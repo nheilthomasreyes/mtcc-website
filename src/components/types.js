@@ -1,0 +1,16 @@
+export const TEST_TYPE_LABELS = {
+  FTIR: 'FTIR Analysis',
+  C: 'Centrifuge',
+  CT: 'Compressive Test',
+  CTT: 'Coating Thickness Test',
+  MO: 'Moisture Test',
+  HT: 'Hardness Test',
+  FT: 'Flexural Test',
+  TS: 'Tensile Strength',
+  BT: 'Bending Test',
+  RE: 'Rotary Evaporator',
+  UC: 'Ultracentrifuge',
+  FD: 'Freeze Dryer',
+  NTA: 'Nanoparticle Tracking Analyzer',
+  O: 'Other',
+};

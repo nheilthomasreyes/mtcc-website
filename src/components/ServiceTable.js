@@ -1,0 +1,286 @@
+import { Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ShieldAlert } from 'lucide-react';
+import { TEST_TYPE_LABELS } from "./types";
+import { format } from 'date-fns';
+import { useState } from 'react';
+
+export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  // Filter clients based on status
+  const filteredClients = statusFilter === 'All' 
+    ? clients 
+    : clients.filter(client => client.status === statusFilter);
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Pending':
+        return <AlertCircle className="w-5 h-5 text-amber-400" />;
+      case 'Ongoing':
+        return <Clock className="w-5 h-5 text-blue-400" />;
+      case 'Completed':
+        return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'Cancelled':
+        return <XIcon className="w-5 h-5 text-red-400" />;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Pending':
+        return 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300';
+      case 'Ongoing':
+        return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300';
+      case 'Completed':
+        return 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300';
+      case 'Cancelled':
+        return 'from-red-500/20 to-rose-500/20 border-red-500/30 text-red-300';
+    }
+  };
+
+  const getRequestFormIcon = (status) => {
+    switch (status) {
+      case 'Signed':
+        return <FileCheck className="w-4 h-4 text-green-400" />;
+      case 'Waiting':
+        return <FileQuestion className="w-4 h-4 text-amber-400" />;
+      case 'N/A':
+        return <FileX className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getRequestFormColor = (status) => {
+    switch (status) {
+      case 'Signed':
+        return 'bg-green-500/20 text-green-300 border-green-500/30';
+      case 'Waiting':
+        return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+      case 'N/A':
+        return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+    }
+  };
+
+  return (
+    <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden">
+      <div className="p-6 border-b border-white/10 space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Service Records</h2>
+          <p className="text-blue-200 text-sm mt-1">Manage all client services and requests</p>
+        </div>
+        
+        {/* Status Filters */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-cyan-300" />
+            <span className="text-sm font-medium text-cyan-300">Filter by Status:</span>
+          </div>
+          <button
+            onClick={() => setStatusFilter('All')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              statusFilter === 'All'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/50 border border-cyan-500'
+                : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            All ({clients.length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('Ongoing')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              statusFilter === 'Ongoing'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/50 border border-blue-500'
+                : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            Ongoing ({clients.filter(c => c.status === 'Ongoing').length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('Pending')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              statusFilter === 'Pending'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/50 border border-amber-500'
+                : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            Pending ({clients.filter(c => c.status === 'Pending').length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('Completed')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              statusFilter === 'Completed'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/50 border border-green-500'
+                : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            Completed ({clients.filter(c => c.status === 'Completed').length})
+          </button>
+          <button
+            onClick={() => setStatusFilter('Cancelled')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              statusFilter === 'Cancelled'
+                ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/50 border border-red-500'
+                : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            Cancelled ({clients.filter(c => c.status === 'Cancelled').length})
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/10 bg-white/5">
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Service No.</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Client Name</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Category</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Request Date</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Signed Request Form</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Official Receipt</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Date of Test</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Report of Analysis</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Released of ROA</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Sample No.</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Specimen No.</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Types of Test</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Total Income</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Sample Count</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Status</th>
+              <th className="px-5 py-5 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {filteredClients.map((client) => (
+              <tr key={client.id} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
+                <td className="px-5 py-5">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">
+                      {client.serviceNo}
+                    </span>
+                    {client.doNotDelete && (
+                      <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />
+                    )}
+                  </div>
+                </td>
+                <td className="px-5 py-5">
+                  <div className="space-y-1 min-w-[220px]">
+                    <p className="text-white font-semibold">{client.name}</p>
+                    <p className="text-gray-400 text-sm">{client.address}</p>
+                  </div>
+                </td>
+                <td className="px-5 py-5">
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">
+                    {client.category}
+                  </span>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">
+                    {client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium border ${getRequestFormColor(client.requestForm)} whitespace-nowrap`}>
+                    {getRequestFormIcon(client.requestForm)}
+                    {client.requestForm}
+                  </div>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">
+                    {client.officialReceipt ? format(new Date(client.officialReceipt), 'MMM dd, yyyy') : '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">
+                    {client.dateOfTest ? format(new Date(client.dateOfTest), 'MMM dd, yyyy') : '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">
+                    {client.reportOfAnalysis ? format(new Date(client.reportOfAnalysis), 'MMM dd, yyyy') : '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">
+                    {client.releasedOfROA ? format(new Date(client.releasedOfROA), 'MMM dd, yyyy') : '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">
+                    {client.sampleNo || '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">
+                    {client.specimenNo || '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <div className="flex flex-wrap gap-2 max-w-xs">
+                    {client.testTypes.length > 0 ? client.testTypes.map((type) => (
+                      <span
+                        key={type}
+                        className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30"
+                        title={TEST_TYPE_LABELS[type]}
+                      >
+                        {type}
+                      </span>
+                    )) : <span className="text-sm text-gray-400">-</span>}
+                  </div>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-lg font-bold text-amber-300 whitespace-nowrap">
+                    ₱{client.amount.toLocaleString()}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 text-center whitespace-nowrap">
+                    {client.sampleCount || '-'}
+                  </p>
+                </td>
+                <td className="px-5 py-5">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium bg-gradient-to-r border ${getStatusColor(client.status)} whitespace-nowrap`}>
+                    {getStatusIcon(client.status)}
+                    {client.status}
+                  </div>
+                </td>
+                <td className="px-5 py-5">
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => onEdit(client)}
+                      className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110"
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    {client.status !== 'Completed' && (
+                      <button
+                        onClick={() => onComplete(client.id)}
+                        className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110"
+                        title="Mark as Completed"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onDelete(client.id)}
+                      className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {clients.length === 0 && (
+          <div className="text-center py-12">
+            <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-400">No clients found. Add your first client to get started!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
