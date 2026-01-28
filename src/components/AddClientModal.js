@@ -10,6 +10,7 @@ const CATEGORIES = [
   'Private Individual',
   'Senior High',
   'BatStateU IS',
+  '+add',
 ];
 
 const SERVICE_TYPES = [
@@ -103,18 +104,23 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Client Name *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Client Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    const value=e.target.value;
+                    const regex=/[^a-zA-Z\s]/g;
+                    const onlyLetters=value.replace(regex, "");
+                    setFormData({...formData, name: onlyLetters});
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="Enter client name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Address *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
@@ -132,7 +138,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Contact Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email <span className="text-red-500">*</span></label>
                 <input
                   type="email"
                   required
@@ -142,17 +148,32 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   placeholder="email@example.com"
                 />
               </div>
+              
+
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Phone *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Phone <span className="text-red-500">*</span></label>
                 <input
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/\D/g, '');
+                    const truncated = rawValue.slice(0, 11);
+                    let formatted = truncated;
+                    if (truncated.length > 4) {
+                      formatted = `${truncated.slice(0, 4)} ${truncated.slice(4)}`;
+                    }
+                    if (truncated.length > 7) {
+                      formatted = `${truncated.slice(0, 4)} ${truncated.slice(4, 7)} ${truncated.slice(7)}`;
+                    }
+                    setFormData({ ...formData, phone: formatted });
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="+63 XXX XXX XXXX"
+                  placeholder="09XX XXX XXXX"
                 />
               </div>
+
+
             </div>
           </div>
 
@@ -161,7 +182,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Category *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Category <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.category}
@@ -176,7 +197,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Service Type *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Service Type <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.serviceType}
@@ -191,7 +212,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Status *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.status}
@@ -213,7 +234,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Timeline</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   min="0"
@@ -237,13 +258,14 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Date Requested *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Date Requested <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   required
                   value={formData.dateRequested}
                   onChange={(e) => setFormData({ ...formData, dateRequested: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
@@ -253,6 +275,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   value={formData.dateReleased}
                   onChange={(e) => setFormData({ ...formData, dateReleased: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
             </div>
@@ -264,26 +287,29 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   value={formData.dateClaimed}
                   onChange={(e) => setFormData({ ...formData, dateClaimed: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Start Date *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Start Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   required
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Due Date *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Due Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   required
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
             </div>
@@ -294,7 +320,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Documentation & Payment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.requestForm}
@@ -315,6 +341,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   value={formData.officialReceipt || ''}
                   onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
             </div>
@@ -326,6 +353,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   value={formData.dateOfTest || ''}
                   onChange={(e) => setFormData({ ...formData, dateOfTest: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
@@ -335,6 +363,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   value={formData.reportOfAnalysis || ''}
                   onChange={(e) => setFormData({ ...formData, reportOfAnalysis: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
@@ -344,6 +373,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   value={formData.releasedOfROA || ''}
                   onChange={(e) => setFormData({ ...formData, releasedOfROA: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
             </div>
@@ -382,7 +412,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   min="0"

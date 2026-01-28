@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { startOfQuarter, endOfQuarter, isWithinInterval } from 'date-fns';
+import { TEST_TYPE_LABELS } from "./types";
 import * as XLSX from 'xlsx';
+
+const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TB', 'HT', 'MO', 'CTT'];
 
 export function TallyModal({ isOpen, onClose, clients, customYears }) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -326,15 +329,16 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <th className="px-4 py-3 text-right text-xs font-bold text-white uppercase border-r border-white/10">Income</th>
                       <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Big Tech</th>
                       <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Material Testing</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">FTIR</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">C</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">CT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">FT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">BT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">TB</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">HT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">MO</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase">CTT</th>
+                      {TEST_HEADERS.map((type) => (
+                        <th 
+                          key={type}
+                          className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10"
+                          // This looks up the definition in your imported types file
+                          title={TEST_TYPE_LABELS[type] || type} 
+                        >
+                          {type}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
