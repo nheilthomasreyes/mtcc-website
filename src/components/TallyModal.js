@@ -180,7 +180,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
       // Add data for each quarter
       tallyDataByQuarter.quarterlyResults.forEach(({ quarter, data, totals }) => {
-        wsData.push([`${quarter}/4/2025`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']); // Quarter header
+        wsData.push([`${quarter}/4/2025`, ...Array(15).fill('')]); // Quarter header
         
         data.forEach(row => {
           wsData.push([
@@ -206,7 +206,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         // Monthly Report row (empty)
         wsData.push([
           'Monthly Report',
-          '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
+          ...Array(15).fill('')
         ]);
 
         // Total Income row
@@ -236,12 +236,23 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         tallyDataByQuarter.grandTotals.noOfClient,
         tallyDataByQuarter.grandTotals.noOfServices,
         `₱${tallyDataByQuarter.grandTotals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-        '', '', '', '', '', '', '', '', '', '', '', ''
+        ...Array(12).fill('')
       ]);
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(wsData);
 
+      const mergeRange = 15; // Column P
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: mergeRange } }, // Republic
+        { s: { r: 1, c: 0 }, e: { r: 1, c: mergeRange } }, // BSU
+        { s: { r: 2, c: 0 }, e: { r: 2, c: mergeRange } }, // Address
+        { s: { r: 3, c: 0 }, e: { r: 3, c: mergeRange } }, // STEER
+        { s: { r: 4, c: 0 }, e: { r: 4, c: mergeRange } }, // Material Testing
+        { s: { r: 5, c: 0 }, e: { r: 5, c: mergeRange } }, // Service Report Year
+        { s: { r: 6, c: 0 }, e: { r: 6, c: mergeRange } }  // Summary
+      ];
+      
       // Set column widths
       ws['!cols'] = [
         { wch: 25 }, // Types Of Client
