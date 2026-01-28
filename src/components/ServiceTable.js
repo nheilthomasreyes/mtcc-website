@@ -14,7 +14,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     return ['All', ...Array.from(cats).sort()];
   }, [clients]);
 
-  const availableTestTypes = ['All', 'FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TB', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+  const availableTestTypes = ['All', 'FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
   // Filter clients based on status, client type, and test type
   const filteredClients = useMemo(() => {
