@@ -6,6 +6,7 @@ import { EditClientModal } from "./components/EditClientModal";
 import { AnalyticsModal } from "./components/AnalyticsModal";
 import { TallyModal } from "./components/TallyModal";
 
+import Login from './Login'
 
 import {
   Plus,
@@ -16,6 +17,10 @@ import {
 } from "lucide-react";
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
+  const [loading, setLoading] = useState(false); // Add this
+  const [error, setError] = useState(null);      // Add this
+
   const [clients, setClients] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
@@ -25,6 +30,8 @@ export default function App() {
   const [customYears, setCustomYears] = useState([]);
   const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
   const [newYearInput, setNewYearInput] = useState('');
+
+  
 
   // Generate service number
   const generateServiceNo = () => {
@@ -501,6 +508,7 @@ export default function App() {
     ];
   };
 
+
   // Load clients from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('clients');
@@ -606,16 +614,33 @@ export default function App() {
     }
   };
 
+if (!isLoggedIn) {
+  return (
+    <Login 
+      onLoginSuccess={() => {
+        localStorage.setItem('isLoggedIn', 'true'); // Save the note
+        setIsLoggedIn(true);
+      }} 
+    />
+  );
+}
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error: {error.message}</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/50">
-                <Activity className="w-8 h-8 text-white" />
-              </div>
+            <div className="flex items-center gap-3">
+                <img src="/MTCCORIG.png" className="w-12 h-12"/>
               <div>
                 <h1 className="text-3xl font-bold text-white tracking-tight">
                   Service Monitoring System
@@ -646,6 +671,15 @@ export default function App() {
               >
                 <Plus className="w-5 h-5" />
                 Add Client
+              </button>
+              <button
+              onClick={() => {
+              localStorage.removeItem('isLoggedIn'); // Delete the note
+              window.location.reload(); // Refresh to show Login again
+              }}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-red-600 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/50 transition-all duration-300 hover:scale-105 font-semibold"
+              >
+                Logout
               </button>
             </div>
           </div>

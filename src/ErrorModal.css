@@ -1,0 +1,101 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+/* MODAL CARD */
+.modal-card {
+  background: white;
+  padding: 40px;
+  border-radius: 25px;
+  text-align: center;
+  max-width: 380px;
+  width: 85%;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  animation: modalAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalAppear {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ERROR CIRCLE ICON */
+.error-icon-circle {
+  width: 80px;
+  height: 80px;
+  background-color: #fce4ec; /* Light red/pink background */
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 20px;
+  position: relative;
+  border: 4px solid #ef5350; /* Solid red ring */
+}
+
+/* THE X MARK (CSS Drawing) */
+.error-x-mark {
+  position: relative;
+  width: 30px;
+  height: 30px;
+}
+
+.error-x-mark::before, .error-x-mark::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 13px;
+  height: 30px;
+  width: 4px;
+  background-color: #d32f2f;
+  border-radius: 2px;
+}
+
+.error-x-mark::before { transform: rotate(45deg); }
+.error-x-mark::after { transform: rotate(-45deg); }
+
+/* TEXT STYLING */
+.error-title {
+  color: #d32f2f;
+  margin: 10px 0;
+  font-size: 1.6rem;
+}
+
+.error-text {
+  color: #666;
+  margin-bottom: 25px;
+  line-height: 1.4;
+}
+
+/* BUTTON STYLING */
+.try-again-btn {
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  padding: 12px 40px;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  width: 100%; /* Makes it easy to click */
+}
+
+.try-again-btn:hover {
+  background-color: #b71c1c;
+  transform: scale(1.03);
+}
+
+.try-again-btn:active {
+  transform: scale(0.98);
+}
