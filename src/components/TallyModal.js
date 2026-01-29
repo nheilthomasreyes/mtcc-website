@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { startOfQuarter, endOfQuarter, isWithinInterval } from 'date-fns';
-import * as XLSX from 'xlsx';
+import { TEST_TYPE_LABELS } from "./types";
+import * as XLSX from 'xlsx';Z
+
+{/*ALL LINES WITH TS ARE EDITED (TB - TS)*/}
+const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 
 export function TallyModal({ isOpen, onClose, clients, customYears }) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -62,7 +66,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           ct: getTestTypeCount('CT'),
           ft: getTestTypeCount('FT'),
           bt: getTestTypeCount('BT'),
-          tb: getTestTypeCount('TB'),
+          ts: getTestTypeCount('TS'),
           ht: getTestTypeCount('HT'),
           mo: getTestTypeCount('MO'),
           ctt: getTestTypeCount('CTT'),
@@ -84,7 +88,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         ct: data.reduce((sum, d) => sum + d.ct, 0),
         ft: data.reduce((sum, d) => sum + d.ft, 0),
         bt: data.reduce((sum, d) => sum + d.bt, 0),
-        tb: data.reduce((sum, d) => sum + d.tb, 0),
+        ts: data.reduce((sum, d) => sum + d.ts, 0),
         ht: data.reduce((sum, d) => sum + d.ht, 0),
         mo: data.reduce((sum, d) => sum + d.mo, 0),
         ctt: data.reduce((sum, d) => sum + d.ctt, 0),
@@ -106,7 +110,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
       ct: quarterlyResults.reduce((sum, q) => sum + q.totals.ct, 0),
       ft: quarterlyResults.reduce((sum, q) => sum + q.totals.ft, 0),
       bt: quarterlyResults.reduce((sum, q) => sum + q.totals.bt, 0),
-      tb: quarterlyResults.reduce((sum, q) => sum + q.totals.tb, 0),
+      ts: quarterlyResults.reduce((sum, q) => sum + q.totals.ts, 0),
       ht: quarterlyResults.reduce((sum, q) => sum + q.totals.ht, 0),
       mo: quarterlyResults.reduce((sum, q) => sum + q.totals.mo, 0),
       ctt: quarterlyResults.reduce((sum, q) => sum + q.totals.ctt, 0),
@@ -168,7 +172,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         'CT',
         'FT',
         'BT',
-        'TB',
+        'TS',
         'HT',
         'MO',
         'CTT',
@@ -177,7 +181,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
       // Add data for each quarter
       tallyDataByQuarter.quarterlyResults.forEach(({ quarter, data, totals }) => {
-        wsData.push([`${quarter}/4/2025`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']); // Quarter header
+        wsData.push([`${quarter}/4/2025`, ...Array(15).fill('')]); // Quarter header
         
         data.forEach(row => {
           wsData.push([
@@ -192,7 +196,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
             row.ct,
             row.ft,
             row.bt,
-            row.tb,
+            row.ts,
             row.ht,
             row.mo,
             row.ctt,
@@ -203,7 +207,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         // Monthly Report row (empty)
         wsData.push([
           'Monthly Report',
-          '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
+          ...Array(15).fill('')
         ]);
 
         // Total Income row
@@ -233,12 +237,12 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         tallyDataByQuarter.grandTotals.noOfClient,
         tallyDataByQuarter.grandTotals.noOfServices,
         `₱${tallyDataByQuarter.grandTotals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-        '', '', '', '', '', '', '', '', '', '', '', ''
+        ...Array(12).fill('')
       ]);
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(wsData);
-
+      
       // Set column widths
       ws['!cols'] = [
         { wch: 25 }, // Types Of Client
@@ -252,7 +256,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         { wch: 8 },  // CT
         { wch: 8 },  // FT
         { wch: 8 },  // BT
-        { wch: 8 },  // TB
+        { wch: 8 },  // TS
         { wch: 8 },  // HT
         { wch: 8 },  // MO
         { wch: 10 }, // CTT
@@ -318,6 +322,8 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
+                  
+                  {/*EDITED UP TO LINE 345*/}
                   <thead>
                     <tr className={`bg-gradient-to-r ${getQuarterColor(quarter)} border-b`}>
                       <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase border-r border-white/10">Type of Client</th>
@@ -326,15 +332,15 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <th className="px-4 py-3 text-right text-xs font-bold text-white uppercase border-r border-white/10">Income</th>
                       <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Big Tech</th>
                       <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Material Testing</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">FTIR</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">C</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">CT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">FT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">BT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">TB</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">HT</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">MO</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase">CTT</th>
+                      {TEST_HEADERS.map((type) => (
+                        <th 
+                          key={type}
+                          className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10"
+                          title={TEST_TYPE_LABELS[type] || type} 
+                        >
+                          {type}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -355,12 +361,13 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                         <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.ct}</td>
                         <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.ft}</td>
                         <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.bt}</td>
-                        <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.tb}</td>
+                        <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.ts}</td>
                         <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.ht}</td>
                         <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.mo}</td>
                         <td className="px-4 py-3 text-center text-sm text-pink-300">{row.ctt}</td>
                       </tr>
                     ))}
+
                     {/* Total Income Row */}
                     <tr className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-t-2 border-amber-500/50">
                       <td className="px-4 py-4 text-sm font-bold text-white border-r border-white/10">{totals.category}</td>
@@ -376,7 +383,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{totals.ct}</td>
                       <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{totals.ft}</td>
                       <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{totals.bt}</td>
-                      <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{totals.tb}</td>
+                      <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{totals.ts}</td>
                       <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{totals.ht}</td>
                       <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{totals.mo}</td>
                       <td className="px-4 py-4 text-center text-sm font-bold text-pink-300">{totals.ctt}</td>
