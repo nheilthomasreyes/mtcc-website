@@ -1,0 +1,236 @@
+/* ============================================================
+   1. LAYOUT WRAPPER 
+   Centers the login card on the screen and handles the background.
+   ============================================================ */
+.page-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+ /* Light grey background to make the white card pop */
+}
+
+/* ============================================================
+   2. CARD CONTAINER & ANIMATION
+   Controls the "Entrance" effect when the page first loads.
+   ============================================================ */
+.card-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  z-index: 10;
+  /* Entrance animation: Slides up and fades in */
+  animation: fadeAndRise 0.8s ease-out forwards;
+}
+
+@keyframes fadeAndRise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   3. THE LOGIN CARD DESIGN
+   The white container holding the logo, form, and buttons.
+   ============================================================ */
+.card {
+  background-color: white;
+  padding: 40px;
+  border-radius: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+/* Tactile hover effect for the card */
+.card:hover {
+  transform: scale(1.02); 
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================================
+   4. HEADER SECTION (Logo + Title)
+   Organizes the MTCC logo and the stacked text side-by-side.
+   ============================================================ */
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  width: 100%;
+}
+
+.logo {
+  width: 150px;
+  height: auto;
+}
+
+.company-name-stacked {
+  font-family: sans-serif;
+  font-size: 1.8rem;
+  line-height: 1.1;
+  margin: 0;
+  text-align: left;
+  color: #222;
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================================
+   5. INPUT FIELDS & WRAPPERS
+   Styles for the Email and Password containers.
+   ============================================================ */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: #f0f0f0; /* Light grey background inside input */
+  padding: 12px 18px;
+  border-radius: 15px;
+  border: 2px solid transparent; /* Transparent border prevents jump when red appears */
+  transition: all 0.3s ease;
+}
+
+.input-wrapper input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding-left: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.input-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.eye-icon {
+  width: 22px;
+  height: auto;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.eye-icon:hover {
+  opacity: 1;
+}
+
+/* ============================================================
+   6. LOGIN BUTTON
+   The primary action button.
+   ============================================================ */
+.login-btn {
+  width: 100%;
+  padding: 16px;
+  background-color: #2b5278; /* MTCC Blue */
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+  background-color: #1e3a56; /* Slightly darker on hover */
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(43, 82, 120, 0.4);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+}
+
+/* ============================================================
+   7. ERROR HANDLING & MODAL EFFECTS
+   Animations and colors for failed login attempts.
+   ============================================================ */
+
+/* Changes input border to red when error exists */
+.shake-animation {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+  border: 2px solid #dc3545; 
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Corner Logo (BSU) */
+.corner-logo {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 65px;
+  height: auto;
+  z-index: 100;
+}
+
+/* ============================================================
+   8. SHARED MODAL STYLES (Success & Error)
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: white;
+  padding: 40px;
+  border-radius: 25px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+  animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-btn {
+  margin-top: 20px;
+  padding: 12px 30px;
+  border-radius: 25px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+}

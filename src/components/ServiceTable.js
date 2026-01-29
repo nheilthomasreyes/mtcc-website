@@ -223,10 +223,27 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     {client.requestForm}
                   </div>
                 </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">
-                    {client.officialReceipt ? format(new Date(client.officialReceipt), 'MMM dd, yyyy') : '-'}
-                  </p>
+
+                {/*EDITED UP TO LINE 207*/}
+                <td className="px-5 py-5 text-center">
+                  <div className="flex justify-center">
+                    {client.officialReceipt ? (
+                      /* Green Checkmark for True */
+                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </span>
+                    ) : (
+                      /* Red X for False */
+                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-5 py-5">
                   <p className="text-sm text-gray-300 whitespace-nowrap">
