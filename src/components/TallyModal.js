@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { startOfQuarter, endOfQuarter, isWithinInterval } from 'date-fns';
+import * as XLSX from 'xlsx-js-style';
 import { TEST_TYPE_LABELS } from "./types";
-import * as XLSX from 'xlsx';Z
 
 {/*ALL LINES WITH TS ARE EDITED (TB - TS)*/}
 const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
@@ -143,21 +143,231 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
   };
 
   const exportToExcel = () => {
-    try {
-      const workbook = XLSX.utils.book_new();
+  try {
+    const workbook = XLSX.utils.book_new();
+    const wsData = [];
+    const merges = [];
+
+    // === 1. HEADER SECTION (Starting at B2) ===
+    // Row 0: Empty row for top margin
+    wsData.push(Array(17).fill(""));
+
+    // Header text starting at B2
+    const headerText = [
+      "Republic of the Philippines",
+      "BATANGAS STATE UNIVERSITY",
+      "The National Engineering University",
+      "Alangilan Campus, Batangas City, Philippines 4200",
+      "Science, Technology, Engineering, and Environment Research (STEER) Hub",
+      "",
+      "MATERIAL TESTING AND CALIBRATION CENTER",
+      "https://batstate-u.edu.ph/ | mtcc@g.batstate-u.edu.ph | local no. 2401"
+    ].join("\n");
+    
+    // Rows 1-8: Header section (B2:B9 in Excel)
+    for (let i = 0; i < 8; i++) {
+      const row = ["", headerText]; // Column A empty, B has header
+      for (let j = 2; j < 17; j++) {
+        row.push("");
+      }
+      wsData.push(row);
+    }
+    
+    // Merge B2:Q9 (rows 1-8, columns 1-16 in 0-indexed)
+    merges.push({ s: { r: 1, c: 1 }, e: { r: 8, c: 16 } });
+
+    // Row 9 (B10 in Excel): Report title
+    const titleRow = ["", `${selectedYear} MTCC SERVICES OFFER`];
+    for (let i = 2; i < 17; i++) titleRow.push("");
+    wsData.push(titleRow);
+    merges.push({ s: { r: 9, c: 1 }, e: { r: 9, c: 16 } });
+
+    // === 2. TABLE HEADERS (Starting at B11) ===
+    // Row 10 (B11 in Excel): Top-level headers
+    const headerRow1 = Array(17).fill("");
+    headerRow1[1] = "Period";
+    headerRow1[2] = "Types Of Client";
+    headerRow1[3] = "No. of Unique\nClient";
+    headerRow1[4] = "No. of\nServices";
+    headerRow1[5] = "Income";
+    headerRow1[6] = "Bio Tech\nTesting";
+    headerRow1[7] = "Material\nTesting";
+    headerRow1[8] = "FTIR";
+    headerRow1[9] = "C";
+    headerRow1[10] = "Universal Testing Machine";
+    headerRow1[13] = "Non-Destructive Testing";
+    headerRow1[16] = "CTT";
+    wsData.push(headerRow1);
+
+    // Row 11 (B12 in Excel): Sub-headers
+    const headerRow2 = Array(17).fill("");
+    headerRow2[10] = "CT";
+    headerRow2[11] = "FT";
+    headerRow2[12] = "BT";
+    headerRow2[13] = "TS";
+    headerRow2[14] = "HT";
+    headerRow2[15] = "MO";
+    wsData.push(headerRow2);
+
+    // Header merges (adjusted for B11 start - row 10 in 0-indexed)
+    const headerMerges = [
+      { s: { r: 10, c: 1 }, e: { r: 11, c: 1 } },   // Period
+      { s: { r: 10, c: 2 }, e: { r: 11, c: 2 } },   // Types
+      { s: { r: 10, c: 3 }, e: { r: 11, c: 3 } },   // Unique Client
+      { s: { r: 10, c: 4 }, e: { r: 11, c: 4 } },   // Services
+      { s: { r: 10, c: 5 }, e: { r: 11, c: 5 } },   // Income
+      { s: { r: 10, c: 6 }, e: { r: 11, c: 6 } },   // Bio Tech
+      { s: { r: 10, c: 7 }, e: { r: 11, c: 7 } },   // Material
+      { s: { r: 10, c: 8 }, e: { r: 11, c: 8 } },   // FTIR
+      { s: { r: 10, c: 9 }, e: { r: 11, c: 9 } },   // C
+      { s: { r: 10, c: 16 }, e: { r: 11, c: 16 } }, // CTT
+      { s: { r: 10, c: 10 }, e: { r: 10, c: 12 } }, // Universal Testing Machine
+      { s: { r: 10, c: 13 }, e: { r: 10, c: 15 } }, // Non-Destructive Testing
+    ];
+    merges.push(...headerMerges);
+
+    // === 3. DATA POPULATION ===
+    let currentRow = 12; // Starting at row 13 in Excel
+
+    tallyDataByQuarter.quarterlyResults.forEach((qData) => {
+      const startRow = currentRow;
       
-      // Create worksheet data
-      const wsData = [];
+      // Client category rows
+      qData.data.forEach((row) => {
+        const rowData = [
+          "", // Column A - vacant
+          "", // Period (will be merged) - Column B
+          row.category,
+          row.noOfClient,
+          row.noOfServices,
+          row.income,
+          row.bioTech,
+          row.materialTesting,
+          row.ftir,
+          row.c,
+          row.ct,
+          row.ft,
+          row.bt,
+          row.ts,
+          row.ht,
+          row.mo,
+          row.ctt
+        ];
+        wsData.push(rowData);
+        currentRow++;
+      });
+
+      // Total Income row
+      const totalRow = [
+        "", // Column A - vacant
+        "",
+        "Total Income",
+        qData.totals.noOfClient,
+        qData.totals.noOfServices,
+        qData.totals.income,
+        qData.totals.bioTech,
+        qData.totals.materialTesting,
+        qData.totals.ftir,
+        qData.totals.c,
+        qData.totals.ct,
+        qData.totals.ft,
+        qData.totals.bt,
+        qData.totals.ts,
+        qData.totals.ht,
+        qData.totals.mo,
+        qData.totals.ctt
+      ];
+      wsData.push(totalRow);
+      currentRow++;
+
+      // Period column merge
+      wsData[startRow][1] = `Quarter ${qData.quarter}\n${selectedYear}`;
+      merges.push({ s: { r: startRow, c: 1 }, e: { r: currentRow - 1, c: 1 } });
+    });
+
+    // === 4. CREATE WORKSHEET ===
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!merges'] = merges;
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 3 },   // Column A - vacant/narrow
+      { wch: 12 },  // Period (Column B)
+      { wch: 22 },  // Types Of Client
+      { wch: 12 },  // Unique Client
+      { wch: 12 },  // Services
+      { wch: 15 },  // Income
+      { wch: 10 },  // Bio Tech
+      { wch: 13 },  // Material
+      { wch: 8 },   // FTIR
+      { wch: 6 },   // C
+      { wch: 8 },   // CT
+      { wch: 8 },   // FT
+      { wch: 8 },   // BT
+      { wch: 8 },   // TS
+      { wch: 8 },   // HT
+      { wch: 8 },   // MO
+      { wch: 8 },   // CTT
+    ];
+
+    // Row heights
+    ws['!rows'] = [];
+    ws['!rows'][0] = { hpt: 15 }; // Top margin row
+    // Rows 2-9 (header section) - taller for better visibility
+    for (let i = 1; i <= 8; i++) {
+      ws['!rows'][i] = { hpt: 20 };
+    }
+    // Row 10 (report title)
+    ws['!rows'][9] = { hpt: 25 };
+
+    // === 5. STYLING ===
+    const thinBorder = {
+      top: { style: "thin", color: { rgb: "000000" } },
+      bottom: { style: "thin", color: { rgb: "000000" } },
+      left: { style: "thin", color: { rgb: "000000" } },
+      right: { style: "thin", color: { rgb: "000000" } }
+    };
+
+    const mediumBorder = {
+      top: { style: "medium", color: { rgb: "000000" } },
+      bottom: { style: "medium", color: { rgb: "000000" } },
+      left: { style: "medium", color: { rgb: "000000" } },
+      right: { style: "medium", color: { rgb: "000000" } }
+    };
+
+    const noBorder = {
+      top: { style: "none" },
+      bottom: { style: "none" },
+      left: { style: "none" },
+      right: { style: "none" }
+    };
+
+    const categoryColors = {
+      'BatStateU College': 'F4CCCC',
+      'University Linkage': 'FFF2CC',
+      'Private HEIs': 'D9EAD3',
+      'Private Individual': 'CFE2F3',
+      'Industry': 'FCE5CD',
+      'Senior High': 'EAD1DC',
+      'BatStateU IS': 'D0E0E3',
+    };
+
+    // Pre-populate all cells to ensure borders on merged cells
+    for (let row = 0; row < wsData.length; row++) {
+      for (let col = 0; col < 17; col++) {
+        const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+        if (!ws[cellRef]) {
+          ws[cellRef] = { v: "", t: "s" };
+        }
+      }
+    }
+
+    // Apply styles to all cells
+    Object.keys(ws).forEach(key => {
+      if (key.startsWith('!')) return;
       
-      // Header rows
-      wsData.push(['Republic of the Philippines']);
-      wsData.push(['BATANGAS STATE UNIVERSITY']);
-      wsData.push(['Alangilan Campus, Batangas City, Philippine 4200']);
-      wsData.push(['Science, Technology, Engineering and Environment Research (STEER) Hub']);
-      wsData.push(['MATERIAL TESTING AND CALIBRATION CENTER']);
-      wsData.push([`Service Report of the Year ${selectedYear}`]);
-      wsData.push(['SUMMARY: REVENUE OFFICER']);
-      wsData.push([]);
+      const cell = ws[key];
+      const { r, c } = XLSX.utils.decode_cell(key);
       
       // Table header
       wsData.push([
@@ -263,16 +473,103 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         { wch: 12 }  // TEMPLATE
       ];
 
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(workbook, ws, `Tally ${selectedYear}`);
+      // === DATA ROWS (12+, Columns B-Q) ===
+      if (r >= 12 && c >= 1) {
+        const rowLabel = wsData[r] ? wsData[r][2] : "";
+        
+        // Default data cell style
+        workingCell.s = {
+          font: { name: "Calibri", sz: 10, color: { rgb: "000000" } },
+          alignment: { horizontal: "center", vertical: "center", wrapText: true },
+          border: thinBorder
+        };
 
-      // Generate file and download
-      XLSX.writeFile(workbook, `Service_Tally_Report_${selectedYear}.xlsx`);
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      alert('Failed to export to Excel. Please try again.');
-    }
-  };
+        // Period column (column B, index 1)
+        if (c === 1) {
+          workingCell.s.font.bold = true;
+          workingCell.s.font.color = { rgb: "1F4E78" };
+          workingCell.s.fill = { fgColor: { rgb: "E7E6E6" } };
+        }
+        
+        // Types of Client column (column C, index 2) - left align with category colors
+        if (c === 2) {
+          workingCell.s.alignment.horizontal = "left";
+          
+          if (categoryColors[rowLabel]) {
+            workingCell.s.fill = { fgColor: { rgb: categoryColors[rowLabel] } };
+          }
+          
+          // Total Income row - bold with darker background
+          if (rowLabel === "Total Income") {
+            workingCell.s.font.bold = true;
+            workingCell.s.font.color = { rgb: "FFFFFF" };
+            workingCell.s.fill = { fgColor: { rgb: "8B7355" } };
+          }
+        }
+        
+        // Total Income row styling for all columns
+        if (rowLabel === "Total Income") {
+          workingCell.s.font.bold = true;
+          workingCell.s.font.color = { rgb: "FFFFFF" };
+          workingCell.s.fill = { fgColor: { rgb: "8B7355" } };
+        }
+        
+        // Income column (column F, index 5) - right align
+        if (c === 5) {
+          workingCell.s.alignment.horizontal = "right";
+        }
+        
+        // Number formatting
+        if (typeof workingCell.v === 'number') {
+          if (c === 5) {
+            workingCell.z = '"₱"#,##0.00';
+          } else {
+            workingCell.z = '#,##0';
+          }
+        }
+      }
+    });
+
+    // === FIX: Apply borders to all cells in merged ranges ===
+    merges.forEach(merge => {
+      for (let row = merge.s.r; row <= merge.e.r; row++) {
+        for (let col = merge.s.c; col <= merge.e.c; col++) {
+          const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+          
+          // Skip column A and row 0
+          if (col === 0 || row === 0) continue;
+          
+          // Ensure cell exists
+          if (!ws[cellRef]) {
+            ws[cellRef] = { v: "", t: "s", s: {} };
+          }
+          
+          // Apply border to merged cells
+          if (row >= 12) { // Data rows only
+            if (!ws[cellRef].s) {
+              ws[cellRef].s = {};
+            }
+            ws[cellRef].s.border = thinBorder;
+            
+            // Preserve other styling for Period column
+            if (col === 1) {
+              ws[cellRef].s.font = { name: "Calibri", sz: 10, bold: true, color: { rgb: "1F4E78" } };
+              ws[cellRef].s.fill = { fgColor: { rgb: "E7E6E6" } };
+              ws[cellRef].s.alignment = { horizontal: "center", vertical: "center", wrapText: true };
+            }
+          }
+        }
+      }
+    });
+
+    XLSX.utils.book_append_sheet(workbook, ws, `Services ${selectedYear}`);
+    XLSX.writeFile(workbook, `Service_Tally_Report_${selectedYear}.xlsx`);
+    
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    alert('Failed to export to Excel. Please try again.');
+  }
+};
 
   if (!isOpen) return null;
 

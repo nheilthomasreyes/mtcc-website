@@ -1,15 +1,31 @@
 import { Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ShieldAlert } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   const [statusFilter, setStatusFilter] = useState('All');
+  const [selectedClientType, setSelectedClientType] = useState('All');
+  const [selectedTestType, setSelectedTestType] = useState('All');
 
-  // Filter clients based on status
-  const filteredClients = statusFilter === 'All' 
-    ? clients 
-    : clients.filter(client => client.status === statusFilter);
+  // Dynamic list of Client Types (Categories)
+  const availableCategories = useMemo(() => {
+    const cats = new Set(clients.map(c => c.category).filter(Boolean));
+    return ['All', ...Array.from(cats).sort()];
+  }, [clients]);
+
+  const availableTestTypes = ['All', 'FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+
+  // Filter clients based on status, client type, and test type
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      const matchesStatus = statusFilter === 'All' || client.status === statusFilter;
+      const matchesClientType = selectedClientType === 'All' || client.category === selectedClientType;
+      const matchesTestType = selectedTestType === 'All' || (client.testTypes && client.testTypes.includes(selectedTestType));
+      
+      return matchesStatus && matchesClientType && matchesTestType;
+    });
+  }, [clients, statusFilter, selectedClientType, selectedTestType]);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -123,6 +139,30 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           >
             Cancelled ({clients.filter(c => c.status === 'Cancelled').length})
           </button>
+
+          <select
+            value={selectedClientType}
+            onChange={(e) => setSelectedClientType(e.target.value)}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+          >
+            {availableCategories.map(cat => (
+              <option key={cat} value={cat} className="bg-slate-800">
+                {cat === 'All' ? 'All Clients' : cat}
+              </option>
+            ))}
+          </select>
+          
+          <select
+            value={selectedTestType}
+            onChange={(e) => setSelectedTestType(e.target.value)}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+          >
+            {availableTestTypes.map(test => (
+              <option key={test} value={test} className="bg-slate-800">
+                {test === 'All' ? 'All Tests' : test}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -291,10 +331,10 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           </tbody>
         </table>
 
-        {clients.length === 0 && (
+        {filteredClients.length === 0 && (
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-            <p className="text-gray-400">No clients found. Add your first client to get started!</p>
+            <p className="text-gray-400">No clients found matching the selected filters.</p>
           </div>
         )}
       </div>
