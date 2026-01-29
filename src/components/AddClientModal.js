@@ -3,15 +3,6 @@ import { X } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 
 
-const CATEGORIES = [
-  'BatStateU College',
-  'Private HEIs',
-  'Industry',
-  'Private Individual',
-  'Senior High',
-  'BatStateU IS',
-  '+add',
-];
 
 const SERVICE_TYPES = [
   'Material Testing',
@@ -26,6 +17,26 @@ const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TB', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
 export function AddClientModal({ isOpen, onClose, onAdd }) {
+  const [categories, setCategories] = useState ([
+  'BatStateU College',
+  'Private HEIs',
+  'Industry',
+  'Private Individual',
+  'Senior High',
+  'BatStateU IS',
+]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newcat, setNewCat] = useState({ name: '', color: '#06b6d4' });
+
+  const today=new Date().toISOString().split('T')[0];
+  const handleDateChange=(field,value) => {
+    if (value > today) {
+      setFormData(prev => ({...prev,[field]:''}));
+    } else {
+      setFormData(prev => ({...prev, [field]: value}));
+    }
+  }
+
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -48,8 +59,27 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     remarks: '',
   });
 
+  const handleSaveNewCategory = () => {
+    if (newcat.name.trim()) {
+      // Add to the list
+      setCategories([...categories, newcat.name.trim()]);
+      // Automatically select the newly created category
+      setFormData({ ...formData, category: newcat.name.trim() });
+      // Reset and close
+      setNewCat({ name: '', color: '#06b6d4' });
+      setIsAdding(false);
+    }
+  };
+  
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (new Date(formData.dateRequested) > new Date()) {  
+      alert("Date Requested cannot be in the future");
+      return;
+
+
+    }
     onAdd(formData);
     setFormData({
       name: '',
@@ -148,7 +178,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   placeholder="email@example.com"
                 />
               </div>
-              
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Phone <span className="text-red-500">*</span></label>
@@ -181,20 +210,80 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Category <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Category <span className="text-red-500">*</span>
+                </label>
                 <select
                   required
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
-                  {CATEGORIES.map((cat) => (
+                  {/* 1. Changed from CATEGORIES to categories (the state variable) */}
+                  {categories.map((cat) => (
                     <option key={cat} value={cat} className="bg-slate-800">
                       {cat}
                     </option>
                   ))}
                 </select>
+
+                {!isAdding ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsAdding(true)}
+                    className="mt-2 text-xs flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"
+                  >
+                    <span className="text-lg">+</span> Add New Category
+                  </button>
+                ) : (
+                  <div className="mt-3 p-3 border border-white/10 rounded-lg bg-white/5 space-y-3">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="New category name"
+                        value={newcat.name}
+                        onChange={(e) => setNewCat({ ...newcat, name: e.target.value })}
+                        className="flex-1 px-3 py-1.5 bg-slate-900 border border-white/20 rounded text-sm text-white focus:ring-1 focus:ring-cyan-500 outline-none"
+                      />
+                      
+                      <div className="relative group">
+                        <input
+                          type="color"
+                          value={newcat.color}
+                          onChange={(e) => setNewCat({ ...newcat, color: e.target.value })}
+                          className="w-10 h-9 bg-transparent border-none cursor-pointer rounded overflow-hidden"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAdding(false)}
+                        className="text-xs text-gray-400 hover:text-white transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // 2. Applied the Save Logic
+                          if (newcat.name.trim()) {
+                            setCategories([...categories, newcat.name.trim()]); // Adds to list
+                            setFormData({ ...formData, category: newcat.name.trim() }); // Selects it
+                            setNewCat({ name: '', color: '#06b6d4' }); // Resets input
+                            setIsAdding(false); // Closes input box
+                          }
+                        }}
+                        className="text-xs bg-cyan-600 hover:bg-cyan-500 px-3 py-1.5 rounded text-white font-medium transition-colors"
+                      >
+                        Save Category
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Service Type <span className="text-red-500">*</span></label>
@@ -240,9 +329,23 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   min="0"
                   max="100"
                   required
-                  value={formData.progress}
-                  onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
+                  value={formData.progress || ''}
+                  onChange={(e) => {
+                    const val=e.target.value;
+                    if(val === "" ){
+                      setFormData({...formData, progress:""});
+                      return;
+                    }
+                    
+                    const numValue=Number(val);
+                    if (numValue > 100) {
+                      setFormData({...formData, progress: ""});
+                    } else {
+                      setFormData({...formData, progress: numValue});
+                    }
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  placeholder="0"
                 />
               </div>
               <div>
@@ -263,7 +366,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   type="date"
                   required
                   value={formData.dateRequested}
-                  onChange={(e) => setFormData({ ...formData, dateRequested: e.target.value })}
+                  max={today}                  
+                  onChange={(e) => handleDateChange('dateRequested', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
                 />
@@ -273,7 +377,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <input
                   type="date"
                   value={formData.dateReleased}
-                  onChange={(e) => setFormData({ ...formData, dateReleased: e.target.value })}
+                  max={today}
+                  onChange={(e) => handleDateChange('dateReleased', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
                 />
@@ -285,7 +390,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <input
                   type="date"
                   value={formData.dateClaimed}
-                  onChange={(e) => setFormData({ ...formData, dateClaimed: e.target.value })}
+                  max={today}
+                  onChange={(e) => handleDateChange('dateClaimed', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
                 />
@@ -333,16 +439,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt Date</label>
-                <input
-                  type="date"
-                  value={formData.officialReceipt || ''}
-                  onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
-                />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -417,23 +513,26 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   type="number"
                   min="0"
                   required
-                  value={formData.amount}
+                  value={formData.amount || ''}
                   onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="0"
                 />
               </div>
-              <div className="flex items-center gap-3 pt-8">
-                <input
-                  type="checkbox"
-                  id="doNotDelete"
-                  checked={formData.doNotDelete || false}
-                  onChange={(e) => setFormData({ ...formData, doNotDelete: e.target.checked })}
-                  className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <label htmlFor="doNotDelete" className="text-sm font-medium text-red-300">
-                  DO NOT DELETE (Protected Record)
-                </label>
+              <div> 
+                <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt</label>
+                  <div className="flex items-center gap-3 pt-3">
+                      <input
+                      type="checkbox"
+                      id="officialReceipt"
+                      checked={formData.officialReceipt || false}
+                      onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked })}
+                      className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    />
+                    <label htmlFor="officialReceipt" className="text-sm font-medium text-green-300">
+                      Receipt Available
+                    </label>
+                  </div>
               </div>
             </div>
             <div>
