@@ -241,17 +241,6 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-      const mergeRange = 15; // Column P
-      ws['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: mergeRange } }, // Republic
-        { s: { r: 1, c: 0 }, e: { r: 1, c: mergeRange } }, // BSU
-        { s: { r: 2, c: 0 }, e: { r: 2, c: mergeRange } }, // Address
-        { s: { r: 3, c: 0 }, e: { r: 3, c: mergeRange } }, // STEER
-        { s: { r: 4, c: 0 }, e: { r: 4, c: mergeRange } }, // Material Testing
-        { s: { r: 5, c: 0 }, e: { r: 5, c: mergeRange } }, // Service Report Year
-        { s: { r: 6, c: 0 }, e: { r: 6, c: mergeRange } }  // Summary
-      ];
       
       // Set column widths
       ws['!cols'] = [
