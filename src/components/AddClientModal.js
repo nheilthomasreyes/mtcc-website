@@ -3,7 +3,6 @@ import { X } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 
 
-
 const SERVICE_TYPES = [
   'Material Testing',
   'Calibration',
@@ -77,9 +76,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     if (new Date(formData.dateRequested) > new Date()) {  
       alert("Date Requested cannot be in the future");
       return;
-
-
     }
+    
     onAdd(formData);
     setFormData({
       name: '',
@@ -141,7 +139,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   value={formData.name}
                   onChange={(e) => {
                     const value=e.target.value;
-                    const regex=/[^a-zA-Z\s]/g;
+                    const regex=/[^a-zA-Z.'()-\s]/g;
                     const onlyLetters=value.replace(regex, "");
                     setFormData({...formData, name: onlyLetters});
                   }}
@@ -178,7 +176,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   placeholder="email@example.com"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Phone <span className="text-red-500">*</span></label>
                 <input
@@ -201,8 +198,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   placeholder="09XX XXX XXXX"
                 />
               </div>
-
-
             </div>
           </div>
 

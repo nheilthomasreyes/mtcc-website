@@ -24,13 +24,31 @@ const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TB', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
 export function EditClientModal({ client, onClose, onSave }) {
+  const today=new Date().toISOString().split('T')[0];
+  const handleDateChange=(field,value) => {
+    if (value > today) {
+      setFormData(prev => ({...prev,[field]:''}));
+    } else {
+      setFormData(prev => ({...prev, [field]: value}));
+    }
+  }
+  
   const [formData, setFormData] = useState(client);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    if (new Date(formData.dateRequested) > new Date()) {  
+      alert("Date Requested cannot be in the future");
+      return;
+    }
+  
     onSave(formData);
-  };
-
+  
+    onClose();
+  }
+  
+  
   const toggleTestType = (type) => {
     setFormData(prev => ({
       ...prev,
@@ -39,7 +57,6 @@ export function EditClientModal({ client, onClose, onSave }) {
         : [...prev.testTypes, type],
     }));
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 shadow-2xl">
@@ -59,18 +76,23 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Client Name *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Client Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    const value=e.target.value;
+                    const regex=/[^a-zA-Z.'()-\s]/g;
+                    const onlyLetters=value.replace(regex, "");
+                    setFormData({...formData, name: onlyLetters});
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="Enter client name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Address *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
@@ -88,7 +110,7 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Contact Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email <span className="text-red-500">*</span></label>
                 <input
                   type="email"
                   required
@@ -99,14 +121,25 @@ export function EditClientModal({ client, onClose, onSave }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Phone *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Phone <span className="text-red-500">*</span></label>
                 <input
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/\D/g, '');
+                    const truncated = rawValue.slice(0, 11);
+                    let formatted = truncated;
+                    if (truncated.length > 4) {
+                      formatted = `${truncated.slice(0, 4)} ${truncated.slice(4)}`;
+                    }
+                    if (truncated.length > 7) {
+                      formatted = `${truncated.slice(0, 4)} ${truncated.slice(4, 7)} ${truncated.slice(7)}`;
+                    }
+                    setFormData({ ...formData, phone: formatted });
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="+63 XXX XXX XXXX"
+                  placeholder="09XX XXX XXXX"
                 />
               </div>
             </div>
@@ -117,7 +150,7 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Category *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Category <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.category}
@@ -132,7 +165,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Service Type *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Service Type <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.serviceType}
@@ -147,7 +180,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Status *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.status}
@@ -169,22 +202,30 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Timeline</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   min="0"
                   max="100"
                   required
-                  value={formData.progress}
-                  onChange={(e) => setFormData({ ...formData, progress: Number(e.target.value) })}
+                  value={formData.progress || ''}
+                  onChange={(e) => {
+                    const val=e.target.value;
+                    if(val === "" ){
+                      setFormData({...formData, progress:""});
+                      return;
+                    }
+                    
+                    const numValue=Number(val);
+                    if (numValue > 100) {
+                      setFormData({...formData, progress: ""});
+                    } else {
+                      setFormData({...formData, progress: numValue});
+                    }
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  placeholder="0"
                 />
-                <div className="mt-2 w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-500"
-                    style={{ width: `${formData.progress}%` }}
-                  />
-                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Laboratory</label>
@@ -199,13 +240,15 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Date Requested *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Date Requested <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   required
                   value={formData.dateRequested}
-                  onChange={(e) => setFormData({ ...formData, dateRequested: e.target.value })}
+                  max={today}                  
+                  onChange={(e) => handleDateChange('dateRequested', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
@@ -213,8 +256,10 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="date"
                   value={formData.dateReleased}
-                  onChange={(e) => setFormData({ ...formData, dateReleased: e.target.value })}
+                  max={today}
+                  onChange={(e) => handleDateChange('dateReleased', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
             </div>
@@ -224,28 +269,32 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="date"
                   value={formData.dateClaimed}
-                  onChange={(e) => setFormData({ ...formData, dateClaimed: e.target.value })}
+                  max={today}
+                  onChange={(e) => handleDateChange('dateClaimed', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Start Date *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Start Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   required
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Due Date *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Due Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   required
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
             </div>
@@ -256,7 +305,7 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Documentation & Payment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.requestForm}
@@ -270,15 +319,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt Date</label>
-                <input
-                  type="date"
-                  value={formData.officialReceipt || ''}
-                  onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -288,6 +328,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   value={formData.dateOfTest || ''}
                   onChange={(e) => setFormData({ ...formData, dateOfTest: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
@@ -297,6 +338,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   value={formData.reportOfAnalysis || ''}
                   onChange={(e) => setFormData({ ...formData, reportOfAnalysis: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
               <div>
@@ -306,6 +348,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   value={formData.releasedOfROA || ''}
                   onChange={(e) => setFormData({ ...formData, releasedOfROA: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
                 />
               </div>
             </div>
@@ -344,28 +387,31 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   min="0"
                   required
-                  value={formData.amount}
+                  value={formData.amount || ''}
                   onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="0"
                 />
               </div>
-              <div className="flex items-center gap-3 pt-8">
-                <input
-                  type="checkbox"
-                  id="doNotDelete"
-                  checked={formData.doNotDelete || false}
-                  onChange={(e) => setFormData({ ...formData, doNotDelete: e.target.checked })}
-                  className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <label htmlFor="doNotDelete" className="text-sm font-medium text-red-300">
-                  DO NOT DELETE (Protected Record)
-                </label>
+              <div> 
+                <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt</label>
+                  <div className="flex items-center gap-3 pt-3">
+                      <input
+                      type="checkbox"
+                      id="officialReceipt"
+                      checked={formData.officialReceipt || false}
+                      onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked })}
+                      className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    />
+                    <label htmlFor="officialReceipt" className="text-sm font-medium text-green-300">
+                      Receipt Available
+                    </label>
+                  </div>
               </div>
             </div>
             <div>
