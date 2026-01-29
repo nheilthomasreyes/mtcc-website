@@ -183,6 +183,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     {client.requestForm}
                   </div>
                 </td>
+
+                {/*EDITED UP TO LINE 207*/}
                 <td className="px-5 py-5 text-center">
                   <div className="flex justify-center">
                     {client.officialReceipt ? (

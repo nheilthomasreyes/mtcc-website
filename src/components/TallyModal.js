@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { startOfQuarter, endOfQuarter, isWithinInterval } from 'date-fns';
 import { TEST_TYPE_LABELS } from "./types";
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx';Z
 
+{/*ALL LINES WITH TS ARE EDITED (TB - TS)*/}
 const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 
 export function TallyModal({ isOpen, onClose, clients, customYears }) {
@@ -321,6 +322,8 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
+                  
+                  {/*EDITED UP TO LINE 345*/}
                   <thead>
                     <tr className={`bg-gradient-to-r ${getQuarterColor(quarter)} border-b`}>
                       <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase border-r border-white/10">Type of Client</th>
@@ -333,7 +336,6 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                         <th 
                           key={type}
                           className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10"
-                          // This looks up the definition in your imported types file
                           title={TEST_TYPE_LABELS[type] || type} 
                         >
                           {type}
@@ -365,6 +367,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                         <td className="px-4 py-3 text-center text-sm text-pink-300">{row.ctt}</td>
                       </tr>
                     ))}
+
                     {/* Total Income Row */}
                     <tr className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-t-2 border-amber-500/50">
                       <td className="px-4 py-4 text-sm font-bold text-white border-r border-white/10">{totals.category}</td>

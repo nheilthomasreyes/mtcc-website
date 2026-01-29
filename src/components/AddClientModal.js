@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 
-
 const SERVICE_TYPES = [
   'Material Testing',
   'Calibration',
@@ -10,12 +9,15 @@ const SERVICE_TYPES = [
 ];
 
 const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
-
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 
-const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TB', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+{/*CHANGED TB - TS*/}
+const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
+  
 export function AddClientModal({ isOpen, onClose, onAdd }) {
+  
+  {/*MOVED TO FUNCTION FROM OUTSIDE*/}
   const [categories, setCategories] = useState ([
   'BatStateU College',
   'Private HEIs',
@@ -23,10 +25,13 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
   'Private Individual',
   'Senior High',
   'BatStateU IS',
-]);
+  ]);
+
+  {/*DECLARATION FOR ADDING NEW CATEGORY*/}
   const [isAdding, setIsAdding] = useState(false);
   const [newcat, setNewCat] = useState({ name: '', color: '#06b6d4' });
 
+  {/*DECLARATION FOR CALENDAR DATES - UP TO LINE 42*/}
   const today=new Date().toISOString().split('T')[0];
   const handleDateChange=(field,value) => {
     if (value > today) {
@@ -58,18 +63,17 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     remarks: '',
   });
 
+  {/*SAVING NEW CATERGORY - UP TO LINE 74*/}
   const handleSaveNewCategory = () => {
     if (newcat.name.trim()) {
-      // Add to the list
       setCategories([...categories, newcat.name.trim()]);
-      // Automatically select the newly created category
       setFormData({ ...formData, category: newcat.name.trim() });
-      // Reset and close
       setNewCat({ name: '', color: '#06b6d4' });
       setIsAdding(false);
     }
   };
   
+  {/*CHANGES TO AVOID EXCEEDING DATES - UP TO LINE 83*/}
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -126,6 +130,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
           </button>
         </div>
 
+        {/*ALL CLIENT INFORMATION IS EDITED UP TO LINE 167*/}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Client Info Section */}
           <div className="space-y-4">
@@ -161,6 +166,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             </div>
           </div>
 
+          {/*ALL CONTACT INFORMATION IS EDITED UP TO LINE 208*/}
           {/* Contact Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Contact Details</h3>
@@ -200,12 +206,13 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
               </div>
             </div>
           </div>
-
+                
           {/* Service Details Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
+              {/*EDITED UP TO LINE 284*/}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Category <span className="text-red-500">*</span>
@@ -216,14 +223,12 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
-                  {/* 1. Changed from CATEGORIES to categories (the state variable) */}
                   {categories.map((cat) => (
                     <option key={cat} value={cat} className="bg-slate-800">
                       {cat}
                     </option>
                   ))}
                 </select>
-
                 {!isAdding ? (
                   <button
                     type="button"
@@ -242,7 +247,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                         onChange={(e) => setNewCat({ ...newcat, name: e.target.value })}
                         className="flex-1 px-3 py-1.5 bg-slate-900 border border-white/20 rounded text-sm text-white focus:ring-1 focus:ring-cyan-500 outline-none"
                       />
-                      
                       <div className="relative group">
                         <input
                           type="color"
@@ -252,7 +256,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                         />
                       </div>
                     </div>
-
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
@@ -264,7 +267,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                       <button
                         type="button"
                         onClick={() => {
-                          // 2. Applied the Save Logic
                           if (newcat.name.trim()) {
                             setCategories([...categories, newcat.name.trim()]); // Adds to list
                             setFormData({ ...formData, category: newcat.name.trim() }); // Selects it
@@ -279,8 +281,10 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                     </div>
                   </div>
                 )}
-              </div>
+              </div>   
               <div>
+
+                {/*ONLY LINE 288 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Service Type <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -296,6 +300,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 </select>
               </div>
               <div>
+
+                {/*ONLY LINE 305 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -317,6 +323,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Timeline</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/*EDITED UP TO LINE 353*/}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) <span className="text-red-500">*</span></label>
                 <input
@@ -354,6 +362,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 />
               </div>
             </div>
+
+            {/*EDITED UP TO LINE 427*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date Requested <span className="text-red-500">*</span></label>
@@ -421,6 +431,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Documentation & Payment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+
+                {/*EDIT STARTS HERE UP TO LINE 482*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -501,6 +513,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 />
               </div>
             </div>
+            
+            {/*EDITED UP TO LINE 546*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) <span className="text-red-500">*</span></label>

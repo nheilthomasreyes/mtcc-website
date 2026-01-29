@@ -21,8 +21,10 @@ const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 
-const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TB', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+{/*CHANGED TB - TS*/}
+const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
+{/*EDITED UP TO LINE 51*/}
 export function EditClientModal({ client, onClose, onSave }) {
   const today=new Date().toISOString().split('T')[0];
   const handleDateChange=(field,value) => {
@@ -48,7 +50,6 @@ export function EditClientModal({ client, onClose, onSave }) {
     onClose();
   }
   
-  
   const toggleTestType = (type) => {
     setFormData(prev => ({
       ...prev,
@@ -57,6 +58,7 @@ export function EditClientModal({ client, onClose, onSave }) {
         : [...prev.testTypes, type],
     }));
   };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 shadow-2xl">
@@ -69,13 +71,14 @@ export function EditClientModal({ client, onClose, onSave }) {
             <X className="w-5 h-5" />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Client Info Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+
+                {/*ALL CLIENT INFORMATION IS EDITED UP TO LINE 109*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Client Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
@@ -104,7 +107,8 @@ export function EditClientModal({ client, onClose, onSave }) {
               </div>
             </div>
           </div>
-
+          
+          {/*ALL CONTACT INFORMATION IS EDITED UP TO LINE 150*/}
           {/* Contact Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Contact Details</h3>
@@ -150,6 +154,8 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
+
+                {/*ONLY LINE 159 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Category <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -165,6 +171,8 @@ export function EditClientModal({ client, onClose, onSave }) {
                 </select>
               </div>
               <div>
+
+                {/*ONLY LINE 176 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Service Type <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -180,6 +188,8 @@ export function EditClientModal({ client, onClose, onSave }) {
                 </select>
               </div>
               <div>
+
+                {/*ONLY LINE 193 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -202,6 +212,8 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Timeline</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+
+                {/*EDITED UP TO LINE 241*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
@@ -240,6 +252,8 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+
+                {/*EDITED UP TO LINE 315*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date Requested <span className="text-red-500">*</span></label>
                 <input
                   type="date"
@@ -305,6 +319,8 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Documentation & Payment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                
+                {/*EDITED UP TO LINE 370*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -387,6 +403,8 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+
+                {/*EDITED UP TO LINE 434*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
