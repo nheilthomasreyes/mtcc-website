@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { startOfQuarter, endOfQuarter, isWithinInterval } from 'date-fns';
-import * as XLSX from 'xlsx-js-style';
 import { TEST_TYPE_LABELS } from "./types";
+import * as XLSX from 'xlsx-js-style';
 
-{/*ALL LINES WITH TS ARE EDITED (TB - TS)*/}
 const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 
 export function TallyModal({ isOpen, onClose, clients, customYears }) {
@@ -366,112 +365,69 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
     Object.keys(ws).forEach(key => {
       if (key.startsWith('!')) return;
       
-      const cell = ws[key];
       const { r, c } = XLSX.utils.decode_cell(key);
       
-      // Table header
-      wsData.push([
-        'Types Of Client',
-        'No. of Client',
-        'No. of Services',
-        'Income',
-        'Big Tech Material Testing',
-        'Material Testing As Per NSCP 2015',
-        'FTIR',
-        'C',
-        'CT',
-        'FT',
-        'BT',
-        'TS',
-        'HT',
-        'MO',
-        'CTT',
-        'TEMPLATE'
-      ]);
-
-      // Add data for each quarter
-      tallyDataByQuarter.quarterlyResults.forEach(({ quarter, data, totals }) => {
-        wsData.push([`${quarter}/4/2025`, ...Array(15).fill('')]); // Quarter header
-        
-        data.forEach(row => {
-          wsData.push([
-            row.category,
-            row.noOfClient,
-            row.noOfServices,
-            row.income,
-            row.bioTech,
-            row.materialTesting,
-            row.ftir,
-            row.c,
-            row.ct,
-            row.ft,
-            row.bt,
-            row.ts,
-            row.ht,
-            row.mo,
-            row.ctt,
-            '' // TEMPLATE column
-          ]);
-        });
-
-        // Monthly Report row (empty)
-        wsData.push([
-          'Monthly Report',
-          ...Array(15).fill('')
-        ]);
-
-        // Total Income row
-        wsData.push([
-          totals.category,
-          totals.noOfClient,
-          totals.noOfServices,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          totals.bioTech,
-          totals.materialTesting,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          `₱${totals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-          '' // TEMPLATE column
-        ]);
-      });
-
-      // Grand Total row
-      wsData.push([
-        tallyDataByQuarter.grandTotals.category,
-        tallyDataByQuarter.grandTotals.noOfClient,
-        tallyDataByQuarter.grandTotals.noOfServices,
-        `₱${tallyDataByQuarter.grandTotals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
-        ...Array(12).fill('')
-      ]);
-
-      // Create worksheet
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      if (c > 16) return;
       
-      // Set column widths
-      ws['!cols'] = [
-        { wch: 25 }, // Types Of Client
-        { wch: 12 }, // No. of Client
-        { wch: 12 }, // No. of Services
-        { wch: 15 }, // Income
-        { wch: 20 }, // Big Tech
-        { wch: 25 }, // Material Testing
-        { wch: 10 }, // FTIR
-        { wch: 8 },  // C
-        { wch: 8 },  // CT
-        { wch: 8 },  // FT
-        { wch: 8 },  // BT
-        { wch: 8 },  // TS
-        { wch: 8 },  // HT
-        { wch: 8 },  // MO
-        { wch: 10 }, // CTT
-        { wch: 12 }  // TEMPLATE
-      ];
+      if (!ws[key]) {
+        ws[key] = { v: "", t: "s" };
+      }
+      const workingCell = ws[key];
+
+      // Row 0: Top margin - no border
+      if (r === 0) {
+        workingCell.s = {
+          border: noBorder,
+          fill: { fgColor: { rgb: "FFFFFF" } }
+        };
+        return;
+      }
+
+      // Column A - always vacant/no border
+      if (c === 0) {
+        workingCell.s = {
+          border: noBorder,
+          fill: { fgColor: { rgb: "FFFFFF" } }
+        };
+        return;
+      }
+
+      // === HEADER SECTION (Rows 1-8, Columns B-Q) ===
+      if (r >= 1 && r <= 8 && c >= 1) {
+        workingCell.s = {
+          font: { name: "Times New Roman", sz: 11, bold: true, color: { rgb: "1F4E78" } },
+          alignment: { horizontal: "center", vertical: "center", wrapText: true },
+          fill: { fgColor: { rgb: "DDEBF7" } },
+          border: mediumBorder
+        };
+        
+        // Special font sizes for specific rows
+        if (r === 2 && c === 1) { // BATANGAS STATE UNIVERSITY (row 2 = B3 in Excel)
+          workingCell.s.font.sz = 16;
+        } else if (r === 7 && c === 1) { // MATERIAL TESTING... (row 7 = B8 in Excel)
+          workingCell.s.font.sz = 14;
+        }
+      }
+
+      // Row 9: Report title (Columns B-Q)
+      if (r === 9 && c >= 1) {
+        workingCell.s = {
+          font: { name: "Times New Roman", sz: 14, bold: true, color: { rgb: "1F4E78" } },
+          alignment: { horizontal: "center", vertical: "center", wrapText: true },
+          fill: { fgColor: { rgb: "BDD7EE" } },
+          border: mediumBorder
+        };
+      }
+
+      // === TABLE HEADERS (Rows 10-11, Columns B-Q) ===
+      if ((r === 10 || r === 11) && c >= 1) {
+        workingCell.s = {
+          font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "4472C4" } },
+          alignment: { horizontal: "center", vertical: "center", wrapText: true },
+          border: thinBorder
+        };
+      }
 
       // === DATA ROWS (12+, Columns B-Q) ===
       if (r >= 12 && c >= 1) {
@@ -619,8 +575,6 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
-                  
-                  {/*EDITED UP TO LINE 345*/}
                   <thead>
                     <tr className={`bg-gradient-to-r ${getQuarterColor(quarter)} border-b`}>
                       <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase border-r border-white/10">Type of Client</th>
@@ -633,7 +587,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                         <th 
                           key={type}
                           className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10"
-                          title={TEST_TYPE_LABELS[type] || type} 
+                          title={TEST_TYPE_LABELS[type] || type}
                         >
                           {type}
                         </th>
@@ -664,7 +618,6 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                         <td className="px-4 py-3 text-center text-sm text-pink-300">{row.ctt}</td>
                       </tr>
                     ))}
-
                     {/* Total Income Row */}
                     <tr className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-t-2 border-amber-500/50">
                       <td className="px-4 py-4 text-sm font-bold text-white border-r border-white/10">{totals.category}</td>
