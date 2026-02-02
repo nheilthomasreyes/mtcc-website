@@ -10,6 +10,7 @@ import Login from './Login'
 
 import {
   Plus,
+  LogOut,
   Activity,
   BarChart3,
   Calculator,
@@ -679,6 +680,7 @@ if (!isLoggedIn) {
               }}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-red-600 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/50 transition-all duration-300 hover:scale-105 font-semibold"
               >
+                <LogOut className="w-5 h-5" />
                 Logout
               </button>
             </div>
