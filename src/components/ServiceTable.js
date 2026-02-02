@@ -75,6 +75,32 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     }
   };
 
+  const getServiceRequestName = (client, allClients) => {
+    if (!client.dateRequested || (!client.roa && !client.ts)) return '-';
+
+    const date = new Date(client.dateRequested);
+    const year = date.getFullYear();
+    const monthYear = format(date, 'MM/yyyy');
+    const type = client.roa ? 'ROA' : 'TS';
+
+    // 1. Filter: Get all entries from the same YEAR with the same SERVICE TYPE
+    const yearlyGroup = allClients
+      .filter(c => {
+        if (!c.dateRequested) return false;
+        const cDate = new Date(c.dateRequested);
+        const cType = c.roa ? 'ROA' : 'TS';
+        return cDate.getFullYear() === year && cType === type;
+      })
+      // 2. Sort by date so the order is consistent (Oldest to Newest)
+      .sort((a, b) => new Date(a.dateRequested) - new Date(b.dateRequested));
+
+    // 3. Find where THIS client sits in that specific yearly group
+    const index = yearlyGroup.findIndex(c => c.id === client.id);
+    const sequenceNumber = index !== -1 ? index + 1 : 1;
+
+    return `${monthYear}-Material-Testing-Service-Request-Form_${type}#${sequenceNumber}`;
+};
+
   return (
     <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden">
       <div className="p-6 border-b border-white/10 space-y-4">
@@ -146,9 +172,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
           >
             {availableCategories.map(cat => (
-              <option key={cat} value={cat} className="bg-slate-800">
-                {cat === 'All' ? 'All Clients' : cat}
-              </option>
+              <option key={cat} value={cat} className="bg-slate-800">{cat === 'All' ? 'All Clients' : cat}</option>
             ))}
           </select>
           
@@ -158,9 +182,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
           >
             {availableTestTypes.map(test => (
-              <option key={test} value={test} className="bg-slate-800">
-                {test === 'All' ? 'All Tests' : test}
-              </option>
+              <option key={test} value={test} className="bg-slate-800">{test === 'All' ? 'All Tests' : test}</option>
             ))}
           </select>
         </div>
@@ -173,6 +195,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Service No.</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Client Name</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Category</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Service Request Form</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Request Date</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Signed Request Form</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Official Receipt</th>
@@ -193,9 +216,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
               <tr key={client.id} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
                 <td className="px-5 py-5">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">
-                      {client.serviceNo}
-                    </span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>
                     {client.doNotDelete && (
                       <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />
                     )}
@@ -208,14 +229,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   </div>
                 </td>
                 <td className="px-5 py-5">
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">
-                    {client.category}
-                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">
-                    {client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}
-                  </p>
+                  <p className="inline-flex items-center px-3 py-1 rounded-lg text-md font-medium bg-blue-500/20 text-gray-300 border border-gray-500/30 whitespace-nowrap">{getServiceRequestName(client, clients)}</p>
+                </td>
+                <td className="px-5 py-5">
+                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}</p>
                 </td>
                 <td className="px-5 py-5">
                   <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium border ${getRequestFormColor(client.requestForm)} whitespace-nowrap`}>
@@ -223,7 +243,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     {client.requestForm}
                   </div>
                 </td>
-
+                
                 {/*EDITED UP TO LINE 207*/}
                 <td className="px-5 py-5 text-center">
                   <div className="flex justify-center">
@@ -231,44 +251,47 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                       /* Green Checkmark for True */
                       <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
+                          <polyline points="20 6 9 17 4 12"></polyline></svg>
                       </span>
                     ) : (
                       /* Red X for False */
                       <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
+                          <line x1="6" y1="6" x2="18" y2="18"></line></svg>
                       </span>
                     )}
                   </div>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">
-                    {client.dateOfTest ? format(new Date(client.dateOfTest), 'MMM dd, yyyy') : '-'}
-                  </p>
+                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateOfTest ? format(new Date(client.dateOfTest), 'MMM dd, yyyy') : '-'}</p>
+                </td>
+                <td className="px-5 py-5 text-center">
+                  <div className="flex justify-center">
+                    {client.reportAnalysis ? (
+                      /* Green Checkmark for True */
+                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </span>
+                    ) : (
+                      /* Red X for False */
+                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line> </svg>
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">
-                    {client.reportOfAnalysis ? format(new Date(client.reportOfAnalysis), 'MMM dd, yyyy') : '-'}
-                  </p>
+                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedOfROA ? format(new Date(client.releasedOfROA), 'MMM dd, yyyy') : '-'}</p>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">
-                    {client.releasedOfROA ? format(new Date(client.releasedOfROA), 'MMM dd, yyyy') : '-'}
-                  </p>
+                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.sampleNo || '-'}</p>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">
-                    {client.sampleNo || '-'}
-                  </p>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">
-                    {client.specimenNo || '-'}
-                  </p>
+                  <p className="text-sm text-gray-300 whitespace-nowrap"> {client.specimenNo || '-'}</p>
                 </td>
                 <td className="px-5 py-5">
                   <div className="flex flex-wrap gap-2 max-w-xs">
@@ -276,22 +299,15 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                       <span
                         key={type}
                         className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30"
-                        title={TEST_TYPE_LABELS[type]}
-                      >
-                        {type}
-                      </span>
+                        title={TEST_TYPE_LABELS[type]}>{type}</span>
                     )) : <span className="text-sm text-gray-400">-</span>}
                   </div>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-lg font-bold text-amber-300 whitespace-nowrap">
-                    ₱{client.amount.toLocaleString()}
-                  </p>
+                  <p className="text-lg font-bold text-amber-300 whitespace-nowrap">₱{client.amount.toLocaleString()}</p>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 text-center whitespace-nowrap">
-                    {client.sampleCount || '-'}
-                  </p>
+                  <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
                 </td>
                 <td className="px-5 py-5">
                   <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium bg-gradient-to-r border ${getStatusColor(client.status)} whitespace-nowrap`}>
@@ -304,25 +320,19 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     <button
                       onClick={() => onEdit(client)}
                       className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" />
+                      title="Edit"><Edit className="w-4 h-4" />
                     </button>
                     {client.status !== 'Completed' && (
                       <button
                         onClick={() => onComplete(client.id)}
                         className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110"
-                        title="Mark as Completed"
-                      >
-                        <CheckCircle className="w-4 h-4" />
+                        title="Mark as Completed"><CheckCircle className="w-4 h-4" />
                       </button>
                     )}
                     <button
                       onClick={() => onDelete(client.id)}
                       className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
+                      title="Delete"><Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </td>

@@ -211,9 +211,9 @@ export function EditClientModal({ client, onClose, onSave }) {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Timeline</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/*EDITED UP TO LINE 353*/}
               <div>
-
-                {/*EDITED UP TO LINE 241*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
@@ -240,20 +240,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Laboratory</label>
-                <input
-                  type="text"
-                  value={formData.laboratory || ''}
-                  onChange={(e) => setFormData({ ...formData, laboratory: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="e.g., Main Lab"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-
-                {/*EDITED UP TO LINE 315*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date Requested <span className="text-red-500">*</span></label>
                 <input
                   type="date"
@@ -264,30 +250,43 @@ export function EditClientModal({ client, onClose, onSave }) {
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Date Released</label>
-                <input
-                  type="date"
-                  value={formData.dateReleased}
-                  max={today}
-                  onChange={(e) => handleDateChange('dateReleased', e.target.value)}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Date Claimed</label>
-                <input
-                  type="date"
-                  value={formData.dateClaimed}
-                  max={today}
-                  onChange={(e) => handleDateChange('dateClaimed', e.target.value)}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
-                />
+                {(() => {
+                  const dateValue = formData.dateRequested;
+                  const year = dateValue ? parseInt(dateValue.split('-')[0]) : 0;
+                  const isComplete = dateValue?.length === 10 && year > 1900;
+
+                  if (isComplete) {
+                    return (
+                      <div className="mt-3 p-3 bg-white/5 border border-white/8 rounded-lg flex gap-8 animate-in fade-in zoom-in-95 duration-200">
+                        <label className="flex items-center block text-md font-md text-gray-300">Service Request Form<span className="text-red-500">*</span></label>
+                        <label className="flex items-center space-x-3 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.roa || false}
+                            onChange={(e) => { handleDateChange('roa', e.target.checked);
+                              if  (e.target.checked) handleDateChange('ts', false);
+                            }}
+                            className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                          />
+                          <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">ROA</span>
+                        </label>
+
+                        <label className="flex items-center space-x-3 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={formData.ts || false}
+                            onChange={(e) => { handleDateChange('ts', e.target.checked)
+                              if (e.target.checked) handleDateChange('roa', false);
+                            }}
+                            className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                          />
+                          <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">TS</span>
+                        </label>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Start Date <span className="text-red-500">*</span></label>
@@ -311,6 +310,31 @@ export function EditClientModal({ client, onClose, onSave }) {
                   style={{colorScheme: 'dark'}}
                 />
               </div>
+            {/*EDITED UP TO LINE 427*/}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Date Claimed</label>
+                <input
+                  type="date"
+                  value={formData.dateClaimed}
+                  max={today}
+                  onChange={(e) => handleDateChange('dateClaimed', e.target.value)}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Date Released</label>
+                <input
+                  type="date"
+                  value={formData.dateReleased}
+                  max={today}
+                  onChange={(e) => handleDateChange('dateReleased', e.target.value)}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{colorScheme: 'dark'}}
+                />
+              </div>
             </div>
           </div>
 
@@ -319,8 +343,8 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Documentation & Payment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                
-                {/*EDITED UP TO LINE 370*/}
+
+                {/*EDIT STARTS HERE UP TO LINE 482*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -348,16 +372,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Report of Analysis Date</label>
-                <input
-                  type="date"
-                  value={formData.reportOfAnalysis || ''}
-                  onChange={(e) => setFormData({ ...formData, reportOfAnalysis: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Released of ROA Date</label>
                 <input
                   type="date"
@@ -366,6 +380,23 @@ export function EditClientModal({ client, onClose, onSave }) {
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Report of Analysis</label>
+                  <div className="p-2.5 bg-white/5 border border-white/10 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <input
+                      type="checkbox"
+                      id="reportAnalysis"
+                      checked={formData.reportAnalysis || false}
+                      onChange={(e) => setFormData({ ...formData, reportAnalysis: e.target.checked })}
+                      className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    />
+                    <label htmlFor="reportAnalysis" className="text-sm font-medium text-green-300">
+                      ROA Available
+                    </label>
+                  </div>
+                 </div> 
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -401,10 +432,10 @@ export function EditClientModal({ client, onClose, onSave }) {
                 />
               </div>
             </div>
+            
+            {/*EDITED UP TO LINE 546*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-
-                {/*EDITED UP TO LINE 434*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
@@ -418,10 +449,11 @@ export function EditClientModal({ client, onClose, onSave }) {
               </div>
               <div> 
                 <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt</label>
-                  <div className="flex items-center gap-3 pt-3">
+                  <div className="p-2.5 bg-white/5 border border-white/10 rounded-lg">
+                    <div className="flex items-center gap-3">
                       <input
                       type="checkbox"
-                      id="officialReceipt"
+                      id="reportAnalysis"
                       checked={formData.officialReceipt || false}
                       onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked })}
                       className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -430,17 +462,8 @@ export function EditClientModal({ client, onClose, onSave }) {
                       Receipt Available
                     </label>
                   </div>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Signatories</label>
-              <input
-                type="text"
-                value={formData.signatories || ''}
-                onChange={(e) => setFormData({ ...formData, signatories: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                placeholder="e.g., John Doe, Jane Smith"
-              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Remarks</label>
