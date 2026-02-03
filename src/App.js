@@ -10,7 +10,7 @@ import Login from "./Login";
 
 import { Plus, LogOut, BarChart3, Calculator, Calendar } from "lucide-react";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "http://localhost:3000";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
