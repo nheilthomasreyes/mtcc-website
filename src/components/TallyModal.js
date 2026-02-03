@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { startOfQuarter, endOfQuarter, isWithinInterval } from 'date-fns';
 import { TEST_TYPE_LABELS } from "./types";
-import ExcelJS from 'xlsx-js-style';
+import ExcelJS from 'exceljs';
 
 const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 const SAMPLES_TEST_HEADERS = ['FTIR', 'Material Testing', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
