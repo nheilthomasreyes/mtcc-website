@@ -33,6 +33,106 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
     });
   }, [clients, selectedYear]);
 
+  // WHOLE YEAR SUMMARY DATA (used when "All Quarters" is selected)
+  const wholeYearData = useMemo(() => {
+    const categories = ['BatStateU College', 'University Linkage', 'Private HEIs', 'Private Individual', 'Industry', 'Senior High', 'BatStateU IS'];
+
+    const data = categories.map(categoryName => {
+      const categoryClients = yearFilteredClients.filter(c =>
+        c.category === categoryName ||
+        (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
+      );
+
+      const uniqueClients = new Set(categoryClients.map(c => c.id)).size;
+      const totalIncome = categoryClients.reduce((sum, c) => sum + c.amount, 0);
+      const totalSamples = categoryClients.reduce((sum, c) => sum + (c.numberOfSamples || 1), 0);
+
+      const getTestTypeCount = (testType) =>
+        categoryClients.filter(c => c.testTypes.includes(testType)).length;
+
+      const getSampleCountByTestType = (testType) =>
+        categoryClients.reduce((sum, c) => {
+          if (c.testTypes.includes(testType)) return sum + (c.numberOfSamples || 1);
+          return sum;
+        }, 0);
+
+      const materialTestingCount = categoryClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length;
+      const materialTestingSamples = categoryClients.reduce((sum, c) => {
+        if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') return sum + (c.numberOfSamples || 1);
+        return sum;
+      }, 0);
+
+      return {
+        category: categoryName,
+        // service fields
+        noOfClient: uniqueClients,
+        noOfServices: categoryClients.length,
+        income: totalIncome,
+        bioTech: 0,
+        materialTesting: materialTestingCount,
+        // samples fields
+        totalSamples,
+        materialTestingSamples,
+        // shared test type fields (service = count, samples = sample count)
+        service: {
+          ftir: getTestTypeCount('FTIR'),
+          c: 0,
+          ct: getTestTypeCount('CT'),
+          ft: getTestTypeCount('FT'),
+          bt: getTestTypeCount('BT'),
+          is: getTestTypeCount('TS'),
+          ht: getTestTypeCount('HT'),
+          mo: getTestTypeCount('MO'),
+          ctt: getTestTypeCount('CTT'),
+        },
+        samples: {
+          ftir: getSampleCountByTestType('FTIR'),
+          ct: getSampleCountByTestType('CT'),
+          ft: getSampleCountByTestType('FT'),
+          bt: getSampleCountByTestType('BT'),
+          is: getSampleCountByTestType('TS'),
+          ht: getSampleCountByTestType('HT'),
+          mo: getSampleCountByTestType('MO'),
+          ctt: getSampleCountByTestType('CTT'),
+        },
+      };
+    });
+
+    const serviceTotals = {
+      category: 'Total Income',
+      noOfClient: data.reduce((s, d) => s + d.noOfClient, 0),
+      noOfServices: data.reduce((s, d) => s + d.noOfServices, 0),
+      income: data.reduce((s, d) => s + d.income, 0),
+      bioTech: 0,
+      materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
+      ftir: data.reduce((s, d) => s + d.service.ftir, 0),
+      c: 0,
+      ct: data.reduce((s, d) => s + d.service.ct, 0),
+      ft: data.reduce((s, d) => s + d.service.ft, 0),
+      bt: data.reduce((s, d) => s + d.service.bt, 0),
+      is: data.reduce((s, d) => s + d.service.is, 0),
+      ht: data.reduce((s, d) => s + d.service.ht, 0),
+      mo: data.reduce((s, d) => s + d.service.mo, 0),
+      ctt: data.reduce((s, d) => s + d.service.ctt, 0),
+    };
+
+    const samplesTotals = {
+      category: 'Total Samples',
+      totalSamples: data.reduce((s, d) => s + d.totalSamples, 0),
+      ftir: data.reduce((s, d) => s + d.samples.ftir, 0),
+      materialTesting: data.reduce((s, d) => s + d.materialTestingSamples, 0),
+      ct: data.reduce((s, d) => s + d.samples.ct, 0),
+      ft: data.reduce((s, d) => s + d.samples.ft, 0),
+      bt: data.reduce((s, d) => s + d.samples.bt, 0),
+      is: data.reduce((s, d) => s + d.samples.is, 0),
+      ht: data.reduce((s, d) => s + d.samples.ht, 0),
+      mo: data.reduce((s, d) => s + d.samples.mo, 0),
+      ctt: data.reduce((s, d) => s + d.samples.ctt, 0),
+    };
+
+    return { data, serviceTotals, samplesTotals };
+  }, [yearFilteredClients]);
+
   // SERVICE TALLY DATA
   const serviceTallyDataByQuarter = useMemo(() => {
     const categories = ['BatStateU College', 'University Linkage', 'Private HEIs', 'Private Individual', 'Industry', 'Senior High', 'BatStateU IS'];
@@ -411,10 +511,6 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           'BatStateU IS': 'FFD0E0E3',
         };
 
-        // Define test type colors for SERVICE report
-        // FTIR (col 9), C (col 10) = F2DCDB (pink/red)
-        // CT, FT, BT, TS (cols 11-14) = DAEEF3 (blue)
-        // HT, MO, CTT (cols 15-17) = FFF2CC (yellow)
         const testTypeColors = {
           9: 'F2DCDB',   // FTIR
           10: 'F2DCDB',  // C
@@ -888,10 +984,6 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           'BatStateU IS': 'FFD0E0E3',
         };
 
-        // Define test type colors for SAMPLES report
-        // FTIR (col 5), C (col 6) = F2DCDB (pink/red)
-        // CT, FT, BT, TS (cols 7-10) = DAEEF3 (blue)
-        // HT, MO, CTT (cols 11-13) = FFF2CC (yellow)
         const testTypeColors = {
           5: 'F2DCDB',   // FTIR
           6: 'F2DCDB',   // C
@@ -1331,6 +1423,84 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           {reportType === 'service' ? (
             // SERVICE TALLY TABLES
             <>
+              {/* ─── WHOLE YEAR SUMMARY TABLE (only when All Quarters) ─── */}
+              {selectedQuarter === 'all' && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-white px-4 py-2 rounded-lg bg-gradient-to-r from-rose-500/20 to-pink-500/20 border border-rose-500/50">
+                    Whole Year Summary — {selectedYear}
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-rose-500/20 to-pink-500/20 border-b border-rose-500/50">
+                          <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase border-r border-white/10">Type of Client</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">No. of Client</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">No. of Services</th>
+                          <th className="px-4 py-3 text-right text-xs font-bold text-white uppercase border-r border-white/10">Income</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Bio Tech</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Material Testing</th>
+                          {TEST_HEADERS.map((type) => (
+                            <th
+                              key={type}
+                              className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10"
+                              title={TEST_TYPE_LABELS[type] || type}
+                            >
+                              {type}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {wholeYearData.data.map((row, index) => (
+                          <tr key={index} className="hover:bg-white/5 transition-colors">
+                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${getCategoryColor(row.category)}`}>
+                              {row.category}
+                            </td>
+                            <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.noOfClient}</td>
+                            <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.noOfServices}</td>
+                            <td className="px-4 py-3 text-right text-sm font-semibold text-green-300 border-r border-white/10">
+                              ₱{row.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.bioTech}</td>
+                            <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.materialTesting}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.ftir}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.c}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.ct}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.ft}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.bt}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.is}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.ht}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.service.mo}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300">{row.service.ctt}</td>
+                          </tr>
+                        ))}
+                        {/* Totals row */}
+                        <tr className="bg-gradient-to-r from-rose-500/30 to-pink-500/30 border-t-2 border-rose-500/60">
+                          <td className="px-4 py-4 text-sm font-bold text-white border-r border-white/10">{wholeYearData.serviceTotals.category}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-white border-r border-white/10">{wholeYearData.serviceTotals.noOfClient}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-white border-r border-white/10">{wholeYearData.serviceTotals.noOfServices}</td>
+                          <td className="px-4 py-4 text-right text-sm font-bold text-green-300 border-r border-white/10">
+                            ₱{wholeYearData.serviceTotals.income.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-white border-r border-white/10">{wholeYearData.serviceTotals.bioTech}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-white border-r border-white/10">{wholeYearData.serviceTotals.materialTesting}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.ftir}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.c}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.ct}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.ft}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.bt}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.is}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.ht}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.serviceTotals.mo}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300">{wholeYearData.serviceTotals.ctt}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── QUARTERLY TABLES ─── */}
               {displayedQuarters.map(({ quarter, data, totals }) => (
                 <div key={quarter} className="space-y-4">
                   <h3 className={`text-xl font-bold text-white px-4 py-2 rounded-lg bg-gradient-to-r ${getQuarterColor(quarter)} border`}>
@@ -1435,6 +1605,68 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           ) : (
             // SAMPLES TALLY TABLES
             <>
+              {/* ─── WHOLE YEAR SUMMARY TABLE (only when All Quarters) ─── */}
+              {selectedQuarter === 'all' && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-white px-4 py-2 rounded-lg bg-gradient-to-r from-rose-500/20 to-pink-500/20 border border-rose-500/50">
+                    Whole Year Summary — {selectedYear}
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-rose-500/20 to-pink-500/20 border-b border-rose-500/50">
+                          <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase border-r border-white/10">Type of Client</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Sample Total Per Client Type</th>
+                          {SAMPLES_TEST_HEADERS.map((type) => (
+                            <th
+                              key={type}
+                              className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10"
+                              title={TEST_TYPE_LABELS[type] || type}
+                            >
+                              {type}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {wholeYearData.data.map((row, index) => (
+                          <tr key={index} className="hover:bg-white/5 transition-colors">
+                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${getCategoryColor(row.category)}`}>
+                              {row.category}
+                            </td>
+                            <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.totalSamples}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.samples.ftir}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.materialTestingSamples}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.samples.ct}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.samples.ft}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.samples.bt}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.samples.is}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.samples.ht}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300 border-r border-white/10">{row.samples.mo}</td>
+                            <td className="px-4 py-3 text-center text-sm text-pink-300">{row.samples.ctt}</td>
+                          </tr>
+                        ))}
+                        {/* Totals row */}
+                        <tr className="bg-gradient-to-r from-rose-500/30 to-pink-500/30 border-t-2 border-rose-500/60">
+                          <td className="px-4 py-4 text-sm font-bold text-white border-r border-white/10">{wholeYearData.samplesTotals.category}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-white border-r border-white/10">{wholeYearData.samplesTotals.totalSamples}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.ftir}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.materialTesting}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.ct}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.ft}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.bt}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.is}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.ht}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300 border-r border-white/10">{wholeYearData.samplesTotals.mo}</td>
+                          <td className="px-4 py-4 text-center text-sm font-bold text-pink-300">{wholeYearData.samplesTotals.ctt}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── QUARTERLY TABLES ─── */}
               {displayedQuarters.map(({ quarter, data, totals }) => (
                 <div key={quarter} className="space-y-4">
                   <h3 className={`text-xl font-bold text-white px-4 py-2 rounded-lg bg-gradient-to-r ${getQuarterColor(quarter)} border`}>
