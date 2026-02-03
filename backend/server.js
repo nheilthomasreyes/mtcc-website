@@ -1,59 +1,78 @@
+// backend/server.js
+require('dotenv').config(); // ADD THIS AT THE TOP!
+
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2"); // MySQL driver
+const mysql = require("mysql2");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Connect to MySQL
-const db = mysql.createPool({
-  host: "localhost",
-  user: "your_mysql_user",
-  password: "your_mysql_password",
-  database: "mtcc_services_db", // your database name
+// Debug: Check if .env is loaded (you can remove this later)
+console.log("Connecting to database with:");
+console.log("Host:", process.env.DB_HOST);
+console.log("User:", process.env.DB_USER);
+console.log("Database:", process.env.DB_NAME);
+
+// MySQL connection - USING .ENV VALUES!
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 3306
 });
 
-// GET all clients
-app.get("/clients", (req, res) => {
-  db.query("SELECT * FROM clients", (err, results) => {
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+    return;
+  }
+  console.log("Connected to MySQL database successfully!");
+});
+
+// Test GET route
+app.get("/", (req, res) => {
+  res.send("Server is running!");
+});
+
+// LOGIN ROUTE
+app.post("/api/login", (req, res) => {
+  const { email, password } = req.body;
+
+  // Query database for user
+  const query = "SELECT * FROM users WHERE email = ? AND password = ?";
+  
+  db.query(query, [email, password], (err, results) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Database error" });
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Server error" });
     }
-    // Convert testTypes from JSON string to array
-    const processed = results.map((c) => ({
-      ...c,
-      testTypes: JSON.parse(c.testTypes || "[]"),
-    }));
-    res.json(processed);
+
+    if (results.length > 0) {
+      // User found - login successful
+      res.json({ 
+        message: "Login successful",
+        user: { email: results[0].email, id: results[0].id }
+      });
+    } else {
+      // Invalid credentials
+      res.status(401).json({ message: "Invalid credentials" });
+    }
   });
 });
 
-// POST new client
+// POST route to receive client data
 app.post("/clients", (req, res) => {
-  const client = { ...req.body, testTypes: JSON.stringify(req.body.testTypes) };
-  const sql = `INSERT INTO clients 
-    (name, address, email, phone, category, serviceType, status, progress, dateRequested, dateReleased, dateClaimed, startDate, dueDate, requestForm, testTypes, amount, remarks, serviceNo) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-  const values = [
-    client.name, client.address, client.email, client.phone,
-    client.category, client.serviceType, client.status, client.progress,
-    client.dateRequested, client.dateReleased, client.dateClaimed,
-    client.startDate, client.dueDate, client.requestForm,
-    client.testTypes, client.amount, client.remarks, client.serviceNo
-  ];
-
-  db.query(sql, values, (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Database insert error" });
-    }
-    res.json({ message: "Client added successfully", data: { id: results.insertId, ...client } });
-  });
+  console.log("Received client data:", req.body);
+  res.json({ message: "Client added successfully", data: req.body });
 });
 
-// PUT and DELETE routes can be added similarly...
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
