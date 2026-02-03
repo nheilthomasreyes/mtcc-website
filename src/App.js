@@ -641,7 +641,7 @@ if (!isLoggedIn) {
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-                <img src="/MTCCORIG.png" className="w-12 h-12"/>
+                <img src="/MTCCORIG.png" className="w-12 h-12 transition-transform duration-300 hover:scale-110 hover:rotate-6 cursor-pointer"/>
               <div>
                 <h1 className="text-3xl font-bold text-white tracking-tight">
                   Service Monitoring System
