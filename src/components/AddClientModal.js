@@ -5,30 +5,33 @@ import { TEST_TYPE_LABELS } from "./types";
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
 const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
-const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
 export function AddClientModal({ isOpen, onClose, onAdd }) {
+  // Move testTypes useState inside the component
+  const [testTypes, setTestTypes] = useState(['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O']);
 
-  const [categories, setCategories] = useState ([
-  'BatStateU College',
-  'Private HEIs',
-  'Industry',
-  'Private Individual',
-  'Senior High',
-  'BatStateU IS',
+  const [categories, setCategories] = useState([
+    'BatStateU College',
+    'Private HEIs',
+    'Industry',
+    'Private Individual',
+    'Senior High',
+    'BatStateU IS',
   ]);
 
-  {/*DECLARATION FOR ADDING NEW CATEGORY*/}
+  // DECLARATION FOR ADDING NEW CATEGORY
   const [isAdding, setIsAdding] = useState(false);
   const [newcat, setNewCat] = useState({ name: '', color: '#06b6d4' });
+  const [isAddingNewType, setIsAddingNewType] = useState(false);
+  const [newTypeInput, setNewTypeInput] = useState('');
 
-  {/*DECLARATION FOR CALENDAR DATES - UP TO LINE 42*/}
-  const today=new Date().toISOString().split('T')[0];
-  const handleDateChange=(field,value) => {
+  // {/*DECLARATION FOR CALENDAR DATES - UP TO LINE 42*/}
+  const today = new Date().toISOString().split('T')[0];
+  const handleDateChange = (field, value) => {
     if (value > today) {
-      setFormData(prev => ({...prev,[field]:''}));
+      setFormData(prev => ({ ...prev, [field]: '' }));
     } else {
-      setFormData(prev => ({...prev, [field]: value}));
+      setFormData(prev => ({ ...prev, [field]: value }));
     }
   }
 
@@ -52,17 +55,28 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     remarks: '',
   });
 
-  {/*SAVING NEW CATERGORY - UP TO LINE 74*/}
-  const handleSaveNewCategory = () => {
-    if (newcat.name.trim()) {
-      setCategories([...categories, newcat.name.trim()]);
-      setFormData({ ...formData, category: newcat.name.trim() });
-      setNewCat({ name: '', color: '#06b6d4' });
-      setIsAdding(false);
+  // {/*SAVING NEW CATEGORY - UP TO LINE 74*/}
+  // const handleSaveNewCategory = () => {
+  //   if (newcat.name.trim()) {
+  //     setCategories([...categories, newcat.name.trim()]);
+  //     setFormData({ ...formData, category: newcat.name.trim() });
+  //     setNewCat({ name: '', color: '#06b6d4' });
+  //     setIsAdding(false);
+  //   }
+  // };
+
+  const handleAddNewType = () => {
+    if (newTypeInput.trim() && !testTypes.includes(newTypeInput.trim().toUpperCase())) {
+      const newType = newTypeInput.trim().toUpperCase();
+      setTestTypes([...testTypes, newType]);
+      setNewTypeInput('');
+      setIsAddingNewType(false);
+      // Save to backend/database here
+      // Example: saveTestTypeToBackend(newType);
     }
   };
   
-  {/*CHANGES TO AVOID EXCEEDING DATES - UP TO LINE 83*/}
+  // {/*CHANGES TO AVOID EXCEEDING DATES - UP TO LINE 83*/}
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -560,28 +574,77 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
           </div>
 
           {/* Test Types */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Types</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-              {TEST_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => toggleTestType(type)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    formData.testTypes.includes(type)
-                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/50 border border-pink-500'
-                      : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
-                  }`}
-                  title={TEST_TYPE_LABELS[type]}>{type}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400">Selected: {formData.testTypes.length > 0 ? formData.testTypes.join(', ') : 'None'}</p>
-          </div>
+<div className="space-y-4">
+  <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Types</h3>
+  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+    {testTypes.map((type) => (
+      <button
+        key={type}
+        type="button"
+        onClick={() => toggleTestType(type)}
+        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+          formData.testTypes.includes(type)
+            ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/50 border border-pink-500'
+            : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+        }`}
+        title={TEST_TYPE_LABELS[type]}
+      >
+        {type}
+      </button>
+    ))}
+    
+    {/* Add New Type Button/Input */}
+    {isAddingNewType ? (
+      <div className="col-span-3 flex items-center gap-2 p-2 bg-white/5 border border-cyan-500/50 rounded-lg">
+        <input
+          type="text"
+          placeholder="Type code"
+          value={newTypeInput}
+          onChange={(e) => setNewTypeInput(e.target.value)}
+          maxLength={4}
+          className="flex-1 px-3 py-1.5 bg-slate-900 border border-white/20 rounded text-sm text-white focus:ring-1 focus:ring-cyan-500 outline-none uppercase"
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAddNewType();
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={handleAddNewType}
+          className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 rounded text-xs text-white font-medium transition-colors"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsAddingNewType(false);
+            setNewTypeInput('');
+          }}
+          className="px-3 py-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    ) : (
+      <button
+        type="button"
+        onClick={() => setIsAddingNewType(true)}
+        className="px-3 py-2 rounded-lg text-sm font-medium bg-white/5 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10 hover:border-cyan-500/50 transition-all flex items-center justify-center gap-1"
+      >
+        <span className="text-lg">+</span> Add Type
+      </button>
+    )}
+  </div>
+  <p className="text-xs text-gray-400">
+    Selected: {formData.testTypes.length > 0 ? formData.testTypes.join(', ') : 'None'}
+  </p>
+</div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-4 pt-6 border-t border-white/10">
+          <div className="flex items-center justify-end gap-4 pt- border-t border-white/10">
             <button
               type="button"
               onClick={onClose}

@@ -11,7 +11,6 @@ import Login from './Login'
 import {
   Plus,
   LogOut,
-  Activity,
   BarChart3,
   Calculator,
   Calendar,
@@ -19,8 +18,8 @@ import {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
-  const [loading, setLoading] = useState(false); // Add this
-  const [error, setError] = useState(null);      // Add this
+  const [loading] = useState(false); // Add this
+  const [error] = useState(null);      // Add this
 
   const [clients, setClients] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -641,7 +640,7 @@ if (!isLoggedIn) {
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-                <img src="/MTCCORIG.png" className="w-12 h-12 transition-transform duration-300 hover:scale-110 hover:rotate-6 cursor-pointer"/>
+                <img src="/MTCCORIG.png" className="w-12 h-12 transition-transform duration-300 hover:scale-110 hover:rotate-6 cursor-pointer" alt="mtcc logo"/>
               <div>
                 <h1 className="text-3xl font-bold text-white tracking-tight">
                   Service Monitoring System
