@@ -188,7 +188,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Single scrollable container - no sticky header */}
+      <div className="overflow-auto max-h-[calc(100vh-350px)]">
         <table className="w-full">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
@@ -244,21 +245,20 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   </div>
                 </td>
                 
-                {/*EDITED UP TO LINE 207*/}
                 <td className="px-5 py-5 text-center">
                   <div className="flex justify-center">
                     {client.officialReceipt ? (
-                      /* Green Checkmark for True */
                       <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
                       </span>
                     ) : (
-                      /* Red X for False */
                       <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
                       </span>
                     )}
                   </div>
@@ -269,17 +269,17 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                 <td className="px-5 py-5 text-center">
                   <div className="flex justify-center">
                     {client.reportAnalysis ? (
-                      /* Green Checkmark for True */
                       <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
                       </span>
                     ) : (
-                      /* Red X for False */
                       <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line> </svg>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
                       </span>
                     )}
                   </div>
@@ -291,7 +291,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   <p className="text-sm text-gray-300 whitespace-nowrap">{client.sampleNo || '-'}</p>
                 </td>
                 <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap"> {client.specimenNo || '-'}</p>
+                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.specimenNo || '-'}</p>
                 </td>
                 <td className="px-5 py-5">
                   <div className="flex flex-wrap gap-2 max-w-xs">
@@ -299,7 +299,10 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                       <span
                         key={type}
                         className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30"
-                        title={TEST_TYPE_LABELS[type]}>{type}</span>
+                        title={TEST_TYPE_LABELS[type]}
+                      >
+                        {type}
+                      </span>
                     )) : <span className="text-sm text-gray-400">-</span>}
                   </div>
                 </td>
@@ -320,19 +323,25 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     <button
                       onClick={() => onEdit(client)}
                       className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110"
-                      title="Edit"><Edit className="w-4 h-4" />
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
                     </button>
                     {client.status !== 'Completed' && (
                       <button
                         onClick={() => onComplete(client.id)}
                         className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110"
-                        title="Mark as Completed"><CheckCircle className="w-4 h-4" />
+                        title="Mark as Completed"
+                      >
+                        <CheckCircle className="w-4 h-4" />
                       </button>
                     )}
                     <button
                       onClick={() => onDelete(client.id)}
                       className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110"
-                      title="Delete"><Trash2 className="w-4 h-4" />
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </td>
