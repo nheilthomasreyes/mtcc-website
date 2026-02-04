@@ -9,44 +9,61 @@ import hidepasswordicon from './images/EYECLOSED.png';
 import showpasswordicon from './images/EYE.png';
 import './Login.css';
 
+const API_URL = "http://localhost:3000";
+
 const Login = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [showModal, setShowModal] = useState(false); 
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const formData = new FormData(e.currentTarget);
-    const passwordInput = formData.get("password");
-    const emailInput = email;
-
-    const VALID_EMAIL = "admin@mtcc.com";
-    const VALID_PASSWORD = "password123";
-
     setEmailError("");
+    setIsLoading(true);
 
-    if (emailInput === VALID_EMAIL && passwordInput === VALID_PASSWORD) {
-      setShowModal(true);
-      setShowErrorModal(false);
-    } else {
+    try {
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Login successful
+        setShowModal(true);
+        setShowErrorModal(false);
+      } else {
+        // Login failed
+        setShowErrorModal(true);
+        setEmailError(data.message || "Invalid credentials");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       setShowErrorModal(true);
-      setEmailError("Invalid credentials");
+      setEmailError("Server connection failed. Make sure backend is running.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // --- NEW FUNCTION: The Transfer Logic ---
   const handleContinue = () => {
-  console.log("Login: Continue clicked, calling onLoginSuccess...");
-  setShowModal(false);
-  if (onLoginSuccess) {
-    onLoginSuccess(); // This is what tells App.js to switch!
-  } else {
-    console.error("onLoginSuccess prop is missing!");
-  }
-};
+    console.log("Login: Continue clicked, calling onLoginSuccess...");
+    setShowModal(false);
+    if (onLoginSuccess) {
+      onLoginSuccess();
+    } else {
+      console.error("onLoginSuccess prop is missing!");
+    }
+  };
 
   const togglePassword = () => {
     setShowPassword(!showPassword);
@@ -85,6 +102,7 @@ const Login = ({ onLoginSuccess }) => {
                     if(emailError) setEmailError("");
                   }}
                   required 
+                  disabled={isLoading}
                 />
               </div>
 
@@ -92,9 +110,11 @@ const Login = ({ onLoginSuccess }) => {
                 <img src={passwordicon} className='input-icon' alt="password" />
                 <input 
                   type={showPassword ? "text" : "password"} 
-                  name="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password" 
                   required
+                  disabled={isLoading}
                 />
                 <img 
                   src={showPassword ? showpasswordicon : hidepasswordicon}
@@ -106,18 +126,22 @@ const Login = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            <button type="submit" className="login-btn">LOG IN</button>
+            <button 
+              type="submit" 
+              className="login-btn"
+              disabled={isLoading}
+            >
+              {isLoading ? 'LOGGING IN...' : 'LOG IN'}
+            </button>
           </form>
         </div>
       </div>
 
-      {/* SUCCESS MODAL - Now using handleContinue */}
       <SuccessModal 
         isOpen={showModal} 
         onClose={handleContinue} 
       />
 
-      {/* ERROR MODAL - Stays local */}
       <ErrorModal 
         isOpen={showErrorModal} 
         onClose={() => setShowErrorModal(false)} 
@@ -127,4 +151,4 @@ const Login = ({ onLoginSuccess }) => {
   );
 };
 
-export default Login;
+export default Login; 

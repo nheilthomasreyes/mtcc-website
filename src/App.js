@@ -10,12 +10,10 @@ import Login from "./Login";
 
 import { Plus, LogOut, BarChart3, Calculator, Calendar } from "lucide-react";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "http://localhost:3000";
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem("isLoggedIn") === "true"
-  );
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,12 +28,25 @@ export default function App() {
   const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
   const [newYearInput, setNewYearInput] = useState("");
 
-  // Load clients from backend
+  // Load clients from backend - ONLY when logged in
   useEffect(() => {
+    if (!isLoggedIn) {
+      setLoading(false);
+      return; // Don't fetch if not logged in
+    }
+
     const fetchClients = async () => {
       try {
+        console.log("Fetching clients from:", `${API_URL}/clients`);
         const res = await fetch(`${API_URL}/clients`);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const data = await res.json();
+        console.log("Received clients:", data);
+        
         // Convert testTypes from JSON string to array if needed
         const processed = data.map((c) => ({
           ...c,
@@ -46,12 +57,14 @@ export default function App() {
         setClients(processed);
         setLoading(false);
       } catch (err) {
+        console.error("Fetch error:", err);
         setError(err);
         setLoading(false);
       }
     };
+    
     fetchClients();
-  }, []);
+  }, [isLoggedIn]);
 
   const saveClientToBackend = async (client, method = "POST") => {
     const url = method === "POST" ? `${API_URL}/clients` : `${API_URL}/clients/${client.id}`;
@@ -120,24 +133,90 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      {/* Header + Buttons (same as before) */}
-      {/* ...copy your header code... */}
+      {/* Header Section */}
+      <div className="p-6 border-b border-white/10 bg-slate-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Material Testing and Calibration Center
+              </h1>
+              <p className="text-gray-400">Service Monitoring System</p>
+            </div>
+            
+            <button
+              onClick={() => {
+                localStorage.removeItem("isLoggedIn");
+                setIsLoggedIn(false);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 border border-red-500/30 transition-all"
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </button>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105 font-semibold"
+            >
+              <Plus className="w-5 h-5" />
+              Add New Client
+            </button>
+
+            <button
+              onClick={() => setIsAnalyticsOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 border border-purple-500/30 transition-all"
+            >
+              <BarChart3 className="w-5 h-5" />
+              Analytics
+            </button>
+
+            <button
+              onClick={() => setIsTallyOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 border border-green-500/30 transition-all"
+            >
+              <Calculator className="w-5 h-5" />
+              Tally Sheet
+            </button>
+
+            {/* Year Selector */}
+            <div className="flex items-center gap-2 ml-auto">
+              <Calendar className="w-5 h-5 text-gray-400" />
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Service Table */}
-      <ServiceTable
-        clients={filteredClients}
-        onEdit={setEditingClient}
-        onDelete={handleDeleteClient}
-      />
+      <div className="p-6">
+        <ServiceTable
+          clients={filteredClients}
+          onEdit={setEditingClient}
+          onDelete={handleDeleteClient}
+        />
+      </div>
 
-      {/* AddClientModal */}
+      {/* Modals */}
       <AddClientModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddClient}
       />
 
-      {/* EditClientModal */}
       {editingClient && (
         <EditClientModal
           client={editingClient}
@@ -145,6 +224,19 @@ export default function App() {
           onSave={handleEditClient}
         />
       )}
+
+      <AnalyticsModal
+        isOpen={isAnalyticsOpen}
+        onClose={() => setIsAnalyticsOpen(false)}
+        clients={clients}
+      />
+
+      <TallyModal
+        isOpen={isTallyOpen}
+        onClose={() => setIsTallyOpen(false)}
+        clients={filteredClients}
+        selectedYear={selectedYear}
+      />
     </div>
   );
 }

@@ -102,7 +102,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/clients', {  // change URL if your backend is hosted elsewhere
+      const response = await fetch('http://localhost:3000/clients', {  // change URL if your backend is hosted elsewhere
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

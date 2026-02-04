@@ -1,24 +1,18 @@
 // backend/server.js
-require('dotenv').config(); // ADD THIS AT THE TOP!
+require('dotenv').config();
 
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Debug: Check if .env is loaded (you can remove this later)
-console.log("Connecting to database with:");
-console.log("Host:", process.env.DB_HOST);
-console.log("User:", process.env.DB_USER);
-console.log("Database:", process.env.DB_NAME);
-
-// MySQL connection - USING .ENV VALUES!
+// MySQL connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -41,10 +35,14 @@ app.get("/", (req, res) => {
 });
 
 // LOGIN ROUTE
+// LOGIN ROUTE
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
+  
+  console.log("=== LOGIN ATTEMPT ===");
+  console.log("Received email:", email);
+  console.log("Received password:", password);
 
-  // Query database for user
   const query = "SELECT * FROM users WHERE email = ? AND password = ?";
   
   db.query(query, [email, password], (err, results) => {
@@ -53,23 +51,112 @@ app.post("/api/login", (req, res) => {
       return res.status(500).json({ message: "Server error" });
     }
 
+    console.log("Query results:", results);
+    console.log("Number of results:", results.length);
+
     if (results.length > 0) {
-      // User found - login successful
+      console.log("✓ Login successful!");
       res.json({ 
         message: "Login successful",
         user: { email: results[0].email, id: results[0].id }
       });
     } else {
-      // Invalid credentials
+      console.log("✗ Login failed - no matching user found");
       res.status(401).json({ message: "Invalid credentials" });
     }
   });
 });
 
-// POST route to receive client data
+// GET all clients
+app.get("/clients", (req, res) => {
+  const query = "SELECT * FROM clients ORDER BY dateRequested DESC";
+  
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+    res.json(results);
+  });
+});
+
+// POST create new client
 app.post("/clients", (req, res) => {
-  console.log("Received client data:", req.body);
-  res.json({ message: "Client added successfully", data: req.body });
+  const { 
+    serviceNo, name, address, email, phone, category, serviceType, 
+    status, progress, dateRequested, dateReleased, dateClaimed, 
+    startDate, dueDate, requestForm, testTypes, amount, 
+    signatories, laboratory, remarks 
+  } = req.body;
+
+  const query = `
+    INSERT INTO clients 
+    (serviceNo, name, address, email, phone, category, serviceType, status, 
+     progress, dateRequested, dateReleased, dateClaimed, startDate, dueDate, 
+     requestForm, testTypes, amount, signatories, laboratory, remarks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(query, [
+    serviceNo, name, address, email, phone, category, serviceType, 
+    status, progress, dateRequested, dateReleased, dateClaimed, 
+    startDate, dueDate, requestForm, testTypes, amount, 
+    signatories, laboratory, remarks
+  ], (err, result) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+    res.json({ message: "Client added successfully", id: result.insertId });
+  });
+});
+
+// PUT update client
+app.put("/clients/:id", (req, res) => {
+  const { id } = req.params;
+  const { 
+    serviceNo, name, address, email, phone, category, serviceType, 
+    status, progress, dateRequested, dateReleased, dateClaimed, 
+    startDate, dueDate, requestForm, testTypes, amount, 
+    signatories, laboratory, remarks 
+  } = req.body;
+
+  const query = `
+    UPDATE clients 
+    SET serviceNo = ?, name = ?, address = ?, email = ?, phone = ?, 
+        category = ?, serviceType = ?, status = ?, progress = ?, 
+        dateRequested = ?, dateReleased = ?, dateClaimed = ?, 
+        startDate = ?, dueDate = ?, requestForm = ?, testTypes = ?, 
+        amount = ?, signatories = ?, laboratory = ?, remarks = ?
+    WHERE id = ?
+  `;
+
+  db.query(query, [
+    serviceNo, name, address, email, phone, category, serviceType, 
+    status, progress, dateRequested, dateReleased, dateClaimed, 
+    startDate, dueDate, requestForm, testTypes, amount, 
+    signatories, laboratory, remarks, id
+  ], (err, result) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+    res.json({ message: "Client updated successfully" });
+  });
+});
+
+// DELETE client
+app.delete("/clients/:id", (req, res) => {
+  const { id } = req.params;
+  const query = "DELETE FROM clients WHERE id = ?";
+  
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+    res.json({ message: "Client deleted successfully" });
+  });
 });
 
 // Start server
