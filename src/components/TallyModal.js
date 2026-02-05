@@ -45,20 +45,21 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
       const uniqueClients = new Set(categoryClients.map(c => c.id)).size;
       const totalIncome = categoryClients.reduce((sum, c) => sum + c.amount, 0);
-      const totalSamples = categoryClients.reduce((sum, c) => sum + (c.numberOfSamples || 1), 0);
+      const totalSamples = categoryClients.reduce((sum, c) => sum + (c.sampleCount || 1), 0);
 
       const getTestTypeCount = (testType) =>
         categoryClients.filter(c => c.testTypes.includes(testType)).length;
 
       const getSampleCountByTestType = (testType) =>
         categoryClients.reduce((sum, c) => {
-          if (c.testTypes.includes(testType)) return sum + (c.numberOfSamples || 1);
+          if (c.testTypes.includes(testType)) return sum + (c.sampleCount || 1);
           return sum;
         }, 0);
 
       const materialTestingCount = categoryClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length;
       const materialTestingSamples = categoryClients.reduce((sum, c) => {
-        if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') return sum + (c.numberOfSamples || 1);
+        if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') 
+          return sum + (c.sampleCount || 1);
         return sum;
       }, 0);
 
@@ -239,14 +240,14 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
         // Count total samples per client type
         const totalSamples = categoryClients.reduce((sum, c) => {
-          return sum + (c.numberOfSamples || 1);
+          return sum + (c.sampleCount || 1);
         }, 0);
 
         // Count samples per test type
         const getSampleCountByTestType = (testType) => {
           return categoryClients.reduce((sum, c) => {
             if (c.testTypes.includes(testType)) {
-              return sum + (c.numberOfSamples || 1);
+              return sum + (c.sampleCount || 1);
             }
             return sum;
           }, 0);
@@ -255,7 +256,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         // Count material testing samples
         const materialTestingSamples = categoryClients.reduce((sum, c) => {
           if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') {
-            return sum + (c.numberOfSamples || 1);
+            return sum + (c.sampleCount || 1);
           }
           return sum;
         }, 0);
@@ -1009,13 +1010,13 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
             );
 
             const totalSamples = categoryClients.reduce((sum, c) => {
-              return sum + (c.numberOfSamples || 1);
+              return sum + (c.sampleCount || 1);
             }, 0);
 
             const getSampleCountByTestType = (testType) => {
               return categoryClients.reduce((sum, c) => {
                 if (c.testTypes.includes(testType)) {
-                  return sum + (c.numberOfSamples || 1);
+                  return sum + (c.sampleCount || 1);
                 }
                 return sum;
               }, 0);
@@ -1023,7 +1024,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
             const materialTestingSamples = categoryClients.reduce((sum, c) => {
               if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') {
-                return sum + (c.numberOfSamples || 1);
+                return sum + (c.sampleCount || 1);
               }
               return sum;
             }, 0);
@@ -1434,8 +1435,8 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <thead>
                         <tr className="bg-gradient-to-r from-rose-500/20 to-pink-500/20 border-b border-rose-500/50">
                           <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase border-r border-white/10">Type of Client</th>
-                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">No. of Client</th>
-                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">No. of Services</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">No. of Unique Client</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">No. of Service Request</th>
                           <th className="px-4 py-3 text-right text-xs font-bold text-white uppercase border-r border-white/10">Income</th>
                           <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Bio Tech</th>
                           <th className="px-4 py-3 text-center text-xs font-bold text-white uppercase border-r border-white/10">Material Testing</th>

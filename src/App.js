@@ -8,12 +8,21 @@ import { TallyModal } from "./components/TallyModal";
 
 import Login from "./Login";
 
-import { Plus, LogOut, BarChart3, Calculator, Calendar } from "lucide-react";
+import {
+  Plus,
+  LogOut,
+  Activity,
+  BarChart3,
+  Calculator,
+  Calendar,
+} from "lucide-react";
 
 const API_URL = "http://localhost:3000";
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    localStorage.getItem("isLoggedIn") === "true"
+    );
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,6 +75,19 @@ export default function App() {
     fetchClients();
   }, [isLoggedIn]);
 
+  // Load custom years from localStorage
+  useEffect(() => {
+    const savedYears = localStorage.getItem("customYears");
+    if (savedYears) {
+      setCustomYears(JSON.parse(savedYears));
+    }
+  }, []);
+
+  // Save custom years to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("customYears", JSON.stringify(customYears));
+  }, [customYears]);
+
   const saveClientToBackend = async (client, method = "POST") => {
     const url = method === "POST" ? `${API_URL}/clients` : `${API_URL}/clients/${client.id}`;
     const body = { ...client, testTypes: JSON.stringify(client.testTypes) };
@@ -83,6 +105,11 @@ export default function App() {
   };
 
   const handleAddClient = async (client) => {
+    if (!client.dateRequested) {
+      alert("Date Requested is required");
+      return;
+    }
+    
     const newClient = { ...client, serviceNo: generateServiceNo() };
     await saveClientToBackend(newClient, "POST");
     setClients([...clients, newClient]);
@@ -108,7 +135,8 @@ export default function App() {
       const year = new Date(c.dateRequested).getFullYear();
       if (!isNaN(year)) years.add(year);
     });
-    return Array.from(years).sort((a, b) => b - a);
+    const yearArray = Array.from(years).sort((a, b) => b - a);
+    return yearArray.length > 0 ? yearArray : [new Date().getFullYear()];
   }, [clients, customYears]);
 
   const filteredClients = useMemo(() => {
@@ -116,6 +144,21 @@ export default function App() {
       (client) => new Date(client.dateRequested).getFullYear() === selectedYear
     );
   }, [clients, selectedYear]);
+
+  const handleAddYear = () => {
+    const year = parseInt(newYearInput);
+    if (!isNaN(year) && year >= 2000 && year <= 2100) {
+      if (!customYears.includes(year) && !availableYears.includes(year)) {
+        setCustomYears([...customYears, year]);
+        setNewYearInput("");
+        setIsAddYearModalOpen(false);
+      } else {
+        alert("This year already exists!");
+      }
+    } else {
+      alert("Please enter a valid year between 2000 and 2100");
+    }
+  };
 
   if (!isLoggedIn) {
     return (
@@ -128,87 +171,118 @@ export default function App() {
     );
   }
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+        <div className="text-red-500 text-xl">Error: {error.message}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      {/* Header Section */}
-      <div className="p-6 border-b border-white/10 bg-slate-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Material Testing and Calibration Center
-              </h1>
-              <p className="text-gray-400">Service Monitoring System</p>
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img
+                src="/MTCCORIG.png"
+                className="w-12 h-12 transition-transform duration-300 hover:scale-110 hover:rotate-6 cursor-pointer"
+                alt="MTCC Logo"
+              />
+              <div>
+                <h1 className="text-3xl font-bold text-white tracking-tight">
+                  Service Monitoring System
+                </h1>
+                <p className="text-blue-200 text-sm mt-1">
+                  Material Testing & Calibration Dashboard
+                </p>
+              </div>
             </div>
-            
-            <button
-              onClick={() => {
-                localStorage.removeItem("isLoggedIn");
-                setIsLoggedIn(false);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 border border-red-500/30 transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              Logout
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105 font-semibold"
-            >
-              <Plus className="w-5 h-5" />
-              Add New Client
-            </button>
-
-            <button
-              onClick={() => setIsAnalyticsOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 border border-purple-500/30 transition-all"
-            >
-              <BarChart3 className="w-5 h-5" />
-              Analytics
-            </button>
-
-            <button
-              onClick={() => setIsTallyOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 border border-green-500/30 transition-all"
-            >
-              <Calculator className="w-5 h-5" />
-              Tally Sheet
-            </button>
-
-            {/* Year Selector */}
-            <div className="flex items-center gap-2 ml-auto">
-              <Calendar className="w-5 h-5 text-gray-400" />
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsTallyOpen(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105 font-semibold"
               >
-                {availableYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+                <Calculator className="w-5 h-5" />
+                Tally
+              </button>
+              <button
+                onClick={() => setIsAnalyticsOpen(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-amber-500/50 transition-all duration-300 hover:scale-105 font-semibold"
+              >
+                <BarChart3 className="w-5 h-5" />
+                Analytics
+              </button>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105 font-semibold"
+              >
+                <Plus className="w-5 h-5" />
+                Add Client
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem("isLoggedIn");
+                  setIsLoggedIn(false);
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-red-600 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/50 transition-all duration-300 hover:scale-105 font-semibold"
+              >
+                <LogOut className="w-5 h-5" />
+                Logout
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Service Table */}
-      <div className="p-6">
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8">
+        {/* Year Filter */}
+        <div className="mb-6 flex items-center gap-4 flex-wrap">
+          <label htmlFor="year-filter" className="text-white font-semibold">
+            Filter by Year:
+          </label>
+          <select
+            id="year-filter"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 hover:bg-white/20 transition-all"
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year} className="bg-slate-800">
+                {year}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setIsAddYearModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 hover:scale-105 font-semibold"
+          >
+            <Calendar className="w-4 h-4" />
+            Add Year
+          </button>
+          <span className="text-blue-200 text-sm">
+            Showing {filteredClients.length} of {clients.length} total services
+          </span>
+        </div>
+
+        {/* Service Table */}
         <ServiceTable
           clients={filteredClients}
           onEdit={setEditingClient}
           onDelete={handleDeleteClient}
         />
-      </div>
+      </main>
 
       {/* Modals */}
       <AddClientModal
@@ -237,6 +311,47 @@ export default function App() {
         clients={filteredClients}
         selectedYear={selectedYear}
       />
+
+      {/* Add Year Modal */}
+      {isAddYearModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 shadow-2xl p-6">
+            <h2 className="text-2xl font-bold text-white mb-4">Add New Year</h2>
+            <p className="text-blue-200 text-sm mb-6">
+              Enter a year to track services for
+            </p>
+            <input
+              type="number"
+              value={newYearInput}
+              onChange={(e) => setNewYearInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAddYear();
+                }
+              }}
+              placeholder="Enter year (e.g., 2027)"
+              className="px-4 py-3 border border-white/20 rounded-lg w-full mb-6 bg-white/10 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 backdrop-blur-xl"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsAddYearModalOpen(false);
+                  setNewYearInput("");
+                }}
+                className="px-6 py-3 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 border border-gray-500/30 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddYear}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:shadow-lg hover:shadow-cyan-500/50 transition-all font-semibold"
+              >
+                Add Year
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

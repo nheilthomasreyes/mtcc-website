@@ -84,66 +84,89 @@ app.get("/clients", (req, res) => {
 app.post("/clients", (req, res) => {
   const { 
     serviceNo, name, address, email, phone, category, serviceType, 
-    status, progress, dateRequested, dateReleased, dateClaimed, 
-    startDate, dueDate, requestForm, testTypes, amount, 
+    status, progress, dateRequested, startDate, dueDate, dateClaimed,
+    dateReleased, requestForm, dateOfTest, testTypes, amount, 
     signatories, laboratory, remarks 
   } = req.body;
+
+  if (!dateRequested) {
+    return res.status(400).json({ message: "dateRequested is required" });
+  }
+
+  const parsedDateRequested = new Date(dateRequested);
+  if (isNaN(parsedDateRequested.getTime())) {
+    return res.status(400).json({ message: "Invalid dateRequested" });
+  }
+
+  const roa = parsedDateRequested.toISOString().slice(0,10).replace(/-/g, "");
 
   const query = `
     INSERT INTO clients 
     (serviceNo, name, address, email, phone, category, serviceType, status, 
-     progress, dateRequested, dateReleased, dateClaimed, startDate, dueDate, 
-     requestForm, testTypes, amount, signatories, laboratory, remarks)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     progress, roa, dateRequested, dateReleased, dateClaimed, startDate, dueDate, 
+     requestForm, testTypes, amount, signatories, laboratory, remarks, sampleCount)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(query, [
     serviceNo, name, address, email, phone, category, serviceType, 
-    status, progress, dateRequested, dateReleased, dateClaimed, 
+    status, progress, roa, dateRequested, dateReleased, dateClaimed, 
     startDate, dueDate, requestForm, testTypes, amount, 
-    signatories, laboratory, remarks
+    signatories, laboratory, remarks, sampleCount
   ], (err, result) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ message: "Server error" });
     }
-    res.json({ message: "Client added successfully", id: result.insertId });
+    res.json({ message: "Client added successfully", id: result.insertId, roa });
   });
 });
 
 // PUT update client
+// PUT update client
 app.put("/clients/:id", (req, res) => {
   const { id } = req.params;
-  const { 
+
+  let { 
     serviceNo, name, address, email, phone, category, serviceType, 
     status, progress, dateRequested, dateReleased, dateClaimed, 
     startDate, dueDate, requestForm, testTypes, amount, 
-    signatories, laboratory, remarks 
+    signatories, laboratory, remarks, sampleCount 
   } = req.body;
+
+  // Recalculate ROA if dateRequested is present
+  let roa = req.body.roa || null;
+  if (dateRequested) {
+    const parsedDateRequested = new Date(dateRequested);
+    if (!isNaN(parsedDateRequested.getTime())) {
+      roa = parsedDateRequested.toISOString().slice(0,10).replace(/-/g, "");
+    }
+  }
 
   const query = `
     UPDATE clients 
     SET serviceNo = ?, name = ?, address = ?, email = ?, phone = ?, 
-        category = ?, serviceType = ?, status = ?, progress = ?, 
+        category = ?, serviceType = ?, status = ?, progress = ?, roa = ?,
         dateRequested = ?, dateReleased = ?, dateClaimed = ?, 
         startDate = ?, dueDate = ?, requestForm = ?, testTypes = ?, 
-        amount = ?, signatories = ?, laboratory = ?, remarks = ?
+        amount = ?, signatories = ?, laboratory = ?, remarks = ?, sampleCount = ?
     WHERE id = ?
   `;
 
   db.query(query, [
     serviceNo, name, address, email, phone, category, serviceType, 
-    status, progress, dateRequested, dateReleased, dateClaimed, 
+    status, progress, roa, dateRequested, dateReleased, dateClaimed, 
     startDate, dueDate, requestForm, testTypes, amount, 
-    signatories, laboratory, remarks, id
+    signatories, laboratory, remarks, sampleCount, id
   ], (err, result) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ message: "Server error" });
     }
-    res.json({ message: "Client updated successfully" });
+    res.json({ message: "Client updated successfully", roa });
   });
 });
+
 
 // DELETE client
 app.delete("/clients/:id", (req, res) => {

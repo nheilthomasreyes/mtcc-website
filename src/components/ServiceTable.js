@@ -212,8 +212,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {filteredClients.map((client) => (
-              <tr key={client.id} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
+            {filteredClients.map((client, index) => (
+              <tr key={client.id ?? index} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
                 <td className="px-5 py-5">
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>

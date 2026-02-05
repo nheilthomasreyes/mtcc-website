@@ -479,28 +479,28 @@ export function EditClientModal({ client, onClose, onSave }) {
 
           {/* Test Types */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Types</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-              {TEST_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => toggleTestType(type)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    formData.testTypes.includes(type)
-                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/50 border border-pink-500'
-                      : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
-                  }`}
-                  title={TEST_TYPE_LABELS[type]}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400">
-              Selected: {formData.testTypes.length > 0 ? formData.testTypes.join(', ') : 'None'}
-            </p>
+          <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Types</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            {TEST_TYPES.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => toggleTestType(type)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  formData.testTypes.includes(type)
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/50 border border-pink-500'
+                    : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+                }`}
+                title={TEST_TYPE_LABELS[type] || type} // lookup label safely
+              >
+                {type}
+              </button>
+            ))}
           </div>
+          <p className="text-xs text-gray-400">
+            Selected: {formData.testTypes.length > 0 ? formData.testTypes.join(', ') : 'None'}
+          </p>
+        </div>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-4 pt-6 border-t border-white/10">

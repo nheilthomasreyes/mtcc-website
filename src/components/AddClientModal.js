@@ -42,10 +42,11 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     status: 'Pending',
     progress: 0,
     dateRequested: new Date().toISOString().split('T')[0],
-    dateReleased: '',
-    dateClaimed: '',
+    roa: false,
     startDate: new Date().toISOString().split('T')[0],
     dueDate: new Date().toISOString().split('T')[0],
+    dateReleased: '',
+    dateClaimed: '',
     requestForm: 'Waiting',
     testTypes: [],
     amount: 0,
@@ -66,6 +67,11 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!formData.dateRequested) {
+      alert("date Requested is required");
+      return;
+    }
+    
     if (new Date(formData.dateRequested) > new Date()) {  
       alert("Date Requested cannot be in the future");
       return;
@@ -82,6 +88,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       status: 'Pending',
       progress: 0,
       dateRequested: new Date().toISOString().split('T')[0],
+      roa: false,
       dateReleased: '',
       dateClaimed: '',
       startDate: new Date().toISOString().split('T')[0],
