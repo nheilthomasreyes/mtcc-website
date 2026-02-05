@@ -21,8 +21,8 @@ const API_URL = "http://localhost:3000";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem("isLoggedIn") === "true"
-    );
+    sessionStorage.getItem("isLoggedIn") === "true"
+  );
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -163,9 +163,9 @@ export default function App() {
   if (!isLoggedIn) {
     return (
       <Login
-        onLoginSuccess={() => {
-          localStorage.setItem("isLoggedIn", "true");
-          setIsLoggedIn(true);
+       onLoginSuccess={() => {
+        sessionStorage.setItem("isLoggedIn", "true");
+        setIsLoggedIn(true);
         }}
       />
     );
@@ -232,7 +232,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => {
-                  localStorage.removeItem("isLoggedIn");
+                  sessionStorage.removeItem("isLoggedIn");
                   setIsLoggedIn(false);
                 }}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-red-600 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/50 transition-all duration-300 hover:scale-105 font-semibold"
