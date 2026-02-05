@@ -205,27 +205,27 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
       {/* Table with frozen columns */}
       <div className="overflow-auto max-h-[calc(100vh-450px)] service-table-scroll">
         <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b border-white/10 bg-white/5">
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-0 bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">Service No.</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-[110px] bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">Client Name</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Category</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Service Request Form</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Request Date</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Signed Request Form</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Official Receipt</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Date of Test</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Report of Analysis</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Released of ROA</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Sample No.</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Specimen No.</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Types of Test</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Total Income</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Sample Count</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Status</th>
-              <th className="px-5 py-5 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Actions</th>
-            </tr>
-          </thead>
+    <thead className="sticky top-0 z-30">
+      <tr className="border-b border-white/10 bg-slate-900">
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-0 bg-slate-900 z-40 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">Service No.</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-[110px] bg-slate-900 z-40 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">Client Name</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Category</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Service Request Form</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Request Date</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Signed Request Form</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Official Receipt</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Date of Test</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Report of Analysis</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Released of ROA</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Sample No.</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Specimen No.</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Types of Test</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Total Income</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Sample Count</th>
+        <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Status</th>
+        <th className="px-5 py-5 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Actions</th>
+      </tr>
+    </thead>
           <tbody className="divide-y divide-white/5">
             {currentClients.map((client) => (
               <tr key={client.id} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
