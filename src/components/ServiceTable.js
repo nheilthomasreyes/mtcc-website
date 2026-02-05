@@ -310,18 +310,34 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   <p className="text-sm text-gray-300 whitespace-nowrap">{client.specimenNo || '-'}</p>
                 </td>
                 <td className="px-5 py-5">
-                  <div className="flex flex-wrap gap-2 max-w-xs">
-                    {client.testTypes.length > 0 ? client.testTypes.map((type) => (
-                      <span
-                        key={type}
-                        className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30"
-                        title={TEST_TYPE_LABELS[type]}
-                      >
-                        {type}
-                      </span>
-                    )) : <span className="text-sm text-gray-400">-</span>}
-                  </div>
-                </td>
+  <div className="flex flex-col gap-2 min-w-[250px]">
+    {client.testTypes.length > 0 ? (
+      // Split test types into chunks of 3
+      (() => {
+        const rows = [];
+        for (let i = 0; i < client.testTypes.length; i += 3) {
+          const rowTypes = client.testTypes.slice(i, i + 3);
+          rows.push(
+            <div key={i} className="flex flex-wrap gap-2">
+              {rowTypes.map((type) => (
+                <span
+                  key={type}
+                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30 whitespace-nowrap"
+                  title={TEST_TYPE_LABELS[type]}
+                >
+                  {type}
+                </span>
+              ))}
+            </div>
+          );
+        }
+        return rows;
+      })()
+    ) : (
+      <span className="text-sm text-gray-400">-</span>
+    )}
+  </div>
+</td>
                 <td className="px-5 py-5">
                   <p className="text-lg font-bold text-amber-300 whitespace-nowrap">₱{client.amount.toLocaleString()}</p>
                 </td>
