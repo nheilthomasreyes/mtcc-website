@@ -188,45 +188,45 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         </div>
       </div>
 
-      {/* Single scrollable container - no sticky header */}
+      {/* Single scrollable container with frozen first two columns */}
       <div className="overflow-auto max-h-[calc(100vh-350px)]">
-        <table className="w-full">
+        <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Service No.</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Client Name</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Category</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Service Request Form</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Request Date</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Signed Request Form</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Official Receipt</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Date of Test</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Report of Analysis</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Released of ROA</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Sample No.</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Specimen No.</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Types of Test</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Total Income</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Sample Count</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider">Status</th>
-              <th className="px-5 py-5 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider">Actions</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-0 bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[160px] min-w-[160px] max-w-[160px]">Service No.</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-[160px] bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[320px] min-w-[320px]">Client Name</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Category</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Service Request Form</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Request Date</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Signed Request Form</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Official Receipt</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Date of Test</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Report of Analysis</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Released of ROA</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Sample No.</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Specimen No.</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Types of Test</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Total Income</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Sample Count</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Status</th>
+              <th className="px-5 py-5 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {filteredClients.map((client) => (
               <tr key={client.id} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
-                <td className="px-5 py-5">
+                <td className="px-5 py-5 sticky left-0 bg-slate-900 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[160px] min-w-[160px] max-w-[160px]">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50 whitespace-nowrap">{client.serviceNo}</span>
                     {client.doNotDelete && (
                       <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />
                     )}
                   </div>
                 </td>
-                <td className="px-5 py-5">
-                  <div className="space-y-1 min-w-[220px]">
-                    <p className="text-white font-semibold">{client.name}</p>
-                    <p className="text-gray-400 text-sm">{client.address}</p>
+                <td className="px-5 py-5 sticky left-[160px] bg-slate-900 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[320px] min-w-[320px]">
+                  <div className="space-y-1">
+                    <p className="text-white font-semibold truncate">{client.name}</p>
+                    <p className="text-gray-400 text-sm truncate">{client.address}</p>
                   </div>
                 </td>
                 <td className="px-5 py-5">
