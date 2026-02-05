@@ -203,7 +203,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
       </div>
 
       {/* Table with frozen columns */}
-      <div className="overflow-auto max-h-[calc(100vh-450px)]">
+      <div className="overflow-auto max-h-[calc(100vh-520px)] service-table-scroll">
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
