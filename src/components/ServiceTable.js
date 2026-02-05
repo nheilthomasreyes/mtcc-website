@@ -1,4 +1,4 @@
-import { Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ShieldAlert } from 'lucide-react';
+import { Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 import { format } from 'date-fns';
 import { useState, useMemo } from 'react';
@@ -7,6 +7,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedClientType, setSelectedClientType] = useState('All');
   const [selectedTestType, setSelectedTestType] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Dynamic list of Client Types (Categories)
   const availableCategories = useMemo(() => {
@@ -26,6 +28,21 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
       return matchesStatus && matchesClientType && matchesTestType;
     });
   }, [clients, statusFilter, selectedClientType, selectedTestType]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentClients = filteredClients.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [statusFilter, selectedClientType, selectedTestType]);
+
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -83,7 +100,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     const monthYear = format(date, 'MM/yyyy');
     const type = client.roa ? 'ROA' : 'TS';
 
-    // 1. Filter: Get all entries from the same YEAR with the same SERVICE TYPE
     const yearlyGroup = allClients
       .filter(c => {
         if (!c.dateRequested) return false;
@@ -91,15 +107,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         const cType = c.roa ? 'ROA' : 'TS';
         return cDate.getFullYear() === year && cType === type;
       })
-      // 2. Sort by date so the order is consistent (Oldest to Newest)
       .sort((a, b) => new Date(a.dateRequested) - new Date(b.dateRequested));
 
-    // 3. Find where THIS client sits in that specific yearly group
     const index = yearlyGroup.findIndex(c => c.id === client.id);
     const sequenceNumber = index !== -1 ? index + 1 : 1;
 
     return `${monthYear}-Material-Testing-Service-Request-Form_${type}#${sequenceNumber}`;
-};
+  };
 
   return (
     <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden">
@@ -188,13 +202,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         </div>
       </div>
 
-      {/* Single scrollable container with frozen first two columns */}
-      <div className="overflow-auto max-h-[calc(100vh-350px)]">
+      {/* Table with frozen columns */}
+      <div className="overflow-auto max-h-[calc(100vh-450px)]">
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-0 bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[160px] min-w-[160px] max-w-[160px]">Service No.</th>
-              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-[160px] bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[320px] min-w-[320px]">Client Name</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-0 bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">Service No.</th>
+              <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider sticky left-[110px] bg-slate-900 z-20 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">Client Name</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Category</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Service Request Form</th>
               <th className="px-5 py-5 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900">Request Date</th>
@@ -213,9 +227,10 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {filteredClients.map((client) => (
+            {currentClients.map((client) => (
               <tr key={client.id} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
-                <td className="px-5 py-5 sticky left-0 bg-slate-900 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[160px] min-w-[160px] max-w-[160px]">
+                {/* Your existing table row cells - keep all the same */}
+                <td className="px-5 py-5 sticky left-0 bg-slate-900 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50 whitespace-nowrap">{client.serviceNo}</span>
                     {client.doNotDelete && (
@@ -223,12 +238,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     )}
                   </div>
                 </td>
-                <td className="px-5 py-5 sticky left-[160px] bg-slate-900 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)] w-[320px] min-w-[320px]">
-                  <div className="space-y-1">
-                    <p className="text-white font-semibold truncate">{client.name}</p>
-                    <p className="text-gray-400 text-sm truncate">{client.address}</p>
+                <td className="px-5 py-5 sticky left-[110px] bg-slate-900 z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)]">
+                  <div className="space-y-1 min-w-[280px]">
+                    <p className="text-white font-semibold">{client.name}</p>
+                    <p className="text-gray-400 text-sm">{client.address}</p>
                   </div>
                 </td>
+                {/* ... rest of your existing cells ... */}
                 <td className="px-5 py-5">
                   <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
                 </td>
@@ -357,6 +373,58 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredClients.length > 0 && (
+        <div className="p-4 border-t border-white/10 flex items-center justify-between">
+          <div className="text-sm text-gray-400">
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} entries
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-lg border transition-all ${
+                currentPage === 1
+                  ? 'bg-white/5 text-gray-500 border-white/10 cursor-not-allowed'
+                  : 'bg-white/5 text-cyan-300 border-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/50'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {[...Array(totalPages)].map((_, index) => {
+              const page = index + 1;
+              return (
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    currentPage === page
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/50 border border-cyan-500'
+                      : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-lg border transition-all ${
+                currentPage === totalPages
+                  ? 'bg-white/5 text-gray-500 border-white/10 cursor-not-allowed'
+                  : 'bg-white/5 text-cyan-300 border-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/50'
+              }`}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
