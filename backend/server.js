@@ -86,7 +86,7 @@ app.post("/clients", (req, res) => {
     serviceNo, name, address, email, phone, category, serviceType, 
     status, progress, dateRequested, startDate, dueDate, dateClaimed,
     dateReleased, requestForm, dateOfTest, testTypes, amount, 
-    signatories, laboratory, remarks 
+    signatories, laboratory, remarks, sampleCount
   } = req.body;
 
   if (!dateRequested) {
