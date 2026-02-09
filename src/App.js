@@ -61,7 +61,9 @@ export default function App() {
           ...c,
           testTypes: Array.isArray(c.testTypes)
             ? c.testTypes
-            : JSON.parse(c.testTypes || "[]"),
+            : typeof c.testTypes === 'string' && c.testTypes.trim()
+            ? c.testTypes.split(',').map(t => t.trim())
+            : [],
         }));
         setClients(processed);
         setLoading(false);

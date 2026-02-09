@@ -987,7 +987,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
         const testTypeColors = {
           5: 'F2DCDB',   // FTIR
-          6: 'F2DCDB',   // C
+          6: 'F2DCDB',   // Material Testing
           7: 'DAEEF3',   // CT
           8: 'DAEEF3',   // FT
           9: 'DAEEF3',   // BT

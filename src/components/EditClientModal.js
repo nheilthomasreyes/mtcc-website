@@ -24,6 +24,35 @@ const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 {/*CHANGED TB - TS*/}
 const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
+// Helper function to convert NULL string or null to empty string
+const sanitizeValue = (value) => {
+  if (value === null || value === undefined || value === 'NULL' || value === 'null') {
+    return '';
+  }
+  return value;
+};
+
+// Helper function to convert dates to YYYY-MM-DD format
+const sanitizeDate = (value) => {
+  if (!value || value === 'NULL' || value === 'null') {
+    return '';
+  }
+  // If it's already in YYYY-MM-DD format, return as-is
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  // If it's an ISO timestamp or Date object, convert to YYYY-MM-DD
+  try {
+    const date = new Date(value);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  } catch (e) {
+    return '';
+  }
+  return '';
+};
+
 {/*EDITED UP TO LINE 51*/}
 export function EditClientModal({ client, onClose, onSave }) {
   const today=new Date().toISOString().split('T')[0];
@@ -35,7 +64,30 @@ export function EditClientModal({ client, onClose, onSave }) {
     }
   }
   
-  const [formData, setFormData] = useState(client);
+  // Sanitize client data before setting state
+  const [formData, setFormData] = useState({
+    ...client,
+    name: sanitizeValue(client.name),
+    address: sanitizeValue(client.address),
+    email: sanitizeValue(client.email),
+    phone: sanitizeValue(client.phone),
+    dateRequested: sanitizeDate(client.dateRequested),
+    startDate: sanitizeDate(client.startDate),
+    dueDate: sanitizeDate(client.dueDate),
+    dateReleased: sanitizeDate(client.dateReleased),
+    dateClaimed: sanitizeDate(client.dateClaimed),
+    testDate: sanitizeDate(client.testDate),
+    releasedROA: sanitizeDate(client.releasedROA),
+    sampleNo: sanitizeValue(client.sampleNo),
+    specimenNo: sanitizeValue(client.specimenNo),
+    remarks: sanitizeValue(client.remarks),
+    // Parse testTypes if it's a string
+    testTypes: Array.isArray(client.testTypes) 
+      ? client.testTypes 
+      : typeof client.testTypes === 'string' && client.testTypes.trim()
+      ? client.testTypes.split(',').map(t => t.trim())
+      : [],
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,8 +96,16 @@ export function EditClientModal({ client, onClose, onSave }) {
       alert("Date Requested cannot be in the future");
       return;
     }
+    
+    // Transform data before saving (convert array back to string for testTypes)
+    const dataForBackend = {
+      ...formData,
+      testTypes: Array.isArray(formData.testTypes) 
+        ? formData.testTypes.join(', ') 
+        : formData.testTypes,
+    };
   
-    onSave(formData);
+    onSave(dataForBackend);
   
     onClose();
   }
@@ -83,7 +143,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="text"
                   required
-                  value={formData.name}
+                  value={formData.name || ''}
                   onChange={(e) => {
                     const value=e.target.value;
                     const regex=/[^a-zA-Z.'()-\s]/g;
@@ -99,7 +159,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="text"
                   required
-                  value={formData.address}
+                  value={formData.address || ''}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="Enter address"
@@ -118,7 +178,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="email"
                   required
-                  value={formData.email}
+                  value={formData.email || ''}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="email@example.com"
@@ -129,7 +189,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="tel"
                   required
-                  value={formData.phone}
+                  value={formData.phone || ''}
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/\D/g, '');
                     const truncated = rawValue.slice(0, 11);
@@ -159,7 +219,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Category <span className="text-red-500">*</span></label>
                 <select
                   required
-                  value={formData.category}
+                  value={formData.category || 'Industry'}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
@@ -176,7 +236,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Service Type <span className="text-red-500">*</span></label>
                 <select
                   required
-                  value={formData.serviceType}
+                  value={formData.serviceType || 'Material Testing'}
                   onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
@@ -193,7 +253,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
                 <select
                   required
-                  value={formData.status}
+                  value={formData.status || 'Pending'}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
@@ -244,7 +304,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="date"
                   required
-                  value={formData.dateRequested}
+                  value={formData.dateRequested || ''}
                   max={today}                  
                   onChange={(e) => handleDateChange('dateRequested', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -293,7 +353,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="date"
                   required
-                  value={formData.startDate}
+                  value={formData.startDate || ''}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
@@ -304,7 +364,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="date"
                   required
-                  value={formData.dueDate}
+                  value={formData.dueDate || ''}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
@@ -317,7 +377,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date Claimed</label>
                 <input
                   type="date"
-                  value={formData.dateClaimed}
+                  value={formData.dateClaimed || ''}
                   max={today}
                   onChange={(e) => handleDateChange('dateClaimed', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -328,7 +388,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date Released</label>
                 <input
                   type="date"
-                  value={formData.dateReleased}
+                  value={formData.dateReleased || ''}
                   max={today}
                   onChange={(e) => handleDateChange('dateReleased', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -348,7 +408,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
-                  value={formData.requestForm}
+                  value={formData.requestForm || 'Waiting'}
                   onChange={(e) => setFormData({ ...formData, requestForm: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
@@ -365,8 +425,8 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date of Test</label>
                 <input
                   type="date"
-                  value={formData.dateOfTest || ''}
-                  onChange={(e) => setFormData({ ...formData, dateOfTest: e.target.value })}
+                  value={formData.testDate || ''}
+                  onChange={(e) => setFormData({ ...formData, testDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
                 />
@@ -375,8 +435,8 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Released of ROA Date</label>
                 <input
                   type="date"
-                  value={formData.releasedOfROA || ''}
-                  onChange={(e) => setFormData({ ...formData, releasedOfROA: e.target.value })}
+                  value={formData.releasedROA || ''}
+                  onChange={(e) => setFormData({ ...formData, releasedROA: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{colorScheme: 'dark'}}
                 />
@@ -387,12 +447,12 @@ export function EditClientModal({ client, onClose, onSave }) {
                     <div className="flex items-center gap-3">
                       <input
                       type="checkbox"
-                      id="reportAnalysis"
-                      checked={formData.reportAnalysis || false}
-                      onChange={(e) => setFormData({ ...formData, reportAnalysis: e.target.checked })}
+                      id="roa"
+                      checked={formData.roa || false}
+                      onChange={(e) => setFormData({ ...formData, roa: e.target.checked })}
                       className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                     />
-                    <label htmlFor="reportAnalysis" className="text-sm font-medium text-green-300">
+                    <label htmlFor="roa" className="text-sm font-medium text-green-300">
                       ROA Available
                     </label>
                   </div>
@@ -426,7 +486,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   type="number"
                   min="0"
                   value={formData.sampleCount || ''}
-                  onChange={(e) => setFormData({ ...formData, sampleCount: Number(e.target.value) || undefined })}
+                  onChange={(e) => setFormData({ ...formData, sampleCount: Number(e.target.value) || 0 })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="0"
                 />
@@ -453,7 +513,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                     <div className="flex items-center gap-3">
                       <input
                       type="checkbox"
-                      id="reportAnalysis"
+                      id="officialReceipt"
                       checked={formData.officialReceipt || false}
                       onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked })}
                       className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"

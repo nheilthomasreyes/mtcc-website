@@ -16,12 +16,26 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const availableTestTypes = ['All', 'FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
+  // Helper function to parse testTypes from database (string) to array
+  const parseTestTypes = (testTypes) => {
+    if (!testTypes) return [];
+    if (Array.isArray(testTypes)) return testTypes;
+    if (typeof testTypes === 'string') {
+      // Split by comma and trim whitespace
+      return testTypes.split(',').map(t => t.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
   // Filter clients based on status, client type, and test type
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
       const matchesStatus = statusFilter === 'All' || client.status === statusFilter;
       const matchesClientType = selectedClientType === 'All' || client.category === selectedClientType;
-      const matchesTestType = selectedTestType === 'All' || (client.testTypes && client.testTypes.includes(selectedTestType));
+      
+      // Parse testTypes properly before checking
+      const clientTestTypes = parseTestTypes(client.testTypes);
+      const matchesTestType = selectedTestType === 'All' || clientTestTypes.includes(selectedTestType);
       
       return matchesStatus && matchesClientType && matchesTestType;
     });
@@ -99,7 +113,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     const sequenceNumber = index !== -1 ? index + 1 : 1;
 
     return `${monthYear}-Material-Testing-Service-Request-Form_${type}#${sequenceNumber}`;
-};
+  };
 
   return (
     <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden">
@@ -212,132 +226,141 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {filteredClients.map((client, index) => (
-              <tr key={client.id ?? index} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
-                <td className="px-5 py-5">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>
-                    {client.doNotDelete && (
-                      <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />
-                    )}
-                  </div>
-                </td>
-                <td className="px-5 py-5">
-                  <div className="space-y-1 min-w-[220px]">
-                    <p className="text-white font-semibold">{client.name}</p>
-                    <p className="text-gray-400 text-sm">{client.address}</p>
-                  </div>
-                </td>
-                <td className="px-5 py-5">
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="inline-flex items-center px-3 py-1 rounded-lg text-md font-medium bg-blue-500/20 text-gray-300 border border-gray-500/30 whitespace-nowrap">{getServiceRequestName(client, clients)}</p>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}</p>
-                </td>
-                <td className="px-5 py-5">
-                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium border ${getRequestFormColor(client.requestForm)} whitespace-nowrap`}>
-                    {getRequestFormIcon(client.requestForm)}
-                    {client.requestForm}
-                  </div>
-                </td>
-                
-                {/*EDITED UP TO LINE 207*/}
-                <td className="px-5 py-5 text-center">
-                  <div className="flex justify-center">
-                    {client.officialReceipt ? (
-                      /* Green Checkmark for True */
-                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </span>
-                    ) : (
-                      /* Red X for False */
-                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateOfTest ? format(new Date(client.dateOfTest), 'MMM dd, yyyy') : '-'}</p>
-                </td>
-                <td className="px-5 py-5 text-center">
-                  <div className="flex justify-center">
-                    {client.reportAnalysis ? (
-                      /* Green Checkmark for True */
-                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"></polyline></svg>
-                      </span>
-                    ) : (
-                      /* Red X for False */
-                      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line> </svg>
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedOfROA ? format(new Date(client.releasedOfROA), 'MMM dd, yyyy') : '-'}</p>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap">{client.sampleNo || '-'}</p>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 whitespace-nowrap"> {client.specimenNo || '-'}</p>
-                </td>
-                <td className="px-5 py-5">
-                  <div className="flex flex-wrap gap-2 max-w-xs">
-                    {client.testTypes.length > 0 ? client.testTypes.map((type) => (
-                      <span
-                        key={type}
-                        className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30"
-                        title={TEST_TYPE_LABELS[type]}>{type}</span>
-                    )) : <span className="text-sm text-gray-400">-</span>}
-                  </div>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-lg font-bold text-amber-300 whitespace-nowrap">₱{client.amount.toLocaleString()}</p>
-                </td>
-                <td className="px-5 py-5">
-                  <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
-                </td>
-                <td className="px-5 py-5">
-                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium bg-gradient-to-r border ${getStatusColor(client.status)} whitespace-nowrap`}>
-                    {getStatusIcon(client.status)}
-                    {client.status}
-                  </div>
-                </td>
-                <td className="px-5 py-5">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => onEdit(client)}
-                      className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110"
-                      title="Edit"><Edit className="w-4 h-4" />
-                    </button>
-                    {client.status !== 'Completed' && (
+            {filteredClients.map((client, index) => {
+              // Parse testTypes for this client
+              const clientTestTypes = parseTestTypes(client.testTypes);
+              
+              return (
+                <tr key={client.id ?? index} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
+                  <td className="px-5 py-5">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>
+                      {client.doNotDelete && (
+                        <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className="space-y-1 min-w-[220px]">
+                      <p className="text-white font-semibold">{client.name}</p>
+                      <p className="text-gray-400 text-sm">{client.address}</p>
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="inline-flex items-center px-3 py-1 rounded-lg text-md font-medium bg-blue-500/20 text-gray-300 border border-gray-500/30 whitespace-nowrap">{getServiceRequestName(client, clients)}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium border ${getRequestFormColor(client.requestForm)} whitespace-nowrap`}>
+                      {getRequestFormIcon(client.requestForm)}
+                      {client.requestForm}
+                    </div>
+                  </td>
+                  
+                  {/* FIXED: Check for boolean or number (0/1) */}
+                  <td className="px-5 py-5 text-center">
+                    <div className="flex justify-center">
+                      {client.officialReceipt === true || client.officialReceipt === 1 ? (
+                        /* Green Checkmark for True */
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                      ) : (
+                        /* Red X for False */
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.testDate ? format(new Date(client.testDate), 'MMM dd, yyyy') : '-'}</p>
+                  </td>
+                  
+                  {/* FIXED: Check for boolean or number (0/1) */}
+                  <td className="px-5 py-5 text-center">
+                    <div className="flex justify-center">
+                      {client.roa === true || client.roa === 1 ? (
+                        /* Green Checkmark for True */
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                      ) : (
+                        /* Red X for False */
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line> </svg>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'MMM dd, yyyy') : '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.sampleNo || '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap"> {client.specimenNo || '-'}</p>
+                  </td>
+                  
+                  {/* FIXED: Use parsed testTypes array */}
+                  <td className="px-5 py-5">
+                    <div className="flex flex-wrap gap-2 max-w-xs">
+                      {clientTestTypes.length > 0 ? clientTestTypes.map((type, idx) => (
+                        <span
+                          key={`${type}-${idx}`}
+                          className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30"
+                          title={TEST_TYPE_LABELS[type]}>{type}</span>
+                      )) : <span className="text-sm text-gray-400">-</span>}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-lg font-bold text-amber-300 whitespace-nowrap">₱{client.amount?.toLocaleString() || '0'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium bg-gradient-to-r border ${getStatusColor(client.status)} whitespace-nowrap`}>
+                      {getStatusIcon(client.status)}
+                      {client.status}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => onComplete(client.id)}
-                        className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110"
-                        title="Mark as Completed"><CheckCircle className="w-4 h-4" />
+                        onClick={() => onEdit(client)}
+                        className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110"
+                        title="Edit"><Edit className="w-4 h-4" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => onDelete(client.id)}
-                      className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110"
-                      title="Delete"><Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {client.status !== 'Completed' && (
+                        <button
+                          onClick={() => onComplete(client.id)}
+                          className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110"
+                          title="Mark as Completed"><CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onDelete(client.id)}
+                        className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110"
+                        title="Delete"><Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
