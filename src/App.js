@@ -11,7 +11,6 @@ import Login from "./Login";
 import {
   Plus,
   LogOut,
-  Activity,
   BarChart3,
   Calculator,
   Calendar,
@@ -131,6 +130,19 @@ export default function App() {
     }
   };
 
+  const handleCompleteClient = (id) => {
+    const today = new Date().toISOString().split('T')[0];
+    setClients(clients.map(c => 
+      c.id === id ? { 
+        ...c, 
+        status: 'Completed', 
+        progress: 100,
+        dateReleased: c.dateReleased || today,
+        dateClaimed: c.dateClaimed || today,
+      } : c
+    ));
+  };
+
   const availableYears = useMemo(() => {
     const years = new Set(customYears);
     clients.forEach((c) => {
@@ -190,9 +202,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="h-screen overflow-hidden flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl">
+      <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl flex-shrink-0">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -283,6 +295,7 @@ export default function App() {
           clients={filteredClients}
           onEdit={setEditingClient}
           onDelete={handleDeleteClient}
+          onComplete={handleCompleteClient}
         />
       </main>
 
@@ -305,13 +318,14 @@ export default function App() {
         isOpen={isAnalyticsOpen}
         onClose={() => setIsAnalyticsOpen(false)}
         clients={clients}
+        customYears={customYears}
       />
 
       <TallyModal
         isOpen={isTallyOpen}
         onClose={() => setIsTallyOpen(false)}
-        clients={filteredClients}
-        selectedYear={selectedYear}
+        clients={clients}
+        customYears={customYears}
       />
 
       {/* Add Year Modal */}
