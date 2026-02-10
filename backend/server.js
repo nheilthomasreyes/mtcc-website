@@ -66,6 +66,37 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+
+app.get("/categories", (req, res) => {
+  const query = "SELECT * FROM institution ORDER BY company ASC";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Database error fetching categories:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+    res.json(results);
+  });
+});
+
+// POST create new category
+app.post("/categories", (req, res) => {
+  const { name } = req.body;
+
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ message: "Category name is required" });
+  }
+
+  const query = "INSERT INTO institution (company, created_at) VALUES (?, NOW())";
+  db.query(query, [name.trim()], (err, result) => {
+    if (err) {
+      console.error("Database error inserting category:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+    res.json({ message: "Category added successfully", id: result.insertId, name: name.trim() });
+  });
+});
+
+
 // GET all clients
 app.get("/clients", (req, res) => {
   const query = "SELECT * FROM clients ORDER BY dateRequested DESC";

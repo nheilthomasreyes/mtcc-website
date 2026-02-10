@@ -274,7 +274,7 @@ export default function App() {
             Add Year
           </button>
           <span className="text-blue-200 text-sm">
-            Showing {filteredClients.length} of {clients.length} total services
+            Showing {filteredClients.length} of {filteredClients.length} total services
           </span>
         </div>
 

@@ -94,7 +94,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
     const date = new Date(client.dateRequested);
     const year = date.getFullYear();
-    const monthYear = format(date, 'MMyyyy');
+    const monthYear = format(date, 'MM/yyyy');
     const type = client.roa ? 'ROA' : 'TS';
 
     // 1. Filter: Get all entries from the same YEAR with the same SERVICE TYPE
@@ -247,23 +247,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     </div>
                   </td>
                   <td className="px-5 py-5">
-                    {(() => {
-                      const colors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
-                      const customHex = colors[client.category];
-
-                      return (
-                        <span 
-                          className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium border whitespace-nowrap"
-                          style={{
-                            backgroundColor: customHex ? `${customHex}20` : 'rgba(168, 85, 247, 0.2)', // 20% opacity
-                            color: customHex ? customHex : '#d8b4fe',
-                            borderColor: customHex ? `${customHex}40` : 'rgba(168, 85, 247, 0.3)'
-                          }}
-                        >
-                          {client.category}
-                        </span>
-                      );
-                    })()}
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
                   </td>
                   <td className="px-5 py-5">
                     <p className="inline-flex items-center px-3 py-1 rounded-lg text-md font-medium bg-blue-500/20 text-gray-300 border border-gray-500/30 whitespace-nowrap">{getServiceRequestName(client, clients)}</p>
