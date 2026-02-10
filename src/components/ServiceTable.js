@@ -108,8 +108,9 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} 
   };
 
   return (
-    <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden">
-      <div className="p-6 border-b border-white/10 space-y-4">
+    <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden flex flex-col max-h-[800px]">
+      {/* Frozen Header Section (Filters and Title) */}
+      <div className="flex-none p-6 border-b border-white/10 space-y-4 bg-slate-900/50 relative z-50">
         <div>
           <h2 className="text-2xl font-bold text-white">Service Records</h2>
           <p className="text-blue-200 text-sm mt-1">Manage all client services and requests</p>
@@ -150,161 +151,169 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} 
         </div>
       </div>
 
-      <div className="relative">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="sticky top-0 z-20 bg-gradient-to-r from-slate-900 to-slate-800 shadow-lg">
-              <tr>
-                <th className="sticky left-0 z-30 px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-gradient-to-r from-slate-900 to-slate-800 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                  Service No.
-                </th>
-                <th className="sticky left-[99px] z-30 px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-gradient-to-r from-slate-900 to-slate-800 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                  Client Name
-                </th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Category</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Service Request Form</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Request Date</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Signed Request Form</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Official Receipt</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Date of Test</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Report of Analysis</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Released of ROA</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Sample No.</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Specimen No.</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Types of Test</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Amount</th>
-                <th className="px-5 py-4 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Sample Count</th>
-                <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Status</th>
-                <th className="px-5 py-4 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {paginatedClients.map((client, index) => {
-                const clientTestTypes = parseTestTypes(client.testTypes);
-                return (
-                  <tr key={client.id ?? index} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
-                    <td className="sticky left-0 z-10 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>
-                        {client.doNotDelete && <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />}
-                      </div>
-                    </td>
-                    <td className="sticky left-[99px] z-10 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                      <div className="space-y-1 min-w-[220px]">
-                        <p className="text-white font-semibold">{client.name}</p>
-                        <p className="text-gray-400 text-sm">{client.address}</p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-5">
-                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="inline-flex items-center px-3 py-1 rounded-lg text-md font-medium bg-blue-500/20 text-gray-300 border border-gray-500/30 whitespace-nowrap">{getServiceRequestName(client, clients)}</p>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}</p>
-                    </td>
-                    <td className="px-5 py-5">
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium border ${getRequestFormColor(client.requestForm)} whitespace-nowrap`}>
-                        {getRequestFormIcon(client.requestForm)} {client.requestForm}
-                      </div>
-                    </td>
-                    <td className="px-5 py-5 text-center">
-                      <div className="flex justify-center">
-                        {client.officialReceipt === true || client.officialReceipt === 1 ? (
-                          <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="text-sm text-gray-300 whitespace-nowrap">{client.testDate ? format(new Date(client.testDate), 'MMM dd, yyyy') : '-'}</p>
-                    </td>
-                    <td className="px-5 py-5 text-center">
-                      <div className="flex justify-center">
-                        {client.roa === true || client.roa === 1 ? (
-                          <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40 shadow-[0_0_10px_rgba(34,197,94,0.2)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'MMM dd, yyyy') : '-'}</p>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="text-sm text-gray-300 whitespace-nowrap">{client.sampleNo || '-'}</p>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="text-sm text-gray-300 whitespace-nowrap">{client.specimenNo || '-'}</p>
-                    </td>
-                    <td className="px-5 py-5">
-                      <div className="flex flex-wrap gap-2 max-w-xs">
-                        {clientTestTypes.length > 0 ? clientTestTypes.map((type, idx) => (
-                          <span key={`${type}-${idx}`} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30" title={TEST_TYPE_LABELS[type]}>{type}</span>
-                        )) : <span className="text-sm text-gray-400">-</span>}
-                      </div>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="text-lg font-bold text-amber-300 whitespace-nowrap">₱{client.amount?.toLocaleString() || '0'}</p>
-                    </td>
-                    <td className="px-5 py-5">
-                      <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
-                    </td>
-                    <td className="px-5 py-5">
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium bg-gradient-to-r border ${getStatusColor(client.status)} whitespace-nowrap`}>
-                        {getStatusIcon(client.status)} {client.status}
-                      </div>
-                    </td>
-                    <td className="px-5 py-5">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => onEdit(client)} className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110" title="Edit"><Edit className="w-4 h-4" /></button>
-                        {client.status !== 'Completed' && onComplete && (
-                          <button onClick={() => onComplete(client.id)} className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110" title="Mark as Completed"><CheckCircle className="w-4 h-4" /></button>
-                        )}
-                        <button onClick={() => onDelete(client.id)} className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* Main Scrollable Area (Table + Pagination) */}
+      <div className="flex-1 overflow-auto relative custom-scrollbar bg-slate-900/20">
+        <table className="w-full border-separate border-spacing-0">
+          <thead className="sticky top-0 z-40">
+            <tr className="bg-slate-900 shadow-md">
+              <th className="sticky left-0 top-0 z-50 px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+                Service No.
+              </th>
+              <th className="sticky left-[99px] top-0 z-50 px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+                Client Name
+              </th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Category</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Service Request Form</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Request Date</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Signed Request Form</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Official Receipt</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Date of Test</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Report of Analysis</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Released of ROA</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample No.</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Specimen No.</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Types of Test</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Amount</th>
+              <th className="px-5 py-4 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample Count</th>
+              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Status</th>
+              <th className="px-5 py-4 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {paginatedClients.map((client, index) => {
+              const clientTestTypes = parseTestTypes(client.testTypes);
+              return (
+                <tr key={client.id ?? index} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
+                  <td className="sticky left-0 z-30 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>
+                      {client.doNotDelete && <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />}
+                    </div>
+                  </td>
+                  <td className="sticky left-[99px] z-30 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+                    <div className="space-y-1 min-w-[220px]">
+                      <p className="text-white font-semibold">{client.name}</p>
+                      <p className="text-gray-400 text-sm">{client.address}</p>
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="inline-flex items-center px-3 py-1 rounded-lg text-md font-medium bg-blue-500/20 text-gray-300 border border-gray-500/30 whitespace-nowrap">{getServiceRequestName(client, clients)}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium border ${getRequestFormColor(client.requestForm)} whitespace-nowrap`}>
+                      {getRequestFormIcon(client.requestForm)} {client.requestForm}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5 text-center">
+                    <div className="flex justify-center">
+                      {(client.officialReceipt === true || client.officialReceipt === 1) ? (
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40">
+                          <CheckCircle className="h-4 w-4" />
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40">
+                          <XIcon className="h-4 w-4" />
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.testDate ? format(new Date(client.testDate), 'MMM dd, yyyy') : '-'}</p>
+                  </td>
+                  <td className="px-5 py-5 text-center">
+                    <div className="flex justify-center">
+                      {(client.roa === true || client.roa === 1) ? (
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40">
+                          <CheckCircle className="h-4 w-4" />
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center w-6 h-6 rounded-md bg-red-500/20 text-red-400 border border-red-500/40">
+                          <XIcon className="h-4 w-4" />
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'MMM dd, yyyy') : '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.sampleNo || '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.specimenNo || '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className="flex flex-wrap gap-2 max-w-xs">
+                      {clientTestTypes.length > 0 ? clientTestTypes.map((type, idx) => (
+                        <span key={`${type}-${idx}`} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-pink-500/20 to-purple-500/20 text-pink-300 border border-pink-500/30" title={TEST_TYPE_LABELS[type]}>{type}</span>
+                      )) : <span className="text-sm text-gray-400">-</span>}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-lg font-bold text-amber-300 whitespace-nowrap">₱{client.amount?.toLocaleString() || '0'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium bg-gradient-to-r border ${getStatusColor(client.status)} whitespace-nowrap`}>
+                      {getStatusIcon(client.status)} {client.status}
+                    </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => onEdit(client)} className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110" title="Edit"><Edit className="w-4 h-4" /></button>
+                      {client.status !== 'Completed' && onComplete && (
+                        <button onClick={() => onComplete(client.id)} className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110" title="Mark as Completed"><CheckCircle className="w-4 h-4" /></button>
+                      )}
+                      <button onClick={() => onDelete(client.id)} className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
-          {filteredClients.length === 0 && (
-            <div className="text-center py-12">
-              <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400">No clients found matching the selected filters.</p>
+        {filteredClients.length === 0 && (
+          <div className="text-center py-12">
+            <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-400">No clients found matching the selected filters.</p>
+          </div>
+        )}
+
+        {/* Pagination Section (Moved INSIDE the scrollable div) */}
+        {filteredClients.length > 0 && (
+          <div className="px-6 py-6 flex items-center justify-between border-t border-white/5 bg-slate-900/40 backdrop-blur-sm sticky left-0 w-full">
+            <div className="text-sm text-gray-400">
+              Showing {startIndex + 1} to {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} entries
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                disabled={currentPage === 1} 
+                className={`p-2 rounded-lg transition-all ${currentPage === 1 ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30'}`}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="text-sm text-gray-300 font-medium">Page {currentPage} of {totalPages}</div>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                disabled={currentPage === totalPages} 
+                className={`p-2 rounded-lg transition-all ${currentPage === totalPages ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30'}`}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-      {filteredClients.length > 0 && (
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-          <div className="text-sm text-gray-400">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} entries
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className={`p-2 rounded-lg transition-all ${currentPage === 1 ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30'}`}>
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="text-sm text-gray-300 font-medium">Page {currentPage} of {totalPages}</div>
-            <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className={`p-2 rounded-lg transition-all ${currentPage === totalPages ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30'}`}>
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
