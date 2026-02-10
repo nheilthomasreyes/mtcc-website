@@ -7,6 +7,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedClientType, setSelectedClientType] = useState('All');
   const [selectedTestType, setSelectedTestType] = useState('All');
+  const [searchClientName, setSearchClientName] = useState('');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,13 +31,15 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
+      const matchesSearch = client.name?.toLowerCase().includes(searchClientName.toLowerCase());
+
       const matchesStatus = statusFilter === 'All' || client.status === statusFilter;
       const matchesClientType = selectedClientType === 'All' || client.category === selectedClientType;
       const clientTestTypes = parseTestTypes(client.testTypes);
       const matchesTestType = selectedTestType === 'All' || clientTestTypes.includes(selectedTestType);
-      return matchesStatus && matchesClientType && matchesTestType;
+      return matchesSearch && matchesStatus && matchesClientType && matchesTestType;
     });
-  }, [clients, statusFilter, selectedClientType, selectedTestType]);
+  }, [clients, searchClientName, statusFilter, selectedClientType, selectedTestType]);
 
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -141,6 +144,30 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
               <option key={type} value={type} className="bg-gray-900">{type === 'All' ? 'All Tests' : type}</option>
             ))}
           </select>
+          <div className="relative w-48"> {/* Adjust this width (w-48, w-64, etc.) to match your 'w-semi' */}
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Filter className="w-3.5 h-3.5 text-cyan-500/50" />
+            </div>
+            
+            <input
+              type="text"
+              placeholder="Search name..."
+              value={searchClientName}
+              onChange={(e) => setSearchClientName(e.target.value)}
+              /* Using w-full here so it fills the 'relative' container above */
+              className="w-full pl-9 pr-8 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 placeholder:text-gray-500"
+            />
+
+            {searchClientName && (
+              <button 
+                onClick={() => setSearchClientName('')}
+                /* Changed pr-2 and added a slight hover background for better UX */
+                className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-500 hover:text-red-400 transition-colors"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -169,6 +196,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
               <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Amount</th>
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample Count</th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Status</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Remarks</th>
               <th className="px-3 py-2 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Actions</th>
             </tr>
           </thead>
@@ -258,6 +286,11 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium bg-gradient-to-r border ${getStatusColor(client.status)} whitespace-nowrap`}>
                       {getStatusIcon(client.status)} {client.status}
                     </div>
+                  </td>
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-400 italic max-w-[200px] truncate" title={client.remarks || ''}>
+                      {client.remarks || <span className="text-gray-600">No remarks</span>}
+                    </p>
                   </td>
                   <td className="px-5 py-5">
                     <div className="flex items-center justify-end gap-2">
