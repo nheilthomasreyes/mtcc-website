@@ -11,7 +11,6 @@ import Login from "./Login";
 import {
   Plus,
   LogOut,
-  Activity,
   BarChart3,
   Calculator,
   Calendar,
