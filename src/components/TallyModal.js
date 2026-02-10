@@ -8,57 +8,108 @@ import axios from 'axios';
 const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 const SAMPLES_TEST_HEADERS = ['FTIR', 'Material Testing', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 
-export function TallyModal({ isOpen, onClose, clients, customYears }) {
+// Material Testing test types (all except FTIR and C)
+const MATERIAL_TESTING_TYPES = ['CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
+
+export function TallyModal({ isOpen, onClose, customYears }) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedQuarter, setSelectedQuarter] = useState('all');
   const [reportType, setReportType] = useState('service'); // 'service' or 'samples'
 
   const [dbCategories, setDbCategories] = useState([]);
+  const [allClients, setAllClients] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
+      // Fetch categories
       axios.get('http://localhost:3000/categories')
         .then(res => {
           const saved = res.data.map(cat => cat.company);
           setDbCategories(saved);
         })
         .catch(err => console.error("Error fetching tally categories:", err));
+      
+      // Fetch ALL clients from database (independent of ServiceTable filters)
+      axios.get('http://localhost:3000/clients')
+        .then(res => {
+          setAllClients(res.data);
+          console.log('Fetched all clients for TallyModal:', res.data.length);
+        })
+        .catch(err => console.error("Error fetching all clients:", err));
     }
   }, [isOpen]);
 
-    const allCategories = useMemo(() => {
-      const hardcoded = [
-        'BatStateU College',
-        'University Linkage',
-        'Private HEIs',
-        'Private Individual',
-        'Industry',
-        'Senior High',
-        'BatStateU IS',
-      ];
-      return [...hardcoded, ...dbCategories.filter(s => !hardcoded.includes(s))];
-    }, [dbCategories]);
+  const allCategories = useMemo(() => {
+    const hardcoded = [
+      'BatStateU College',
+      'University Linkage',
+      'Private HEIs',
+      'Private Individual',
+      'Industry',
+      'Senior High',
+      'BatStateU IS',
+    ];
+    return [...hardcoded, ...dbCategories.filter(s => !hardcoded.includes(s))];
+  }, [dbCategories]);
 
-  // Get unique years from clients and combine with custom years
+  // Get unique years from ALL clients in database
   const availableYears = useMemo(() => {
-    const years = new Set(customYears);
-    clients.forEach(client => {
-      const year = new Date(client.dateRequested).getFullYear();
-      if (!isNaN(year)) {
-        years.add(year);
+    const years = new Set();
+    
+    // Add custom years if provided
+    if (customYears && Array.isArray(customYears)) {
+      customYears.forEach(year => years.add(year));
+    }
+    
+    // Extract years from ALL clients
+    allClients.forEach(client => {
+      if (client.dateRequested) {
+        const date = new Date(client.dateRequested);
+        const year = date.getFullYear();
+        
+        if (!isNaN(year) && year > 1900 && year < 2100) {
+          years.add(year);
+        }
       }
     });
+    
     const yearArray = Array.from(years).sort((a, b) => b - a);
+    
+    console.log('Available years:', yearArray);
+    console.log('Total clients in database:', allClients.length);
+    
     return yearArray.length > 0 ? yearArray : [new Date().getFullYear()];
-  }, [clients, customYears]);
+  }, [allClients, customYears]);
 
-  // Filter clients by selected year
+  // Helper function to parse testTypes (handles string or array)
+  const parseTestTypes = (testTypes) => {
+    if (!testTypes) return [];
+    if (Array.isArray(testTypes)) return testTypes;
+    if (typeof testTypes === 'string') {
+      // Remove quotes and split by comma
+      return testTypes
+        .replace(/^"|"$/g, '') // Remove leading/trailing quotes
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+    }
+    return [];
+  };
+
+  // Filter clients by selected year (using ALL clients from database)
   const yearFilteredClients = useMemo(() => {
-    return clients.filter(client => {
-      const year = new Date(client.dateRequested).getFullYear();
+    return allClients.filter(client => {
+      if (!client.dateRequested) return false;
+      
+      const date = new Date(client.dateRequested);
+      const year = date.getFullYear();
+      
       return year === selectedYear;
-    });
-  }, [clients, selectedYear, allCategories]);
+    }).map(client => ({
+      ...client,
+      testTypes: parseTestTypes(client.testTypes)
+    }));
+  }, [allClients, selectedYear]);
 
   // WHOLE YEAR SUMMARY DATA (used when "All Quarters" is selected)
   const wholeYearData = useMemo(() => {
@@ -70,31 +121,47 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
       );
 
-      const uniqueClients = new Set(categoryClients.map(c => c.id)).size;
-      const totalIncome = categoryClients.reduce((sum, c) => sum + c.amount, 0);
-      const totalSamples = categoryClients.reduce((sum, c) => sum + (c.sampleCount || 1), 0);
+      // FIXED: Unique clients by name (case-insensitive)
+      const uniqueClientNames = new Set(
+        categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
+      );
+      const uniqueClients = uniqueClientNames.size;
+
+      // Service requests = total number of rows (each row is a service request)
+      const serviceRequests = categoryClients.length;
+
+      const totalIncome = categoryClients.reduce((sum, c) => sum + (c.amount || 0), 0);
+      
+      // FIXED: Total samples = sum of all sampleCount values
+      const totalSamples = categoryClients.reduce((sum, c) => sum + (c.sampleCount || 0), 0);
 
       const getTestTypeCount = (testType) =>
         categoryClients.filter(c => c.testTypes.includes(testType)).length;
 
       const getSampleCountByTestType = (testType) =>
         categoryClients.reduce((sum, c) => {
-          if (c.testTypes.includes(testType)) return sum + (c.sampleCount || 1);
+          if (c.testTypes.includes(testType)) return sum + (c.sampleCount || 0);
           return sum;
         }, 0);
 
-      const materialTestingCount = categoryClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length;
+      // FIXED: Material Testing should count samples that have ANY material testing test type
       const materialTestingSamples = categoryClients.reduce((sum, c) => {
-        if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') 
-          return sum + (c.sampleCount || 1);
+        const hasMaterialTestingType = c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type));
+        if (hasMaterialTestingType) {
+          return sum + (c.sampleCount || 0);
+        }
         return sum;
       }, 0);
+
+      const materialTestingCount = categoryClients.filter(c => 
+        c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
+      ).length;
 
       return {
         category: categoryName,
         // service fields
         noOfClient: uniqueClients,
-        noOfServices: categoryClients.length,
+        noOfServices: serviceRequests,
         income: totalIncome,
         bioTech: 0,
         materialTesting: materialTestingCount,
@@ -178,20 +245,33 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           return matchCategory && isWithinInterval(date, { start, end });
         });
 
-        const uniqueClients = new Set(categoryClients.map(c => c.id)).size;
-        const totalIncome = categoryClients.reduce((sum, c) => sum + c.amount, 0);
+        // FIXED: Unique clients by name (case-insensitive)
+        const uniqueClientNames = new Set(
+          categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
+        );
+        const uniqueClients = uniqueClientNames.size;
+
+        // Service requests = total number of rows
+        const serviceRequests = categoryClients.length;
+
+        const totalIncome = categoryClients.reduce((sum, c) => sum + (c.amount || 0), 0);
 
         const getTestTypeCount = (testType) => {
           return categoryClients.filter(c => c.testTypes.includes(testType)).length;
         };
 
+        // FIXED: Material Testing count based on test types, not serviceType field
+        const materialTestingCount = categoryClients.filter(c => 
+          c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
+        ).length;
+
         return {
           category: categoryName,
           noOfClient: uniqueClients,
-          noOfServices: categoryClients.length,
+          noOfServices: serviceRequests,
           income: totalIncome,
           bioTech: 0,
-          materialTesting: categoryClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length,
+          materialTesting: materialTestingCount,
           ftir: getTestTypeCount('FTIR'),
           c: getTestTypeCount('C'),
           ct: getTestTypeCount('CT'),
@@ -265,25 +345,26 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           return matchCategory && isWithinInterval(date, { start, end });
         });
 
-        // Count total samples per client type
+        // FIXED: Total samples = sum of all sampleCount values
         const totalSamples = categoryClients.reduce((sum, c) => {
-          return sum + (c.sampleCount || 1);
+          return sum + (c.sampleCount || 0);
         }, 0);
 
         // Count samples per test type
         const getSampleCountByTestType = (testType) => {
           return categoryClients.reduce((sum, c) => {
             if (c.testTypes.includes(testType)) {
-              return sum + (c.sampleCount || 1);
+              return sum + (c.sampleCount || 0);
             }
             return sum;
           }, 0);
         };
 
-        // Count material testing samples
+        // FIXED: Material Testing samples = samples that have ANY material testing test type
         const materialTestingSamples = categoryClients.reduce((sum, c) => {
-          if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') {
-            return sum + (c.sampleCount || 1);
+          const hasMaterialTestingType = c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type));
+          if (hasMaterialTestingType) {
+            return sum + (c.sampleCount || 0);
           }
           return sum;
         }, 0);
@@ -348,7 +429,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
       return tallyDataByQuarter.quarterlyResults;
     }
     return tallyDataByQuarter.quarterlyResults.filter(q => q.quarter === parseInt(selectedQuarter));
-  }, [tallyDataByQuarter.quarterlyResults, selectedQuarter, allCategories]);
+  }, [tallyDataByQuarter.quarterlyResults, selectedQuarter]);
 
   // Recalculate grand totals based on displayed quarters
   const displayedGrandTotals = useMemo(() => {
@@ -392,13 +473,13 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
         ctt: filteredQuarter.totals.ctt,
       };
     }
-  }, [displayedQuarters, selectedQuarter, ,allCategories, tallyDataByQuarter.grandTotals, reportType]);
+  }, [displayedQuarters, selectedQuarter, tallyDataByQuarter.grandTotals, reportType]);
 
   const getCategoryColor = (category) => {
-  // 1. Check localStorage first
+    // Check localStorage first
     const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
     if (customColors[category]) {
-      return customColors[category]; // Returns the hex code (e.g., "#ff0000")
+      return customColors[category];
     }
     const colors = {
       'BatStateU College': 'bg-red-500/20 border-red-500/50',

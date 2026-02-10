@@ -3,7 +3,7 @@ import { TEST_TYPE_LABELS } from "./types";
 import { format } from 'date-fns';
 import { useState, useMemo } from 'react';
 
-export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
+export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedClientType, setSelectedClientType] = useState('All');
   const [selectedTestType, setSelectedTestType] = useState('All');
@@ -14,7 +14,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     return ['All', ...Array.from(cats).sort()];
   }, [clients]);
 
-  const availableTestTypes = ['All', 'FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+  const availableTestTypes = ['All', 'FTIR', 'C', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
   // Helper function to parse testTypes from database (string) to array
   const parseTestTypes = (testTypes) => {
@@ -249,7 +249,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   <td className="px-5 py-5">
                     {(() => {
                       const colors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
-                      const customHex = colors[client.category];
+                      const customHex = '#d8b4fe';
 
                       return (
                         <span 
@@ -360,11 +360,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                         className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110"
                         title="Edit"><Edit className="w-4 h-4" />
                       </button>
-                      {client.status !== 'Completed' && (
+                      {client.status !== 'Completed' && onComplete && (
                         <button
                           onClick={() => onComplete(client.id)}
                           className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110"
-                          title="Mark as Completed"><CheckCircle className="w-4 h-4" />
+                          title="Mark as Completed"
+                        >
+                          <CheckCircle className="w-4 h-4" />
                         </button>
                       )}
                       <button

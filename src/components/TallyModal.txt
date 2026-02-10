@@ -395,6 +395,11 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
   }, [displayedQuarters, selectedQuarter, ,allCategories, tallyDataByQuarter.grandTotals, reportType]);
 
   const getCategoryColor = (category) => {
+  // 1. Check localStorage first
+    const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
+    if (customColors[category]) {
+      return customColors[category]; // Returns the hex code (e.g., "#ff0000")
+    }
     const colors = {
       'BatStateU College': 'bg-red-500/20 border-red-500/50',
       'University Linkage': 'bg-yellow-500/20 border-yellow-500/50',
@@ -404,7 +409,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
       'Senior High': 'bg-purple-500/20 border-purple-500/50',
       'BatStateU IS': 'bg-indigo-500/20 border-indigo-500/50',
     };
-    return colors[category] || 'bg-gray-500/20 border-gray-500/50';
+    return colors[category] || 'bg-red-500/20 border-gray-500/50';
   };
 
   const getQuarterColor = (quarter) => {
@@ -418,6 +423,9 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
   };
 
   const exportToExcel = async () => {
+    
+    const customStoredColors = JSON.parse(localStorage.getItem('categoryColors') || '{}');
+    
     try {
       const workbook = new ExcelJS.Workbook();
       const quarterText = selectedQuarter === 'all' ? 'All Quarters' : `Q${selectedQuarter}`;
@@ -623,8 +631,25 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
               if (col === 3) {
                 cell.alignment = { horizontal: 'left', vertical: 'middle' };
-                if (categoryColors[row.category]) {
-                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: categoryColors[row.category] } };
+  
+                // Get custom colors from storage
+                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
+                const hex = customColors[row.category];
+
+                if (hex) {
+                  // Excel needs ARGB (FF + Hex without #)
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: `FF${hex.replace('#', '')}` }
+                  };
+                } else if (categoryColors[row.category]) {
+                  // Fallback to your hardcoded categoryColors object
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: categoryColors[row.category] }
+                  };
                 }
               }
 
@@ -787,8 +812,25 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
               if (col === 3) {
                 cell.alignment = { horizontal: 'left', vertical: 'middle' };
-                if (categoryColors[row.category]) {
-                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: categoryColors[row.category] } };
+  
+                // Get custom colors from storage
+                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
+                const hex = customColors[row.category];
+
+                if (hex) {
+                  // Excel needs ARGB (FF + Hex without #)
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: `FF${hex.replace('#', '')}` }
+                  };
+                } else if (categoryColors[row.category]) {
+                  // Fallback to your hardcoded categoryColors object
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: categoryColors[row.category] }
+                  };
                 }
               }
 
@@ -1002,6 +1044,7 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
           }
         }
 
+       
         const categoryColors = {
           'BatStateU College': 'FFF4CCCC',
           'University Linkage': 'FFFFF2CC',
@@ -1101,8 +1144,25 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
               if (col === 3) {
                 cell.alignment = { horizontal: 'left', vertical: 'middle' };
-                if (categoryColors[row.category]) {
-                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: categoryColors[row.category] } };
+  
+                // Get custom colors from storage
+                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
+                const hex = customColors[row.category];
+
+                if (hex) {
+                  // Excel needs ARGB (FF + Hex without #)
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: `FF${hex.replace('#', '')}` }
+                  };
+                } else if (categoryColors[row.category]) {
+                  // Fallback to your hardcoded categoryColors object
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: categoryColors[row.category] }
+                  };
                 }
               }
 
@@ -1243,11 +1303,27 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
 
               if (col === 3) {
                 cell.alignment = { horizontal: 'left', vertical: 'middle' };
-                if (categoryColors[row.category]) {
-                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: categoryColors[row.category] } };
+  
+                // Get custom colors from storage
+                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
+                const hex = customColors[row.category];
+
+                if (hex) {
+                  // Excel needs ARGB (FF + Hex without #)
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: `FF${hex.replace('#', '')}` }
+                  };
+                } else if (categoryColors[row.category]) {
+                  // Fallback to your hardcoded categoryColors object
+                  cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: categoryColors[row.category] }
+                  };
                 }
               }
-
               // Apply test type colors to all cells in these columns
               if (testTypeColors[col]) {
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: testTypeColors[col] } };
@@ -1289,8 +1365,8 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
             };
 
             if (col === 3) {
-              cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            }
+             cell.alignment = { horizontal: 'left', vertical: 'middle' };
+          }
             if (typeof cell.value === 'number') {
               cell.numFmt = '#,##0';
             }
@@ -1481,7 +1557,15 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <tbody className="divide-y divide-white/5">
                         {wholeYearData.data.map((row, index) => (
                           <tr key={index} className="hover:bg-white/5 transition-colors">
-                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${getCategoryColor(row.category)}`}>
+                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${
+                                !getCategoryColor(row.category).startsWith('#') ? getCategoryColor(row.category) : ''
+                              }`}
+                              style={{
+                                backgroundColor: getCategoryColor(row.category).startsWith('#') 
+                                  ? `${getCategoryColor(row.category)}44` // Adding '44' adds transparency (approx 25%)
+                                  : undefined
+                              }}
+                            >
                               {row.category}
                             </td>
                             <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.noOfClient}</td>
@@ -1558,7 +1642,15 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <tbody className="divide-y divide-white/5">
                         {data.map((row, index) => (
                           <tr key={index} className="hover:bg-white/5 transition-colors">
-                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${getCategoryColor(row.category)}`}>
+                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${
+                                !getCategoryColor(row.category).startsWith('#') ? getCategoryColor(row.category) : ''
+                              }`}
+                              style={{
+                                backgroundColor: getCategoryColor(row.category).startsWith('#') 
+                                  ? `${getCategoryColor(row.category)}44` // Adding '44' adds transparency (approx 25%)
+                                  : undefined
+                              }}
+                            >
                               {row.category}
                             </td>
                             <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.noOfClient}</td>
@@ -1659,7 +1751,15 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <tbody className="divide-y divide-white/5">
                         {wholeYearData.data.map((row, index) => (
                           <tr key={index} className="hover:bg-white/5 transition-colors">
-                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${getCategoryColor(row.category)}`}>
+                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${
+                                !getCategoryColor(row.category).startsWith('#') ? getCategoryColor(row.category) : ''
+                              }`}
+                              style={{
+                                backgroundColor: getCategoryColor(row.category).startsWith('#') 
+                                  ? `${getCategoryColor(row.category)}44` // Adding '44' adds transparency (approx 25%)
+                                  : undefined
+                              }}
+                            >
                               {row.category}
                             </td>
                             <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.totalSamples}</td>
@@ -1720,7 +1820,15 @@ export function TallyModal({ isOpen, onClose, clients, customYears }) {
                       <tbody className="divide-y divide-white/5">
                         {data.map((row, index) => (
                           <tr key={index} className="hover:bg-white/5 transition-colors">
-                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${getCategoryColor(row.category)}`}>
+                            <td className={`px-4 py-3 text-sm font-semibold text-white border-r border-white/10 ${
+                                !getCategoryColor(row.category).startsWith('#') ? getCategoryColor(row.category) : ''
+                              }`}
+                              style={{
+                                backgroundColor: getCategoryColor(row.category).startsWith('#') 
+                                  ? `${getCategoryColor(row.category)}44` // Adding '44' adds transparency (approx 25%)
+                                  : undefined
+                              }}
+                            >
                               {row.category}
                             </td>
                             <td className="px-4 py-3 text-center text-sm text-gray-300 border-r border-white/10">{row.totalSamples}</td>

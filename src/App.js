@@ -131,6 +131,20 @@ export default function App() {
     }
   };
 
+  const handleCompleteClient = async (id) => {
+  try {
+    const clientToUpdate = clients.find(c => c.id === id);
+    if (!clientToUpdate) return;
+
+    const updatedClient = { ...clientToUpdate, status: 'Completed' };
+    await saveClientToBackend(updatedClient, "PUT");
+    setClients(clients.map((c) => (c.id === id ? updatedClient : c)));
+  } catch (error) {
+    console.error("Error completing client:", error);
+    alert("Failed to mark client as completed");
+  }
+};
+
   const availableYears = useMemo(() => {
     const years = new Set(customYears);
     clients.forEach((c) => {
@@ -266,13 +280,6 @@ export default function App() {
               </option>
             ))}
           </select>
-          <button
-            onClick={() => setIsAddYearModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 hover:scale-105 font-semibold"
-          >
-            <Calendar className="w-4 h-4" />
-            Add Year
-          </button>
           <span className="text-blue-200 text-sm">
             Showing {filteredClients.length} of {filteredClients.length} total services
           </span>
@@ -283,6 +290,7 @@ export default function App() {
           clients={filteredClients}
           onEdit={setEditingClient}
           onDelete={handleDeleteClient}
+          onComplete={handleCompleteClient}
         />
       </main>
 
@@ -313,47 +321,6 @@ export default function App() {
         clients={filteredClients}
         selectedYear={selectedYear}
       />
-
-      {/* Add Year Modal */}
-      {isAddYearModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-md rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 shadow-2xl p-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Add New Year</h2>
-            <p className="text-blue-200 text-sm mb-6">
-              Enter a year to track services for
-            </p>
-            <input
-              type="number"
-              value={newYearInput}
-              onChange={(e) => setNewYearInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleAddYear();
-                }
-              }}
-              placeholder="Enter year (e.g., 2027)"
-              className="px-4 py-3 border border-white/20 rounded-lg w-full mb-6 bg-white/10 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 backdrop-blur-xl"
-            />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setIsAddYearModalOpen(false);
-                  setNewYearInput("");
-                }}
-                className="px-6 py-3 bg-gray-500/20 text-gray-300 rounded-lg hover:bg-gray-500/30 border border-gray-500/30 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddYear}
-                className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:shadow-lg hover:shadow-cyan-500/50 transition-all font-semibold"
-              >
-                Add Year
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

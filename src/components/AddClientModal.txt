@@ -103,8 +103,17 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
   {/*SAVING NEW CATEGORY*/}
   const handleSaveNewCategory = () => {
     if (newcat.name.trim()) {
-      setCategories([...categories, newcat.name.trim()]);
-      setFormData({ ...formData, category: newcat.name.trim() });
+      const categoryName = newcat.name.trim();
+
+      // --- ADD THIS SECTION ---
+      // Save color mapping to localStorage
+      const categoryColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
+      categoryColors[categoryName] = newcat.color; // Save the hex (e.g., #06b6d4)
+      localStorage.setItem('customCategoryColors', JSON.stringify(categoryColors));
+      // ------------------------
+
+      setCategories([...categories, categoryName]);
+      setFormData({ ...formData, category: categoryName });
       setNewCat({ name: '', color: '#06b6d4' });
       setIsAdding(false);
     }
@@ -358,14 +367,24 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                         onClick={() => {
                           if (!newcat.name.trim()) return;
 
-                          // Save to backend first
-                          axios.post('http://localhost:3000/categories', { name: newcat.name.trim() })
+                          // 1. Save the color mapping to localStorage before/during the backend call
+                          const categoryName = newcat.name.trim();
+                          const categoryColor = newcat.color; // This is the color from the <input type="color" />
+
+                          const storedColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
+                          storedColors[categoryName] = categoryColor;
+                          localStorage.setItem('customCategoryColors', JSON.stringify(storedColors));
+
+                          // 2. Existing axios call
+                          axios.post('http://localhost:3000/categories', { name: categoryName })
                             .then(res => {
-                              // Update local state
-                              setCategories(prev => [...prev, newcat.name.trim()]);
-                              setFormData({ ...formData, category: newcat.name.trim() });
+                              setCategories(prev => [...prev, categoryName]);
+                              setFormData({ ...formData, category: categoryName });
                               setNewCat({ name: '', color: '#06b6d4' });
                               setIsAdding(false);
+                              
+                              // Optional: Force a refresh event so other open modals see the change
+                              window.dispatchEvent(new Event('storage'));
                             })
                             .catch(err => {
                               console.error(err);
@@ -421,7 +440,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   min="0"
                   max="100"
                   required
-                  value={formData.progress || ''}
+                  value={formData.progress ?? ''}
                   onChange={(e) => {
                     const val = e.target.value;
                     if (val === "") {
@@ -429,7 +448,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                       return;
                     }
                     const numValue = Number(val);
-                    if (numValue > 100) {
+                    if (numValue > 100 || numValue < 0) {
                       setFormData({ ...formData, progress: "" });
                     } else {
                       setFormData({ ...formData, progress: numValue });
@@ -462,6 +481,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                         <label className="flex items-center space-x-3 cursor-pointer group">
                           <input
                             type="checkbox"
+                            id = 'roa'
                             checked={formData.roa || false}
                             onChange={(e) => {
                               setFormData({ ...formData, roa: e.target.checked });
@@ -475,6 +495,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                         <label className="flex items-center space-x-3 cursor-pointer group">
                           <input
                             type="checkbox"
+                            id = 'ts'
                             checked={formData.ts || false}
                             onChange={(e) => {
                               setFormData({ ...formData, ts: e.target.checked });
@@ -583,12 +604,12 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
-                      id="roa"
-                      checked={formData.roa || false}
-                      onChange={(e) => setFormData({ ...formData, roa: e.target.checked })}
+                      id="roaV"
+                      checked={formData.roaV || false}
+                      onChange={(e) => setFormData({ ...formData, roaV: e.target.checked })}
                       className="w-5 h-5 rounded bg-white/5 border border-white/10 text-cyan-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                     />
-                    <label htmlFor="roa" className="text-sm font-medium text-green-300">ROA Available</label>
+                    <label htmlFor="roaV" className="text-sm font-medium text-green-300">ROA Available</label>
                   </div>
                 </div> 
               </div>
@@ -633,8 +654,21 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <input
                   type="number"
                   min="0"
-                  value={formData.amount || ''}
-                  onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                  required
+                  value={formData.amount ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setFormData({ ...formData, amount: "" });
+                      return;
+                    }
+                    const numValue = Number(val);
+                    if (numValue < 0) {
+                      setFormData({ ...formData, amount: "" });
+                    } else {
+                      setFormData({ ...formData, amount: numValue });
+                    }
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="0"
                 />

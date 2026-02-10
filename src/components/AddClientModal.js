@@ -654,6 +654,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <input
                   type="number"
                   min="0"
+                  required
                   value={formData.amount ?? ''}
                   onChange={(e) => {
                     const val = e.target.value;

@@ -1,7 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
-import axios from 'axios';
+
+const CATEGORIES = [
+  'BatStateU College',
+  'Private HEIs',
+  'Industry',
+  'Private Individual',
+  'Senior High',
+  'BatStateU IS',
+];
 
 const SERVICE_TYPES = [
   'Material Testing',
@@ -14,7 +22,7 @@ const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 
 {/*CHANGED TB - TS*/}
-const TEST_TYPES = ['FTIR', 'C', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+const TEST_TYPES = ['FTIR', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
 // Helper function to convert NULL string or null to empty string
 const sanitizeValue = (value) => {
@@ -47,27 +55,6 @@ const sanitizeDate = (value) => {
 
 {/*EDITED UP TO LINE 51*/}
 export function EditClientModal({ client, onClose, onSave }) {
-  const [categories, setCategories] = useState([
-    'BatStateU College',
-    'Private HEIs',
-    'Industry',
-    'Private Individual',
-    'Senior High',
-    'BatStateU IS',
-  ]);
-
-  // Add this effect to fetch saved categories from your backend 
-  useEffect(() => {
-    axios.get('http://localhost:3000/categories')
-      .then(res => {
-        const saved = res.data.map(cat => cat.company || cat.name);
-        // Merge default categories with saved ones, avoiding duplicates 
-        setCategories(prev => [...prev, ...saved.filter(s => !prev.includes(s))]);
-      })
-      .catch(err => console.error("Error fetching categories:", err));
-  }, []); // Runs once when the modal opens
-  
-  
   const today=new Date().toISOString().split('T')[0];
   const handleDateChange=(field,value) => {
     if (value > today) {
@@ -236,8 +223,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
-                  {/* Change CATEGORIES.map to categories.map [cite: 518, 588] */}
-                  {categories.map((cat) => (
+                  {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat} className="bg-slate-800">
                       {cat}
                     </option>
