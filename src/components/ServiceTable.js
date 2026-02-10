@@ -3,11 +3,12 @@ import { TEST_TYPE_LABELS } from "./types";
 import { format } from 'date-fns';
 import { useState, useMemo } from 'react';
 
-export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} }) {
+export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedClientType, setSelectedClientType] = useState('All');
   const [selectedTestType, setSelectedTestType] = useState('All');
   
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -33,7 +34,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} 
       const matchesClientType = selectedClientType === 'All' || client.category === selectedClientType;
       const clientTestTypes = parseTestTypes(client.testTypes);
       const matchesTestType = selectedTestType === 'All' || clientTestTypes.includes(selectedTestType);
-      
       return matchesStatus && matchesClientType && matchesTestType;
     });
   }, [clients, statusFilter, selectedClientType, selectedTestType]);
@@ -69,46 +69,39 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} 
 
   const getRequestFormIcon = (status) => {
     switch (status) {
-      case 'Signed': return <FileCheck className="w-4 h-4 text-green-400" />;
-      case 'Waiting': return <FileQuestion className="w-4 h-4 text-amber-400" />;
-      case 'N/A': return <FileX className="w-4 h-4 text-gray-400" />;
-      default: return null;
+      case 'Signed': return <FileCheck className="w-4 h-4" />;
+      case 'Unsigned': return <FileX className="w-4 h-4" />;
+      default: return <FileQuestion className="w-4 h-4" />;
     }
   };
 
   const getRequestFormColor = (status) => {
     switch (status) {
       case 'Signed': return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'Waiting': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
-      case 'N/A': return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-      default: return '';
+      case 'Unsigned': return 'bg-red-500/20 text-red-300 border-red-500/30';
+      default: return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
     }
   };
 
   const getServiceRequestName = (client, allClients) => {
     if (!client.dateRequested || (!client.roa && !client.ts)) return '-';
     const date = new Date(client.dateRequested);
-    const year = date.getFullYear();
     const monthYear = format(date, 'MM/yyyy');
     const type = client.roa ? 'ROA' : 'TS';
-
-    const yearlyGroup = allClients
-      .filter(c => {
+    const yearlyGroup = allClients.filter(c => {
         if (!c.dateRequested) return false;
         const cDate = new Date(c.dateRequested);
         const cType = c.roa ? 'ROA' : 'TS';
-        return cDate.getFullYear() === year && cType === type;
-      })
-      .sort((a, b) => new Date(a.dateRequested) - new Date(b.dateRequested));
-
+        return cDate.getFullYear() === date.getFullYear() && cType === type;
+    }).sort((a, b) => new Date(a.dateRequested) - new Date(b.dateRequested));
     const index = yearlyGroup.findIndex(c => c.id === client.id);
     const sequenceNumber = index !== -1 ? index + 1 : 1;
-
     return `${monthYear}-Material-Testing-Service-Request-Form_${type}#${sequenceNumber}`;
   };
 
   return (
-    <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden flex flex-col max-h-[800px]">
+    /* Changed max-h to a calc based on viewport height to guarantee visibility at 100% zoom */
+    <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden flex flex-col h-[calc(100vh-230px)]">
       {/* Frozen Header Section (Filters and Title) */}
       <div className="flex-none p-6 border-b border-white/10 space-y-4 bg-slate-900/50 relative z-50">
         <div>
@@ -156,27 +149,27 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} 
         <table className="w-full border-separate border-spacing-0">
           <thead className="sticky top-0 z-40">
             <tr className="bg-slate-900 shadow-md">
-              <th className="sticky left-0 top-0 z-50 px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+              <th className="sticky left-0 top-0 z-50 px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
                 Service No.
               </th>
-              <th className="sticky left-[99px] top-0 z-50 px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+              <th className="sticky left-[99px] top-0 z-50 px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
                 Client Name
               </th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Category</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Service Request Form</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Request Date</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Signed Request Form</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Official Receipt</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Date of Test</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Report of Analysis</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Released of ROA</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample No.</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Specimen No.</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Types of Test</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Amount</th>
-              <th className="px-5 py-4 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample Count</th>
-              <th className="px-5 py-4 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Status</th>
-              <th className="px-5 py-4 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Actions</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Category</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Service Request Form</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Request Date</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Signed Request Form</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Official Receipt</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Date of Test</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Report of Analysis</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Released of ROA</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample No.</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Specimen No.</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Types of Test</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Amount</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample Count</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Status</th>
+              <th className="px-3 py-2 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -190,7 +183,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} 
                       {client.doNotDelete && <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />}
                     </div>
                   </td>
-                  <td className="sticky left-[99px] z-30 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+                  <td className="sticky left-[99px] z-30 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5_rgba(0,0,0,0.5)]">
                     <div className="space-y-1 min-w-[220px]">
                       <p className="text-white font-semibold">{client.name}</p>
                       <p className="text-gray-400 text-sm">{client.address}</p>
@@ -288,9 +281,9 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete = () => {} 
           </div>
         )}
 
-        {/* Pagination Section (Moved INSIDE the scrollable div) */}
+        {/* Pagination Section - Now always visible at bottom of table container */}
         {filteredClients.length > 0 && (
-          <div className="px-6 py-6 flex items-center justify-between border-t border-white/5 bg-slate-900/40 backdrop-blur-sm sticky left-0 w-full">
+          <div className="px-1 py-1 flex items-center justify-between border-t border-white/5 bg-slate-900/40 backdrop-blur-sm sticky bottom-0 left-0 w-full z-40">
             <div className="text-sm text-gray-400">
               Showing {startIndex + 1} to {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} entries
             </div>

@@ -203,9 +203,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="h-screen overflow-hidden flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl">
+      <header className="flex-none border-b border-white/10 bg-black/20 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -261,7 +261,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="flex-1 container mx-auto px-6 py-8 flex flex-col overflow-hidden">
         {/* Year Filter */}
         <div className="mb-6 flex items-center gap-4 flex-wrap">
           <label htmlFor="year-filter" className="text-white font-semibold">
@@ -285,13 +285,15 @@ export default function App() {
         </div>
 
         {/* Service Table */}
-        <ServiceTable
-          clients={filteredClients}
-          onEdit={setEditingClient}
-          onDelete={handleDeleteClient}
-          onComplete={handleCompleteClient}
-        />
-      </main>
+        <div className="flex-1 overflow-hidden">
+          <ServiceTable
+            clients={filteredClients}
+            onEdit={setEditingClient}
+            onDelete={handleDeleteClient}
+            onComplete={handleCompleteClient}
+          />
+          </div>
+        </main>
 
       {/* Modals */}
       <AddClientModal
