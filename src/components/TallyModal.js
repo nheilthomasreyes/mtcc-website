@@ -20,24 +20,20 @@ export function TallyModal({ isOpen, onClose, customYears }) {
   const [allClients, setAllClients] = useState([]);
 
   useEffect(() => {
-    if (isOpen) {
-      // Fetch categories
-      axios.get('http://localhost:3000/categories')
-        .then(res => {
-          const saved = res.data.map(cat => cat.company);
-          setDbCategories(saved);
-        })
-        .catch(err => console.error("Error fetching tally categories:", err));
-      
-      // Fetch ALL clients from database (independent of ServiceTable filters)
+  if (isOpen) {
+    Promise.all([
+      axios.get('http://localhost:3000/categories'),
       axios.get('http://localhost:3000/clients')
-        .then(res => {
-          setAllClients(res.data);
-          console.log('Fetched all clients for TallyModal:', res.data.length);
-        })
-        .catch(err => console.error("Error fetching all clients:", err));
-    }
-  }, [isOpen]);
+    ])
+      .then(([categoriesRes, clientsRes]) => {
+        const saved = categoriesRes.data.map(cat => cat.company);
+        setDbCategories(saved);
+        setAllClients(clientsRes.data);
+        console.log('Fetched all clients for TallyModal:', clientsRes.data.length);
+      })
+      .catch(err => console.error("Error fetching data:", err));
+  }
+}, [isOpen]);
 
   const allCategories = useMemo(() => {
     const hardcoded = [
