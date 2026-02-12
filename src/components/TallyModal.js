@@ -500,1042 +500,575 @@ export function TallyModal({ isOpen, onClose, customYears }) {
   };
 
   const exportToExcel = async () => {
-    
-    const customStoredColors = JSON.parse(localStorage.getItem('categoryColors') || '{}');
-    
-    try {
-      const workbook = new ExcelJS.Workbook();
-      const quarterText = selectedQuarter === 'all' ? 'All Quarters' : `Q${selectedQuarter}`;
-      const reportName = reportType === 'service' ? 'Services' : 'Samples';
-      const ws = workbook.addWorksheet(`${reportName} ${selectedYear} ${quarterText}`);
 
-      // === LOAD AND ADD LOGO ===
-      const logoResponse = await fetch('BSULOGO.png');
-      const logoBlob = await logoResponse.blob();
-      const logoBase64 = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(logoBlob);
-      });
+  // FIX 4 & 5: Read custom colors once; removed dead 'customStoredColors'
+  const customCategoryColors = JSON.parse(
+    localStorage.getItem('customCategoryColors') || '{}'
+  );
 
-      const logoId = workbook.addImage({
-        base64: logoBase64,
-        extension: 'png',
-      });
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const quarterText = selectedQuarter === 'all' ? 'All Quarters' : `Q${selectedQuarter}`;
+    const reportName = reportType === 'service' ? 'Services' : 'Samples';
+    const ws = workbook.addWorksheet(`${reportName} ${selectedYear} ${quarterText}`);
 
-      const categories = allCategories;
-      
-      // === 1. HEADER SECTION ===
-      ws.getRow(1).height = 15;
+    // === LOAD AND ADD LOGO ===
+    const logoResponse = await fetch('/BSULOGO.png'); // FIX 7: absolute path
+    const logoBlob = await logoResponse.blob();
+    const logoBase64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(logoBlob);
+    });
 
-      if (reportType === 'service') {
-        // SERVICE TALLY REPORT EXCEL
-        ws.mergeCells('B2:Q9');
-        const headerCell = ws.getCell('B2');
-        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
-        headerCell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
+    const logoId = workbook.addImage({ base64: logoBase64, extension: 'png' });
+
+    const categories = allCategories;
+
+    // ── Shared helper: apply cell color from customCategoryColors or fallback map ──
+    const applyCategoryFill = (cell, categoryName, categoryColors) => {
+      const hex = customCategoryColors[categoryName]; // FIX 4: use pre-read object
+      if (hex) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: `FF${hex.replace('#', '')}` },
         };
+      } else if (categoryColors[categoryName]) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: categoryColors[categoryName] },
+        };
+      }
+    };
 
-        ws.addImage(logoId, {
-          tl: { col: 2.9, row: 2 },  
-          br: { col: 3.5, row: 8.3 }, 
-          editAs: 'oneCell'
-        });
+    // ── Shared helper: safely merge only when range spans >1 row ──
+    // FIX 3: guard covers both service and samples quarterly blocks
+    const safeMerge = (ws, startRow, endRow, col) => {
+      if (endRow > startRow) {
+        ws.mergeCells(`${col}${startRow}:${col}${endRow}`);
+      }
+    };
 
-        const headerText = [
-          "Republic of the Philippines",
-          "BATANGAS STATE UNIVERSITY",
-          "The National Engineering University",
-          "Alangilan Campus, Batangas City, Philippines 4200",
-          "Science, Technology, Engineering, and Environment Research (STEER) Hub",
-          "",
-          "MATERIAL TESTING AND CALIBRATION CENTER",
-          "https://batstate-u.edu.ph/ | mtcc@g.batstate-u.edu.ph | local no. 2401"
-        ].join("\n");
-        
-        headerCell.value = headerText;
-        headerCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF000000' } };
-        headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    // ── Shared border style ──
+    const thinBorder = {
+      top:    { style: 'thin' },
+      left:   { style: 'thin' },
+      bottom: { style: 'thin' },
+      right:  { style: 'thin' },
+    };
 
-        for (let i = 2; i <= 9; i++) {
-          ws.getRow(i).height = 20;
+    ws.getRow(1).height = 15;
+
+    // ════════════════════════════════════════════════════════════
+    // SERVICE TALLY REPORT
+    // ════════════════════════════════════════════════════════════
+    if (reportType === 'service') {
+      const categoryColors = {
+        'BatStateU College':  'FFF4CCCC',
+        'University Linkage': 'FFFFF2CC',
+        'Private HEIs':       'FFD9EAD3',
+        'Private Individual': 'FFCFE2F3',
+        'Industry':           'FFFCE5CD',
+        'Senior High':        'FFEAD1DC',
+        'BatStateU IS':       'FFD0E0E3',
+      };
+
+      const testTypeColors = {
+        9:  'F2DCDB',
+        10: 'F2DCDB',
+        11: 'DAEEF3',
+        12: 'DAEEF3',
+        13: 'DAEEF3',
+        14: 'DAEEF3',
+        15: 'FFF2CC',
+        16: 'FFF2CC',
+        17: 'FFF2CC',
+      };
+
+      // Header block
+      ws.mergeCells('B2:Q9');
+      const headerCell = ws.getCell('B2');
+      headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+      headerCell.border = thinBorder;
+      ws.addImage(logoId, { tl: { col: 2.9, row: 2 }, br: { col: 3.5, row: 8.3 }, editAs: 'oneCell' });
+      headerCell.value = [
+        'Republic of the Philippines',
+        'BATANGAS STATE UNIVERSITY',
+        'The National Engineering University',
+        'Alangilan Campus, Batangas City, Philippines 4200',
+        'Science, Technology, Engineering, and Environment Research (STEER) Hub',
+        '',
+        'MATERIAL TESTING AND CALIBRATION CENTER',
+        'https://batstate-u.edu.ph/ | mtcc@g.batstate-u.edu.ph | local no. 2401',
+      ].join('\n');
+      headerCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF000000' } };
+      headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      for (let i = 2; i <= 9; i++) ws.getRow(i).height = 20;
+
+      ws.mergeCells('B10:Q10');
+      const titleCell = ws.getCell('B10');
+      titleCell.value = `${selectedYear} MATERIAL TESTING SERVICES OFFER - ${quarterText}`;
+      titleCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF000000' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.border = thinBorder;
+      ws.getRow(10).height = 25;
+
+      ws.getRow(11).values = ['', 'Period', 'Types Of Client', 'No. of Unique\nClient',
+        'No. of Service\nRequest', 'Income', 'Bio Tech\nTesting', 'Material\nTesting',
+        'FTIR', 'C', 'Universal Testing Machine', '', '', '',
+        'Non-Destructive Testing', '', ''];
+      ws.getRow(12).values = ['', '', '', '', '', '', '', '', '', '', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
+
+      ws.mergeCells('B11:B12'); ws.mergeCells('C11:C12'); ws.mergeCells('D11:D12');
+      ws.mergeCells('E11:E12'); ws.mergeCells('F11:F12'); ws.mergeCells('G11:G12');
+      ws.mergeCells('H11:H12'); ws.mergeCells('I11:I12'); ws.mergeCells('J11:J12');
+      ws.mergeCells('K11:N11'); ws.mergeCells('O11:Q11');
+
+      for (let col = 2; col <= 17; col++) {
+        for (let row = 11; row <= 12; row++) {
+          const cell = ws.getCell(row, col);
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F6228' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          cell.border = thinBorder;
         }
-
-        ws.mergeCells('B10:Q10');
-        const titleCell = ws.getCell('B10');
-        titleCell.value = `${selectedYear} MATERIAL TESTING SERVICES OFFER - ${quarterText}`;
-        titleCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF000000' } };
-        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
-        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-        titleCell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-        ws.getRow(10).height = 25;
-
-        const headers1 = ['', 'Period', 'Types Of Client', 'No. of Unique\nClient', 'No. of Service\nRequest', 'Income', 
-                          'Bio Tech\nTesting', 'Material\nTesting', 'FTIR', 'C', 'Universal Testing Machine', '', '', '',
-                          'Non-Destructive Testing', '', ''];
-        ws.getRow(11).values = headers1;
-
-        const headers2 = ['', '', '', '', '', '', '', '', '', '', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
-        ws.getRow(12).values = headers2;
-
-        ws.mergeCells('B11:B12');
-        ws.mergeCells('C11:C12');
-        ws.mergeCells('D11:D12');
-        ws.mergeCells('E11:E12');
-        ws.mergeCells('F11:F12');
-        ws.mergeCells('G11:G12');
-        ws.mergeCells('H11:H12');
-        ws.mergeCells('I11:I12');
-        ws.mergeCells('J11:J12');
-        ws.mergeCells('K11:N11');
-        ws.mergeCells('O11:Q11');
-
-        for (let col = 2; col <= 17; col++) {
-          for (let row = 11; row <= 12; row++) {
-            const cell = ws.getCell(row, col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F6228' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-          }
-        }
-
-        const categoryColors = {
-          'BatStateU College': 'FFF4CCCC',
-          'University Linkage': 'FFFFF2CC',
-          'Private HEIs': 'FFD9EAD3',
-          'Private Individual': 'FFCFE2F3',
-          'Industry': 'FFFCE5CD',
-          'Senior High': 'FFEAD1DC',
-          'BatStateU IS': 'FFD0E0E3',
-        };
-
-        const testTypeColors = {
-          9: 'F2DCDB',   // FTIR
-          10: 'F2DCDB',  // C
-          11: 'DAEEF3',  // CT
-          12: 'DAEEF3',  // FT
-          13: 'DAEEF3',  // BT
-          14: 'DAEEF3',  // TS
-          15: 'FFF2CC',  // HT
-          16: 'FFF2CC',  // MO
-          17: 'FFF2CC',  // CTT
-        };
-
-        let currentRow = 13;
-
-        // Add whole year summary if "All Quarters" is selected
-        if (selectedQuarter === 'all') {
-          const yearStartRow = currentRow;
-
-          // Calculate whole year data
-          const yearData = categories.map(categoryName => {
-            const categoryClients = yearFilteredClients.filter(c => 
-              c.category === categoryName || (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
-            );
-
-            const uniqueClients = new Set(
-            categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
-          ).size;
-            const totalIncome = categoryClients.reduce((sum, c) => sum + c.amount, 0);
-
-            const getTestTypeCount = (testType) => {
-              return categoryClients.filter(c => c.testTypes.includes(testType)).length;
-            };
-
-            return {
-              category: categoryName,
-              noOfClient: uniqueClients,
-              noOfServices: categoryClients.length,
-              income: totalIncome,
-              bioTech: 0,
-              mmaterialTesting: categoryClients.filter(c =>
-                c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
-              ).length,
-              ftir: getTestTypeCount('FTIR'),
-              c: getTestTypeCount('C'),
-              ct: getTestTypeCount('CT'),
-              ft: getTestTypeCount('FT'),
-              bt: getTestTypeCount('BT'),
-              is: getTestTypeCount('TS'),
-              ht: getTestTypeCount('HT'),
-              mo: getTestTypeCount('MO'),
-              ctt: getTestTypeCount('CTT'),
-            };
-          });
-
-          // Add year data rows
-          yearData.forEach((row) => {
-            const excelRow = ws.getRow(currentRow);
-            excelRow.values = [
-              '', '', row.category,
-              row.noOfClient,
-              row.noOfServices,
-              row.income,
-              row.bioTech,
-              row.materialTesting,
-              row.ftir,
-              row.c,
-              row.ct,
-              row.ft,
-              row.bt,
-              row.is,
-              row.ht,
-              row.mo,
-              row.ctt
-            ];
-
-            for (let col = 2; col <= 17; col++) {
-              const cell = excelRow.getCell(col);
-              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
-              cell.alignment = { horizontal: 'center', vertical: 'middle' };
-              cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-              };
-
-              if (col === 3) {
-                cell.alignment = { horizontal: 'left', vertical: 'middle' };
-  
-                // Get custom colors from storage
-                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
-                const hex = customColors[row.category];
-
-                if (hex) {
-                  // Excel needs ARGB (FF + Hex without #)
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: `FF${hex.replace('#', '')}` }
-                  };
-                } else if (categoryColors[row.category]) {
-                  // Fallback to your hardcoded categoryColors object
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: categoryColors[row.category] }
-                  };
-                }
-              }
-
-              if (col === 6) {
-                cell.alignment = { horizontal: 'right', vertical: 'middle' };
-                cell.numFmt = '"₱"#,##0.00';
-              }
-
-              if (testTypeColors[col]) {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: testTypeColors[col] } };
-              }
-
-              if (typeof cell.value === 'number' && col !== 6) {
-                cell.numFmt = '#,##0';
-              }
-            }
-
-            currentRow++;
-          });
-
-          // Add year total row
-          const yearTotalRow = ws.getRow(currentRow);
-          const yearTotals = {
-            noOfClient: yearData.reduce((sum, d) => sum + d.noOfClient, 0),
-            noOfServices: yearData.reduce((sum, d) => sum + d.noOfServices, 0),
-            income: yearData.reduce((sum, d) => sum + d.income, 0),
-            bioTech: yearData.reduce((sum, d) => sum + d.bioTech, 0),
-            materialTesting: yearData.reduce((sum, d) => sum + d.materialTesting, 0),
-            ftir: yearData.reduce((sum, d) => sum + d.ftir, 0),
-            c: yearData.reduce((sum, d) => sum + d.c, 0),
-            ct: yearData.reduce((sum, d) => sum + d.ct, 0),
-            ft: yearData.reduce((sum, d) => sum + d.ft, 0),
-            bt: yearData.reduce((sum, d) => sum + d.bt, 0),
-            is: yearData.reduce((sum, d) => sum + d.is, 0),
-            ht: yearData.reduce((sum, d) => sum + d.ht, 0),
-            mo: yearData.reduce((sum, d) => sum + d.mo, 0),
-            ctt: yearData.reduce((sum, d) => sum + d.ctt, 0),
-          };
-
-          yearTotalRow.values = [
-            '', '', 'Total Income',
-            yearTotals.noOfClient,
-            yearTotals.noOfServices,
-            yearTotals.income,
-            yearTotals.bioTech,
-            yearTotals.materialTesting,
-            yearTotals.ftir,
-            yearTotals.c,
-            yearTotals.ct,
-            yearTotals.ft,
-            yearTotals.bt,
-            yearTotals.is,
-            yearTotals.ht,
-            yearTotals.mo,
-            yearTotals.ctt
-          ];
-
-          for (let col = 2; col <= 17; col++) {
-            const cell = yearTotalRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-
-            if (col === 3) {
-              cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            }
-            if (col === 6) {
-              cell.alignment = { horizontal: 'right', vertical: 'middle' };
-              cell.numFmt = '"₱"#,##0.00';
-            }
-            if (typeof cell.value === 'number' && col !== 6) {
-              cell.numFmt = '#,##0';
-            }
-          }
-
-          currentRow++;
-
-          // Merge cells for "Whole Year" period label (main part)
-          ws.mergeCells(`B${yearStartRow}:B${currentRow - 3}`);
-          const yearPeriodCell = ws.getCell(`B${yearStartRow}`);
-          yearPeriodCell.value = `\n${selectedYear}`;
-          yearPeriodCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } };
-          yearPeriodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          yearPeriodCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-          yearPeriodCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-
-          // Add whole year start date (January 1)
-          const yearStartDate = new Date(selectedYear, 0, 1).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          const yearStartDateCell = ws.getCell(`B${currentRow - 2}`);
-          yearStartDateCell.value = yearStartDate;
-          yearStartDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          yearStartDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          yearStartDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          yearStartDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-
-          // Add whole year end date (December 31)
-          const yearEndDate = new Date(selectedYear, 11, 31).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          const yearEndDateCell = ws.getCell(`B${currentRow - 1}`);
-          yearEndDateCell.value = yearEndDate;
-          yearEndDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          yearEndDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          yearEndDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          yearEndDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-        }
-
-        displayedQuarters.forEach((qData) => {
-          const startRow = currentRow;
-
-          qData.data.forEach((row) => {
-            const excelRow = ws.getRow(currentRow);
-            excelRow.values = [
-              '', '', row.category,
-              row.noOfClient,
-              row.noOfServices,
-              row.income,
-              row.bioTech,
-              row.materialTesting,
-              row.ftir,
-              row.c,
-              row.ct,
-              row.ft,
-              row.bt,
-              row.is,
-              row.ht,
-              row.mo,
-              row.ctt
-            ];
-
-            for (let col = 2; col <= 17; col++) {
-              const cell = excelRow.getCell(col);
-              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
-              cell.alignment = { horizontal: 'center', vertical: 'middle' };
-              cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-              };
-
-              if (col === 3) {
-                cell.alignment = { horizontal: 'left', vertical: 'middle' };
-  
-                // Get custom colors from storage
-                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
-                const hex = customColors[row.category];
-
-                if (hex) {
-                  // Excel needs ARGB (FF + Hex without #)
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: `FF${hex.replace('#', '')}` }
-                  };
-                } else if (categoryColors[row.category]) {
-                  // Fallback to your hardcoded categoryColors object
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: categoryColors[row.category] }
-                  };
-                }
-              }
-
-              if (col === 6) {
-                cell.alignment = { horizontal: 'right', vertical: 'middle' };
-                cell.numFmt = '"₱"#,##0.00';
-              }
-
-              // Apply test type colors to all cells in these columns
-              if (testTypeColors[col]) {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: testTypeColors[col] } };
-              }
-
-              if (typeof cell.value === 'number' && col !== 6) {
-                cell.numFmt = '#,##0';
-              }
-            }
-
-            currentRow++;
-          });
-
-          const totalRow = ws.getRow(currentRow);
-          totalRow.values = [
-            '', '', 'Total Income',
-            qData.totals.noOfClient,
-            qData.totals.noOfServices,
-            qData.totals.income,
-            qData.totals.bioTech,
-            qData.totals.materialTesting,
-            qData.totals.ftir,
-            qData.totals.c,
-            qData.totals.ct,
-            qData.totals.ft,
-            qData.totals.bt,
-            qData.totals.is,
-            qData.totals.ht,
-            qData.totals.mo,
-            qData.totals.ctt
-          ];
-
-          for (let col = 2; col <= 17; col++) {
-            const cell = totalRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-
-            if (col === 3) {
-              cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            }
-            if (col === 6) {
-              cell.alignment = { horizontal: 'right', vertical: 'middle' };
-              cell.numFmt = '"₱"#,##0.00';
-            }
-            if (typeof cell.value === 'number' && col !== 6) {
-              cell.numFmt = '#,##0';
-            }
-          }
-
-          currentRow++;
-
-          // Merge cells for Quarter and Year (main part)
-          if (currentRow - 3 > startRow) {
-            ws.mergeCells(`B${startRow}:B${currentRow - 3}`);
-          }
-          const periodCell = ws.getCell(`B${startRow}`);
-          periodCell.value = `Quarter ${qData.quarter}`;
-          periodCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } };
-          periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          periodCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-          periodCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-          
-          // Calculate quarter date range
-          const quarterStart = startOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
-          const quarterEnd = endOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
-          const startDate = quarterStart.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          const endDate = quarterEnd.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          
-          // Add start date in second to last row
-          const startDateCell = ws.getCell(`B${currentRow - 2}`);
-          startDateCell.value = startDate;
-          startDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          startDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          startDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          startDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-          
-          // Add end date in last row
-          const endDateCell = ws.getCell(`B${currentRow - 1}`);
-          endDateCell.value = endDate;
-          endDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          endDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          endDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          endDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-        });
-
-        ws.getColumn(1).width = 3;
-        ws.getColumn(2).width = 12;
-        ws.getColumn(3).width = 22;
-        ws.getColumn(4).width = 12;
-        ws.getColumn(5).width = 12;
-        ws.getColumn(6).width = 15;
-        ws.getColumn(7).width = 10;
-        ws.getColumn(8).width = 13;
-        ws.getColumn(9).width = 8;
-        ws.getColumn(10).width = 6;
-        ws.getColumn(11).width = 8;
-        ws.getColumn(12).width = 8;
-        ws.getColumn(13).width = 8;
-        ws.getColumn(14).width = 8;
-        ws.getColumn(15).width = 8;
-        ws.getColumn(16).width = 8;
-        ws.getColumn(17).width = 8;
-
-      } else {
-        // SAMPLES TALLY REPORT EXCEL
-        ws.mergeCells('B2:M9');
-        const headerCell = ws.getCell('B2');
-        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
-        headerCell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-
-        ws.addImage(logoId, {
-          tl: { col: 1.3, row: 2 },  
-          br: { col: 2.9, row: 8.3 }, 
-          editAs: 'oneCell'
-        });
-
-        const headerText = [
-          "Republic of the Philippines",
-          "BATANGAS STATE UNIVERSITY",
-          "The National Engineering University",
-          "Alangilan Campus, Batangas City, Philippines 4200",
-          "Science, Technology, Engineering, and Environment Research (STEER) Hub",
-          "",
-          "MATERIAL TESTING AND CALIBRATION CENTER",
-          "https://batstate-u.edu.ph/ | mtcc@g.batstate-u.edu.ph | local no. 2401"
-        ].join("\n");
-        
-        headerCell.value = headerText;
-        headerCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF000000' } };
-        headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-
-        for (let i = 2; i <= 9; i++) {
-          ws.getRow(i).height = 20;
-        }
-
-        ws.mergeCells('B10:M10');
-        const titleCell = ws.getCell('B10');
-        titleCell.value = `${selectedYear} MATERIAL TESTING SAMPLES TALLY - ${quarterText}`;
-        titleCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF000000' } };
-        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
-        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-        titleCell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-        ws.getRow(10).height = 25;
-
-        const headers1 = ['', 'Period', 'Types Of Client', 'Sample Total\nPer Client Type', 
-                          'FTIR', 'Material\nTesting', 'Universal Testing Machine', '', '', '',
-                          'Non-Destructive Testing', '', ''];
-        ws.getRow(11).values = headers1;
-
-        const headers2 = ['', '', '', '', '', '', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
-        ws.getRow(12).values = headers2;
-
-        ws.mergeCells('B11:B12');
-        ws.mergeCells('C11:C12');
-        ws.mergeCells('D11:D12');
-        ws.mergeCells('E11:E12');
-        ws.mergeCells('F11:F12');
-        ws.mergeCells('G11:J11');
-        ws.mergeCells('K11:M11');
-
-        for (let col = 2; col <= 13; col++) {
-          for (let row = 11; row <= 12; row++) {
-            const cell = ws.getCell(row, col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F6228' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-          }
-        }
-
-       
-        const categoryColors = {
-          'BatStateU College': 'FFF4CCCC',
-          'University Linkage': 'FFFFF2CC',
-          'Private HEIs': 'FFD9EAD3',
-          'Private Individual': 'FFCFE2F3',
-          'Industry': 'FFFCE5CD',
-          'Senior High': 'FFEAD1DC',
-          'BatStateU IS': 'FFD0E0E3',
-        };
-
-        const testTypeColors = {
-          5: 'F2DCDB',   // FTIR
-          6: 'F2DCDB',   // Material Testing
-          7: 'DAEEF3',   // CT
-          8: 'DAEEF3',   // FT
-          9: 'DAEEF3',   // BT
-          10: 'DAEEF3',  // TS
-          11: 'FFF2CC',  // HT
-          12: 'FFF2CC',  // MO
-          13: 'FFF2CC',  // CTT
-        };
-
-        let currentRow = 13;
-
-        // Add whole year summary if "All Quarters" is selected
-        if (selectedQuarter === 'all') {
-          const yearStartRow = currentRow;
-
-          // Calculate whole year data for samples
-          const yearData = categories.map(categoryName => {
-            const categoryClients = yearFilteredClients.filter(c => 
-              c.category === categoryName || (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
-            );
-
-            const totalSamples = categoryClients.reduce((sum, c) => {
-              return sum + (c.sampleCount || 0);
-            }, 0);
-
-            const getSampleCountByTestType = (testType) => {
-              return categoryClients.reduce((sum, c) => {
-                if (c.testTypes.includes(testType)) {
-                  return sum + (c.sampleCount || 0);
-                }
-                return sum;
-              }, 0);
-            };
-
-            const materialTestingSamples = categoryClients.reduce((sum, c) => {
-              const hasMaterialTestingType = c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type));
-              if (hasMaterialTestingType) {
-                return sum + (c.sampleCount || 0);
-              }
-              return sum;
-            }, 0);
-
-            return {
-              category: categoryName,
-              totalSamples: totalSamples,
-              ftir: getSampleCountByTestType('FTIR'),
-              materialTesting: materialTestingSamples,
-              ct: getSampleCountByTestType('CT'),
-              ft: getSampleCountByTestType('FT'),
-              bt: getSampleCountByTestType('BT'),
-              is: getSampleCountByTestType('TS'),
-              ht: getSampleCountByTestType('HT'),
-              mo: getSampleCountByTestType('MO'),
-              ctt: getSampleCountByTestType('CTT'),
-            };
-          });
-
-          // Add year data rows
-          yearData.forEach((row) => {
-            const excelRow = ws.getRow(currentRow);
-            excelRow.values = [
-              '', '', row.category,
-              row.totalSamples,
-              row.ftir,
-              row.materialTesting,
-              row.ct,
-              row.ft,
-              row.bt,
-              row.is,
-              row.ht,
-              row.mo,
-              row.ctt
-            ];
-
-            for (let col = 2; col <= 13; col++) {
-              const cell = excelRow.getCell(col);
-              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
-              cell.alignment = { horizontal: 'center', vertical: 'middle' };
-              cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-              };
-
-              if (col === 3) {
-                cell.alignment = { horizontal: 'left', vertical: 'middle' };
-  
-                // Get custom colors from storage
-                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
-                const hex = customColors[row.category];
-
-                if (hex) {
-                  // Excel needs ARGB (FF + Hex without #)
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: `FF${hex.replace('#', '')}` }
-                  };
-                } else if (categoryColors[row.category]) {
-                  // Fallback to your hardcoded categoryColors object
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: categoryColors[row.category] }
-                  };
-                }
-              }
-
-              if (testTypeColors[col]) {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: testTypeColors[col] } };
-              }
-
-              if (typeof cell.value === 'number') {
-                cell.numFmt = '#,##0';
-              }
-            }
-
-            currentRow++;
-          });
-
-          // Add year total row
-          const yearTotalRow = ws.getRow(currentRow);
-          const yearTotals = {
-            totalSamples: yearData.reduce((sum, d) => sum + d.totalSamples, 0),
-            ftir: yearData.reduce((sum, d) => sum + d.ftir, 0),
-            materialTesting: yearData.reduce((sum, d) => sum + d.materialTesting, 0),
-            ct: yearData.reduce((sum, d) => sum + d.ct, 0),
-            ft: yearData.reduce((sum, d) => sum + d.ft, 0),
-            bt: yearData.reduce((sum, d) => sum + d.bt, 0),
-            is: yearData.reduce((sum, d) => sum + d.is, 0),
-            ht: yearData.reduce((sum, d) => sum + d.ht, 0),
-            mo: yearData.reduce((sum, d) => sum + d.mo, 0),
-            ctt: yearData.reduce((sum, d) => sum + d.ctt, 0),
-          };
-
-          yearTotalRow.values = [
-            '', '', 'Total Samples',
-            yearTotals.totalSamples,
-            yearTotals.ftir,
-            yearTotals.materialTesting,
-            yearTotals.ct,
-            yearTotals.ft,
-            yearTotals.bt,
-            yearTotals.is,
-            yearTotals.ht,
-            yearTotals.mo,
-            yearTotals.ctt
-          ];
-
-          for (let col = 2; col <= 13; col++) {
-            const cell = yearTotalRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-
-            if (col === 3) {
-              cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            }
-            if (typeof cell.value === 'number') {
-              cell.numFmt = '#,##0';
-            }
-          }
-
-          currentRow++;
-
-          if (currentRow - 3 > yearStartRow) {
-            ws.mergeCells(`B${yearStartRow}:B${currentRow - 3}`);
-          }
-          const yearPeriodCell = ws.getCell(`B${yearStartRow}`);
-          yearPeriodCell.value = `\n${selectedYear}`;
-          yearPeriodCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } };
-          yearPeriodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          yearPeriodCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-          yearPeriodCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-
-          // Add whole year start date (January 1)
-          const yearStartDate = new Date(selectedYear, 0, 1).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          const yearStartDateCell = ws.getCell(`B${currentRow - 2}`);
-          yearStartDateCell.value = yearStartDate;
-          yearStartDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          yearStartDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          yearStartDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          yearStartDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-
-          // Add whole year end date (December 31)
-          const yearEndDate = new Date(selectedYear, 11, 31).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          const yearEndDateCell = ws.getCell(`B${currentRow - 1}`);
-          yearEndDateCell.value = yearEndDate;
-          yearEndDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          yearEndDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          yearEndDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          yearEndDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-        }
-
-        displayedQuarters.forEach((qData) => {
-          const startRow = currentRow;
-
-          qData.data.forEach((row) => {
-            const excelRow = ws.getRow(currentRow);
-            excelRow.values = [
-              '', '', row.category,
-              row.totalSamples,
-              row.ftir,
-              row.materialTesting,
-              row.ct,
-              row.ft,
-              row.bt,
-              row.is,
-              row.ht,
-              row.mo,
-              row.ctt
-            ];
-
-            for (let col = 2; col <= 13; col++) {
-              const cell = excelRow.getCell(col);
-              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
-              cell.alignment = { horizontal: 'center', vertical: 'middle' };
-              cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-              };
-
-              if (col === 3) {
-                cell.alignment = { horizontal: 'left', vertical: 'middle' };
-  
-                // Get custom colors from storage
-                const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
-                const hex = customColors[row.category];
-
-                if (hex) {
-                  // Excel needs ARGB (FF + Hex without #)
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: `FF${hex.replace('#', '')}` }
-                  };
-                } else if (categoryColors[row.category]) {
-                  // Fallback to your hardcoded categoryColors object
-                  cell.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: categoryColors[row.category] }
-                  };
-                }
-              }
-              // Apply test type colors to all cells in these columns
-              if (testTypeColors[col]) {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: testTypeColors[col] } };
-              }
-
-              if (typeof cell.value === 'number') {
-                cell.numFmt = '#,##0';
-              }
-            }
-
-            currentRow++;
-          });
-
-          const totalRow = ws.getRow(currentRow);
-          totalRow.values = [
-            '', '', 'Total Samples',
-            qData.totals.totalSamples,
-            qData.totals.ftir,
-            qData.totals.materialTesting,
-            qData.totals.ct,
-            qData.totals.ft,
-            qData.totals.bt,
-            qData.totals.is,
-            qData.totals.ht,
-            qData.totals.mo,
-            qData.totals.ctt
-          ];
-
-          for (let col = 2; col <= 13; col++) {
-            const cell = totalRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-
-            if (col === 3) {
-             cell.alignment = { horizontal: 'left', vertical: 'middle' };
-          }
-            if (typeof cell.value === 'number') {
-              cell.numFmt = '#,##0';
-            }
-          }
-
-          currentRow++;
-
-          // Merge cells for Quarter and Year (main part)
-          ws.mergeCells(`B${startRow}:B${currentRow - 3}`);
-          const periodCell = ws.getCell(`B${startRow}`);
-          periodCell.value = `Quarter ${qData.quarter}`;
-          periodCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } };
-          periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          periodCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-          periodCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-          
-          // Calculate quarter date range
-          const quarterStart = startOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
-          const quarterEnd = endOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
-          const startDate = quarterStart.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          const endDate = quarterEnd.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-          
-          // Add start date in second to last row
-          const startDateCell = ws.getCell(`B${currentRow - 2}`);
-          startDateCell.value = startDate;
-          startDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          startDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          startDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          startDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-          
-          // Add end date in last row
-          const endDateCell = ws.getCell(`B${currentRow - 1}`);
-          endDateCell.value = endDate;
-          endDateCell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF1F4E78' } };
-          endDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
-          endDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-          endDateCell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-        });
-
-        ws.getColumn(1).width = 3;
-        ws.getColumn(2).width = 12;
-        ws.getColumn(3).width = 22;
-        ws.getColumn(4).width = 18;
-        ws.getColumn(5).width = 8;
-        ws.getColumn(6).width = 13;
-        ws.getColumn(7).width = 8;
-        ws.getColumn(8).width = 8;
-        ws.getColumn(9).width = 8;
-        ws.getColumn(10).width = 8;
-        ws.getColumn(11).width = 8;
-        ws.getColumn(12).width = 8;
-        ws.getColumn(13).width = 8;
       }
 
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${reportName}_Tally_Report_${selectedYear}_${quarterText}.xlsx`;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      // ── Helper: write one service data row ──
+      const writeServiceDataRow = (ws, rowNum, row) => {
+        const excelRow = ws.getRow(rowNum);
+        excelRow.values = ['', '', row.category,
+          row.noOfClient, row.noOfServices, row.income,
+          row.bioTech, row.materialTesting,
+          row.ftir, row.c, row.ct, row.ft, row.bt, row.is, row.ht, row.mo, row.ctt];
 
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      alert('Failed to export to Excel. Please try again.');
+        for (let col = 2; col <= 17; col++) {
+          const cell = excelRow.getCell(col);
+          cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = thinBorder;
+          if (col === 3) {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            applyCategoryFill(cell, row.category, categoryColors); // FIX 4
+          }
+          if (col === 6) {
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            cell.numFmt = '"₱"#,##0.00';
+          }
+          if (testTypeColors[col]) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: testTypeColors[col] } };
+          }
+          if (typeof cell.value === 'number' && col !== 6) cell.numFmt = '#,##0';
+        }
+      };
+
+      // ── Helper: write one service total row ──
+      const writeServiceTotalRow = (ws, rowNum, totals, label) => {
+        const totalRow = ws.getRow(rowNum);
+        totalRow.values = ['', '', label,
+          totals.noOfClient, totals.noOfServices, totals.income,
+          totals.bioTech, totals.materialTesting,
+          totals.ftir, totals.c, totals.ct, totals.ft, totals.bt,
+          totals.is, totals.ht, totals.mo, totals.ctt];
+
+        for (let col = 2; col <= 17; col++) {
+          const cell = totalRow.getCell(col);
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = thinBorder;
+          if (col === 3) cell.alignment = { horizontal: 'left', vertical: 'middle' };
+          if (col === 6) {
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            cell.numFmt = '"₱"#,##0.00';
+          }
+          if (typeof cell.value === 'number' && col !== 6) cell.numFmt = '#,##0';
+        }
+      };
+
+      // ── Helper: write period label cells (label + start date + end date) ──
+      const writePeriodCells = (ws, labelCell, startDateCell, endDateCell, label, startDate, endDate) => {
+        const periodStyle = {
+          font: { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } },
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } },
+          border: thinBorder,
+        };
+        labelCell.value = label;
+        Object.assign(labelCell, periodStyle);
+        labelCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+        startDateCell.value = startDate;
+        Object.assign(startDateCell, { ...periodStyle, font: { ...periodStyle.font, size: 9 } });
+        startDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        endDateCell.value = endDate;
+        Object.assign(endDateCell, { ...periodStyle, font: { ...periodStyle.font, size: 9 } });
+        endDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      };
+
+      let currentRow = 13;
+
+      // ── Whole Year Summary (All Quarters only) ──
+      if (selectedQuarter === 'all') {
+        const yearStartRow = currentRow;
+
+        // FIX 1 & 6: correct field name + amount fallback
+        const yearData = categories.map(categoryName => {
+          const categoryClients = yearFilteredClients.filter(c =>
+            c.category === categoryName ||
+            (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
+          );
+          const uniqueClients = new Set(
+            categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
+          ).size;
+          // FIX 6: added || 0
+          const totalIncome = categoryClients.reduce((sum, c) => sum + (c.amount || 0), 0);
+          const getCount = (type) => categoryClients.filter(c => c.testTypes.includes(type)).length;
+          return {
+            category: categoryName,
+            noOfClient: uniqueClients,
+            noOfServices: categoryClients.length,
+            income: totalIncome,
+            bioTech: 0,
+            // FIX 1: was 'mmaterialTesting'
+            materialTesting: categoryClients.filter(c =>
+              c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
+            ).length,
+            ftir: getCount('FTIR'), c: getCount('C'), ct: getCount('CT'),
+            ft: getCount('FT'), bt: getCount('BT'), is: getCount('TS'),
+            ht: getCount('HT'), mo: getCount('MO'), ctt: getCount('CTT'),
+          };
+        });
+
+        yearData.forEach(row => { writeServiceDataRow(ws, currentRow, row); currentRow++; });
+
+        // FIX 2: materialTesting now sums correctly because yearData rows have correct field
+        const yearTotals = {
+          noOfClient:      yearData.reduce((s, d) => s + d.noOfClient, 0),
+          noOfServices:    yearData.reduce((s, d) => s + d.noOfServices, 0),
+          income:          yearData.reduce((s, d) => s + d.income, 0),
+          bioTech:         0,
+          materialTesting: yearData.reduce((s, d) => s + d.materialTesting, 0),
+          ftir: yearData.reduce((s, d) => s + d.ftir, 0),
+          c:    yearData.reduce((s, d) => s + d.c, 0),
+          ct:   yearData.reduce((s, d) => s + d.ct, 0),
+          ft:   yearData.reduce((s, d) => s + d.ft, 0),
+          bt:   yearData.reduce((s, d) => s + d.bt, 0),
+          is:   yearData.reduce((s, d) => s + d.is, 0),
+          ht:   yearData.reduce((s, d) => s + d.ht, 0),
+          mo:   yearData.reduce((s, d) => s + d.mo, 0),
+          ctt:  yearData.reduce((s, d) => s + d.ctt, 0),
+        };
+
+        writeServiceTotalRow(ws, currentRow, yearTotals, 'Total Income');
+        currentRow++;
+
+        // Period label: merge body rows, then two date rows below
+        safeMerge(ws, yearStartRow, currentRow - 3, 'B'); // FIX 3
+        writePeriodCells(
+          ws,
+          ws.getCell(`B${yearStartRow}`),
+          ws.getCell(`B${currentRow - 2}`),
+          ws.getCell(`B${currentRow - 1}`),
+          `\n${selectedYear}`,
+          new Date(selectedYear, 0, 1).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+          new Date(selectedYear, 11, 31).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+        );
+      }
+
+      // ── Quarterly blocks ──
+      displayedQuarters.forEach((qData) => {
+        const startRow = currentRow;
+
+        qData.data.forEach(row => { writeServiceDataRow(ws, currentRow, row); currentRow++; });
+        writeServiceTotalRow(ws, currentRow, qData.totals, 'Total Income');
+        currentRow++;
+
+        // FIX 3: safe merge for quarterly block
+        safeMerge(ws, startRow, currentRow - 3, 'B');
+
+        const qStart = startOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
+        const qEnd   = endOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
+        writePeriodCells(
+          ws,
+          ws.getCell(`B${startRow}`),
+          ws.getCell(`B${currentRow - 2}`),
+          ws.getCell(`B${currentRow - 1}`),
+          `Quarter ${qData.quarter}`,
+          qStart.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+          qEnd.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+        );
+      });
+
+      // FIX 8: Write Grand Total row to Excel
+      writeServiceTotalRow(ws, currentRow, displayedGrandTotals, 'Grand Total');
+      // Style grand total row distinctly
+      for (let col = 2; col <= 17; col++) {
+        const cell = ws.getRow(currentRow).getCell(col);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F6228' } };
+        cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      }
+      currentRow++;
+
+      ws.getColumn(1).width = 3;  ws.getColumn(2).width = 12; ws.getColumn(3).width = 22;
+      ws.getColumn(4).width = 12; ws.getColumn(5).width = 12; ws.getColumn(6).width = 15;
+      ws.getColumn(7).width = 10; ws.getColumn(8).width = 13; ws.getColumn(9).width = 8;
+      ws.getColumn(10).width = 6; ws.getColumn(11).width = 8; ws.getColumn(12).width = 8;
+      ws.getColumn(13).width = 8; ws.getColumn(14).width = 8; ws.getColumn(15).width = 8;
+      ws.getColumn(16).width = 8; ws.getColumn(17).width = 8;
+
+    // ════════════════════════════════════════════════════════════
+    // SAMPLES TALLY REPORT
+    // ════════════════════════════════════════════════════════════
+    } else {
+      const categoryColors = {
+        'BatStateU College':  'FFF4CCCC',
+        'University Linkage': 'FFFFF2CC',
+        'Private HEIs':       'FFD9EAD3',
+        'Private Individual': 'FFCFE2F3',
+        'Industry':           'FFFCE5CD',
+        'Senior High':        'FFEAD1DC',
+        'BatStateU IS':       'FFD0E0E3',
+      };
+
+      const testTypeColors = {
+        5:  'F2DCDB',
+        6:  'F2DCDB',
+        7:  'DAEEF3',
+        8:  'DAEEF3',
+        9:  'DAEEF3',
+        10: 'DAEEF3',
+        11: 'FFF2CC',
+        12: 'FFF2CC',
+        13: 'FFF2CC',
+      };
+
+      // Header block
+      ws.mergeCells('B2:M9');
+      const headerCell = ws.getCell('B2');
+      headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+      headerCell.border = thinBorder;
+      ws.addImage(logoId, { tl: { col: 1.3, row: 2 }, br: { col: 2.9, row: 8.3 }, editAs: 'oneCell' });
+      headerCell.value = [
+        'Republic of the Philippines',
+        'BATANGAS STATE UNIVERSITY',
+        'The National Engineering University',
+        'Alangilan Campus, Batangas City, Philippines 4200',
+        'Science, Technology, Engineering, and Environment Research (STEER) Hub',
+        '',
+        'MATERIAL TESTING AND CALIBRATION CENTER',
+        'https://batstate-u.edu.ph/ | mtcc@g.batstate-u.edu.ph | local no. 2401',
+      ].join('\n');
+      headerCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF000000' } };
+      headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      for (let i = 2; i <= 9; i++) ws.getRow(i).height = 20;
+
+      ws.mergeCells('B10:M10');
+      const titleCell = ws.getCell('B10');
+      titleCell.value = `${selectedYear} MATERIAL TESTING SAMPLES TALLY - ${quarterText}`;
+      titleCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF000000' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.border = thinBorder;
+      ws.getRow(10).height = 25;
+
+      ws.getRow(11).values = ['', 'Period', 'Types Of Client', 'Sample Total\nPer Client Type',
+        'FTIR', 'Material\nTesting', 'Universal Testing Machine', '', '', '',
+        'Non-Destructive Testing', '', ''];
+      ws.getRow(12).values = ['', '', '', '', '', '', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
+
+      ws.mergeCells('B11:B12'); ws.mergeCells('C11:C12'); ws.mergeCells('D11:D12');
+      ws.mergeCells('E11:E12'); ws.mergeCells('F11:F12');
+      ws.mergeCells('G11:J11'); ws.mergeCells('K11:M11');
+
+      for (let col = 2; col <= 13; col++) {
+        for (let row = 11; row <= 12; row++) {
+          const cell = ws.getCell(row, col);
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F6228' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          cell.border = thinBorder;
+        }
+      }
+
+      // ── Helper: write one samples data row ──
+      const writeSamplesDataRow = (ws, rowNum, row) => {
+        const excelRow = ws.getRow(rowNum);
+        excelRow.values = ['', '', row.category,
+          row.totalSamples, row.ftir, row.materialTesting,
+          row.ct, row.ft, row.bt, row.is, row.ht, row.mo, row.ctt];
+
+        for (let col = 2; col <= 13; col++) {
+          const cell = excelRow.getCell(col);
+          cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = thinBorder;
+          if (col === 3) {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            applyCategoryFill(cell, row.category, categoryColors); // FIX 4
+          }
+          if (testTypeColors[col]) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: testTypeColors[col] } };
+          }
+          if (typeof cell.value === 'number') cell.numFmt = '#,##0';
+        }
+      };
+
+      // ── Helper: write one samples total row ──
+      const writeSamplesTotalRow = (ws, rowNum, totals, label) => {
+        const totalRow = ws.getRow(rowNum);
+        totalRow.values = ['', '', label,
+          totals.totalSamples, totals.ftir, totals.materialTesting,
+          totals.ct, totals.ft, totals.bt, totals.is, totals.ht, totals.mo, totals.ctt];
+
+        for (let col = 2; col <= 13; col++) {
+          const cell = totalRow.getCell(col);
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = thinBorder;
+          if (col === 3) cell.alignment = { horizontal: 'left', vertical: 'middle' };
+          if (typeof cell.value === 'number') cell.numFmt = '#,##0';
+        }
+      };
+
+      // ── Helper: write period label cells ──
+      const writePeriodCells = (ws, labelCell, startDateCell, endDateCell, label, startDate, endDate) => {
+        const periodStyle = {
+          font: { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } },
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } },
+          border: thinBorder,
+        };
+        labelCell.value = label;
+        Object.assign(labelCell, periodStyle);
+        labelCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+        startDateCell.value = startDate;
+        Object.assign(startDateCell, { ...periodStyle, font: { ...periodStyle.font, size: 9 } });
+        startDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        endDateCell.value = endDate;
+        Object.assign(endDateCell, { ...periodStyle, font: { ...periodStyle.font, size: 9 } });
+        endDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      };
+
+      let currentRow = 13;
+
+      // ── Whole Year Summary (All Quarters only) ──
+      if (selectedQuarter === 'all') {
+        const yearStartRow = currentRow;
+
+        const yearData = categories.map(categoryName => {
+          const categoryClients = yearFilteredClients.filter(c =>
+            c.category === categoryName ||
+            (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
+          );
+          const totalSamples = categoryClients.reduce((sum, c) => sum + (c.sampleCount || 0), 0);
+          const getSampleCount = (type) =>
+            categoryClients.reduce((sum, c) => c.testTypes.includes(type) ? sum + (c.sampleCount || 0) : sum, 0);
+          const materialTestingSamples = categoryClients.reduce((sum, c) => {
+            const has = c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type));
+            return has ? sum + (c.sampleCount || 0) : sum;
+          }, 0);
+          return {
+            category: categoryName,
+            totalSamples,
+            ftir: getSampleCount('FTIR'),
+            materialTesting: materialTestingSamples,
+            ct: getSampleCount('CT'), ft: getSampleCount('FT'),
+            bt: getSampleCount('BT'), is: getSampleCount('TS'),
+            ht: getSampleCount('HT'), mo: getSampleCount('MO'), ctt: getSampleCount('CTT'),
+          };
+        });
+
+        yearData.forEach(row => { writeSamplesDataRow(ws, currentRow, row); currentRow++; });
+
+        const yearTotals = {
+          totalSamples:    yearData.reduce((s, d) => s + d.totalSamples, 0),
+          ftir:            yearData.reduce((s, d) => s + d.ftir, 0),
+          materialTesting: yearData.reduce((s, d) => s + d.materialTesting, 0),
+          ct:  yearData.reduce((s, d) => s + d.ct, 0),
+          ft:  yearData.reduce((s, d) => s + d.ft, 0),
+          bt:  yearData.reduce((s, d) => s + d.bt, 0),
+          is:  yearData.reduce((s, d) => s + d.is, 0),
+          ht:  yearData.reduce((s, d) => s + d.ht, 0),
+          mo:  yearData.reduce((s, d) => s + d.mo, 0),
+          ctt: yearData.reduce((s, d) => s + d.ctt, 0),
+        };
+
+        writeSamplesTotalRow(ws, currentRow, yearTotals, 'Total Samples');
+        currentRow++;
+
+        safeMerge(ws, yearStartRow, currentRow - 3, 'B'); // FIX 3
+        writePeriodCells(
+          ws,
+          ws.getCell(`B${yearStartRow}`),
+          ws.getCell(`B${currentRow - 2}`),
+          ws.getCell(`B${currentRow - 1}`),
+          `\n${selectedYear}`,
+          new Date(selectedYear, 0, 1).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+          new Date(selectedYear, 11, 31).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+        );
+      }
+
+      // ── Quarterly blocks ──
+      displayedQuarters.forEach((qData) => {
+        const startRow = currentRow;
+
+        qData.data.forEach(row => { writeSamplesDataRow(ws, currentRow, row); currentRow++; });
+        writeSamplesTotalRow(ws, currentRow, qData.totals, 'Total Samples');
+        currentRow++;
+
+        // FIX 3: safe merge — was unguarded crash in original samples code
+        safeMerge(ws, startRow, currentRow - 3, 'B');
+
+        const qStart = startOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
+        const qEnd   = endOfQuarter(new Date(selectedYear, (qData.quarter - 1) * 3, 1));
+        writePeriodCells(
+          ws,
+          ws.getCell(`B${startRow}`),
+          ws.getCell(`B${currentRow - 2}`),
+          ws.getCell(`B${currentRow - 1}`),
+          `Quarter ${qData.quarter}`,
+          qStart.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+          qEnd.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+        );
+      });
+
+      // FIX 8: Write Grand Total row to Excel
+      writeSamplesTotalRow(ws, currentRow, displayedGrandTotals, 'Grand Total');
+      for (let col = 2; col <= 13; col++) {
+        const cell = ws.getRow(currentRow).getCell(col);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F6228' } };
+        cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      }
+      currentRow++;
+
+      ws.getColumn(1).width = 3;  ws.getColumn(2).width = 12; ws.getColumn(3).width = 22;
+      ws.getColumn(4).width = 18; ws.getColumn(5).width = 8;  ws.getColumn(6).width = 13;
+      ws.getColumn(7).width = 8;  ws.getColumn(8).width = 8;  ws.getColumn(9).width = 8;
+      ws.getColumn(10).width = 8; ws.getColumn(11).width = 8; ws.getColumn(12).width = 8;
+      ws.getColumn(13).width = 8;
     }
-  };
+
+    // ── Write file ──
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${reportName}_Tally_Report_${selectedYear}_${quarterText}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    alert(`Failed to export to Excel: ${error.message}`);
+  }
+};
 
   if (!isOpen) return null;
 
