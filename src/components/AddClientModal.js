@@ -62,6 +62,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     
     // Client Information
     name: '',
+    companyName: '',
     address: '',
     email: '',
     phone: '',
@@ -90,6 +91,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     sampleNo: '',
     specimenNo: '',
     sampleCount: 0,
+    sampleRangeStart: '',
+    sampleRangeEnd: '',
     
     // Financial
     amount: 0,
@@ -140,6 +143,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       
       // Client Information
       name: formData.name.trim(),
+      company: formData.companyName.trim(),
       address: formData.address.trim(),
       email: formData.email.trim().toLowerCase(),
       phone: formData.phone.replace(/\s/g, ''), // Remove formatting spaces
@@ -164,7 +168,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       roa: formData.roa,
       
       // Sample Information
-      sampleNo: formData.sampleNo.trim() || null,
+      sampleNo1: formData.sampleRangeStart ? Number(formData.sampleRangeStart) : null,
+      sampleNo2: formData.sampleRangeEnd ? Number(formData.sampleRangeEnd) : null,
       specimenNo: formData.specimenNo.trim() || null,
       sampleCount: Number(formData.sampleCount) || 0,
       
@@ -179,12 +184,21 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       remarks: formData.remarks.trim() || null,
     };
     
+    // Debug: Log the data being sent
+    console.log('=== DATA BEING SENT TO BACKEND ===');
+    console.log('sampleNo1:', dataForBackend.sampleNo1, 'Type:', typeof dataForBackend.sampleNo1);
+    console.log('sampleNo2:', dataForBackend.sampleNo2, 'Type:', typeof dataForBackend.sampleNo2);
+    console.log('company:', dataForBackend.company);
+    console.log('Full data:', dataForBackend);
+    console.log('===================================');
+    
     // Send to backend
     onAdd(dataForBackend);
     
     // Reset form
     setFormData({
       name: '',
+      companyName: '',
       address: '',
       email: '',
       phone: '',
@@ -205,6 +219,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       sampleNo: '',
       specimenNo: '',
       sampleCount: 0,
+      sampleRangeStart: '',
+      sampleRangeEnd: '',
       amount: 0,
       officialReceipt: false,
       testTypes: [],
@@ -219,6 +235,26 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
         ? prev.testTypes.filter(t => t !== type)
         : [...prev.testTypes, type],
     }));
+  };
+
+  // Calculate sample count based on range
+  const handleSampleRangeChange = (field, value) => {
+    const newFormData = { ...formData, [field]: value };
+    
+    // Auto-calculate sample count if both start and end are provided
+    if (field === 'sampleRangeStart' || field === 'sampleRangeEnd') {
+      const start = field === 'sampleRangeStart' ? parseInt(value) : parseInt(formData.sampleRangeStart);
+      const end = field === 'sampleRangeEnd' ? parseInt(value) : parseInt(formData.sampleRangeEnd);
+      
+      if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) {
+        // Calculate: (end - start) + 1
+        newFormData.sampleCount = (end - start) + 1;
+      } else {
+        newFormData.sampleCount = 0;
+      }
+    }
+    
+    setFormData(newFormData);
   };
 
   if (!isOpen) return null;
@@ -257,6 +293,19 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   placeholder="Enter client name"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Company Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  placeholder="Enter company name"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
                 <input
@@ -617,13 +666,25 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Sample No.</label>
-                <input
-                  type="text"
-                  value={formData.sampleNo || ''}
-                  onChange={(e) => setFormData({ ...formData, sampleNo: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="e.g., S-001"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.sampleRangeStart || ''}
+                    onChange={(e) => handleSampleRangeChange('sampleRangeStart', e.target.value)}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="10"
+                  />
+                  <span className="text-gray-300 font-medium">-</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.sampleRangeEnd || ''}
+                    onChange={(e) => handleSampleRangeChange('sampleRangeEnd', e.target.value)}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="15"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Specimen No.</label>
@@ -637,14 +698,9 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Sample Count</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.sampleCount || ''}
-                  onChange={(e) => setFormData({ ...formData, sampleCount: Number(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="0"
-                />
+                <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white">
+                  {formData.sampleCount > 0 ? formData.sampleCount : '0'}
+                </div>
               </div>
             </div>
             
