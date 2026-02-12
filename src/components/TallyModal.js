@@ -648,7 +648,9 @@ export function TallyModal({ isOpen, onClose, customYears }) {
               c.category === categoryName || (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
             );
 
-            const uniqueClients = new Set(categoryClients.map(c => c.id)).size;
+            const uniqueClients = new Set(
+            categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
+          ).size;
             const totalIncome = categoryClients.reduce((sum, c) => sum + c.amount, 0);
 
             const getTestTypeCount = (testType) => {
@@ -661,7 +663,9 @@ export function TallyModal({ isOpen, onClose, customYears }) {
               noOfServices: categoryClients.length,
               income: totalIncome,
               bioTech: 0,
-              materialTesting: categoryClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length,
+              mmaterialTesting: categoryClients.filter(c =>
+                c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
+              ).length,
               ftir: getTestTypeCount('FTIR'),
               c: getTestTypeCount('C'),
               ct: getTestTypeCount('CT'),
@@ -975,7 +979,9 @@ export function TallyModal({ isOpen, onClose, customYears }) {
           currentRow++;
 
           // Merge cells for Quarter and Year (main part)
-          ws.mergeCells(`B${startRow}:B${currentRow - 3}`);
+          if (currentRow - 3 > startRow) {
+            ws.mergeCells(`B${startRow}:B${currentRow - 3}`);
+          }
           const periodCell = ws.getCell(`B${startRow}`);
           periodCell.value = `Quarter ${qData.quarter}`;
           periodCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } };
@@ -1157,21 +1163,22 @@ export function TallyModal({ isOpen, onClose, customYears }) {
             );
 
             const totalSamples = categoryClients.reduce((sum, c) => {
-              return sum + (c.sampleCount || 1);
+              return sum + (c.sampleCount || 0);
             }, 0);
 
             const getSampleCountByTestType = (testType) => {
               return categoryClients.reduce((sum, c) => {
                 if (c.testTypes.includes(testType)) {
-                  return sum + (c.sampleCount || 1);
+                  return sum + (c.sampleCount || 0);
                 }
                 return sum;
               }, 0);
             };
 
             const materialTestingSamples = categoryClients.reduce((sum, c) => {
-              if (c.serviceType === 'Material Testing' || c.serviceType === 'Both') {
-                return sum + (c.sampleCount || 1);
+              const hasMaterialTestingType = c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type));
+              if (hasMaterialTestingType) {
+                return sum + (c.sampleCount || 0);
               }
               return sum;
             }, 0);
@@ -1306,7 +1313,9 @@ export function TallyModal({ isOpen, onClose, customYears }) {
 
           currentRow++;
 
-          ws.mergeCells(`B${yearStartRow}:B${currentRow - 3}`);
+          if (currentRow - 3 > yearStartRow) {
+            ws.mergeCells(`B${yearStartRow}:B${currentRow - 3}`);
+          }
           const yearPeriodCell = ws.getCell(`B${yearStartRow}`);
           yearPeriodCell.value = `\n${selectedYear}`;
           yearPeriodCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF1F4E78' } };
