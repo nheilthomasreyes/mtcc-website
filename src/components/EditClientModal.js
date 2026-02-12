@@ -13,7 +13,6 @@ const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 
-{/*CHANGED TB - TS*/}
 const TEST_TYPES = ['FTIR', 'C', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
 
 // Helper function to convert NULL string or null to empty string
@@ -45,7 +44,6 @@ const sanitizeDate = (value) => {
   return '';
 };
 
-{/*EDITED UP TO LINE 51*/}
 export function EditClientModal({ client, onClose, onSave }) {
   const [categories, setCategories] = useState([
     'BatStateU College',
@@ -56,24 +54,23 @@ export function EditClientModal({ client, onClose, onSave }) {
     'BatStateU IS',
   ]);
 
-  // Add this effect to fetch saved categories from your backend 
+  // Fetch saved categories from backend
   useEffect(() => {
     axios.get('http://localhost:3000/categories')
       .then(res => {
         const saved = res.data.map(cat => cat.company || cat.name);
-        // Merge default categories with saved ones, avoiding duplicates 
+        // Merge default categories with saved ones, avoiding duplicates
         setCategories(prev => [...prev, ...saved.filter(s => !prev.includes(s))]);
       })
       .catch(err => console.error("Error fetching categories:", err));
-  }, []); // Runs once when the modal opens
+  }, []);
   
-  
-  const today=new Date().toISOString().split('T')[0];
-  const handleDateChange=(field,value) => {
+  const today = new Date().toISOString().split('T')[0];
+  const handleDateChange = (field, value) => {
     if (value > today) {
-      setFormData(prev => ({...prev,[field]:''}));
+      setFormData(prev => ({ ...prev, [field]: '' }));
     } else {
-      setFormData(prev => ({...prev, [field]: value}));
+      setFormData(prev => ({ ...prev, [field]: value }));
     }
   }
   
@@ -81,6 +78,7 @@ export function EditClientModal({ client, onClose, onSave }) {
   const [formData, setFormData] = useState({
     ...client,
     name: sanitizeValue(client.name),
+    company: sanitizeValue(client.company),
     address: sanitizeValue(client.address),
     email: sanitizeValue(client.email),
     phone: sanitizeValue(client.phone),
@@ -91,7 +89,8 @@ export function EditClientModal({ client, onClose, onSave }) {
     dateClaimed: sanitizeDate(client.dateClaimed),
     testDate: sanitizeDate(client.testDate),
     releasedROA: sanitizeDate(client.releasedROA),
-    sampleNo: sanitizeValue(client.sampleNo),
+    sampleNo1: sanitizeValue(client.sampleNo1),
+    sampleNo2: sanitizeValue(client.sampleNo2),
     specimenNo: sanitizeValue(client.specimenNo),
     remarks: sanitizeValue(client.remarks),
     // Parse testTypes if it's a string
@@ -101,6 +100,24 @@ export function EditClientModal({ client, onClose, onSave }) {
       ? client.testTypes.split(',').map(t => t.trim())
       : [],
   });
+
+  // Calculate sample count based on sampleNo1 and sampleNo2
+  useEffect(() => {
+    const start = parseInt(formData.sampleNo1);
+    const end = parseInt(formData.sampleNo2);
+    
+    if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) {
+      setFormData(prev => ({
+        ...prev,
+        sampleCount: (end - start) + 1
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        sampleCount: 0
+      }));
+    }
+  }, [formData.sampleNo1, formData.sampleNo2]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -119,7 +136,6 @@ export function EditClientModal({ client, onClose, onSave }) {
     };
   
     onSave(dataForBackend);
-  
     onClose();
   }
   
@@ -150,23 +166,34 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-
-                {/*ALL CLIENT INFORMATION IS EDITED UP TO LINE 109*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Client Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   value={formData.name || ''}
                   onChange={(e) => {
-                    const value=e.target.value;
-                    const regex=/[^a-zA-Z.'()-\s]/g;
-                    const onlyLetters=value.replace(regex, "");
-                    setFormData({...formData, name: onlyLetters});
+                    const value = e.target.value;
+                    const regex = /[^a-zA-Z.'()-\s]/g;
+                    const onlyLetters = value.replace(regex, "");
+                    setFormData({ ...formData, name: onlyLetters });
                   }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   placeholder="Enter client name"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Company Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={formData.company || ''}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  placeholder="Enter company name"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
                 <input
@@ -181,7 +208,6 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
           </div>
           
-          {/*ALL CONTACT INFORMATION IS EDITED UP TO LINE 150*/}
           {/* Contact Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Contact Details</h3>
@@ -227,8 +253,6 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-
-                {/*ONLY LINE 159 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Category <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -236,7 +260,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 >
-                  {/* Change CATEGORIES.map to categories.map [cite: 518, 588] */}
                   {categories.map((cat) => (
                     <option key={cat} value={cat} className="bg-slate-800">
                       {cat}
@@ -245,8 +268,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 </select>
               </div>
               <div>
-
-                {/*ONLY LINE 176 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Service Type <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -262,8 +283,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 </select>
               </div>
               <div>
-
-                {/*ONLY LINE 193 IS EDITED HERE*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -285,8 +304,6 @@ export function EditClientModal({ client, onClose, onSave }) {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Timeline</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              {/*EDITED UP TO LINE 353*/}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) <span className="text-red-500">*</span></label>
                 <input
@@ -296,17 +313,16 @@ export function EditClientModal({ client, onClose, onSave }) {
                   required
                   value={formData.progress ?? ''}
                   onChange={(e) => {
-                    const val=e.target.value;
-                    if(val === "" ){
-                      setFormData({...formData, progress:""});
+                    const val = e.target.value;
+                    if (val === "") {
+                      setFormData({ ...formData, progress: "" });
                       return;
                     }
-                    
-                    const numValue=Number(val);
+                    const numValue = Number(val);
                     if (numValue > 100 || numValue < 0) {
-                      setFormData({...formData, progress: ""});
+                      setFormData({ ...formData, progress: "" });
                     } else {
-                      setFormData({...formData, progress: numValue});
+                      setFormData({ ...formData, progress: numValue });
                     }
                   }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -322,7 +338,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   max={today}                  
                   onChange={(e) => handleDateChange('dateRequested', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
+                  style={{ colorScheme: 'dark' }}
                 />
                 {(() => {
                   const dateValue = formData.dateRequested;
@@ -336,10 +352,11 @@ export function EditClientModal({ client, onClose, onSave }) {
                         <label className="flex items-center space-x-3 cursor-pointer group">
                           <input
                             type="checkbox"
-                            id = 'roa'
+                            id='roa'
                             checked={formData.roa || false}
-                            onChange={(e) => { handleDateChange('roa', e.target.checked);
-                              if  (e.target.checked) handleDateChange('ts', false);
+                            onChange={(e) => {
+                              setFormData({ ...formData, roa: e.target.checked });
+                              if (e.target.checked) setFormData(prev => ({ ...prev, ts: false }));
                             }}
                             className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
                           />
@@ -349,10 +366,11 @@ export function EditClientModal({ client, onClose, onSave }) {
                         <label className="flex items-center space-x-3 cursor-pointer group">
                           <input
                             type="checkbox"
-                            id = 'ts'
+                            id='ts'
                             checked={formData.ts || false}
-                            onChange={(e) => { handleDateChange('ts', e.target.checked)
-                              if (e.target.checked) handleDateChange('roa', false);
+                            onChange={(e) => {
+                              setFormData({ ...formData, ts: e.target.checked });
+                              if (e.target.checked) setFormData(prev => ({ ...prev, roa: false }));
                             }}
                             className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
                           />
@@ -372,7 +390,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   value={formData.startDate || ''}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
+                  style={{ colorScheme: 'dark' }}
                 />
               </div>
               <div>
@@ -383,10 +401,9 @@ export function EditClientModal({ client, onClose, onSave }) {
                   value={formData.dueDate || ''}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
+                  style={{ colorScheme: 'dark' }}
                 />
               </div>
-            {/*EDITED UP TO LINE 427*/}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -397,7 +414,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   max={today}
                   onChange={(e) => handleDateChange('dateClaimed', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
+                  style={{ colorScheme: 'dark' }}
                 />
               </div>
               <div>
@@ -408,7 +425,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   max={today}
                   onChange={(e) => handleDateChange('dateReleased', e.target.value)}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
+                  style={{ colorScheme: 'dark' }}
                 />
               </div>
             </div>
@@ -419,8 +436,6 @@ export function EditClientModal({ client, onClose, onSave }) {
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Documentation & Payment</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-
-                {/*EDIT STARTS HERE UP TO LINE 482*/}
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
@@ -444,7 +459,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   value={formData.testDate || ''}
                   onChange={(e) => setFormData({ ...formData, testDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
+                  style={{ colorScheme: 'dark' }}
                 />
               </div>
               <div>
@@ -454,14 +469,14 @@ export function EditClientModal({ client, onClose, onSave }) {
                   value={formData.releasedROA || ''}
                   onChange={(e) => setFormData({ ...formData, releasedROA: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{colorScheme: 'dark'}}
+                  style={{ colorScheme: 'dark' }}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Report of Analysis</label>
-                  <div className="p-2.5 bg-white/5 border border-white/10 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <input
+                <div className="p-2.5 bg-white/5 border border-white/10 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <input
                       type="checkbox"
                       id="roaV"
                       checked={formData.roaV || false}
@@ -472,19 +487,31 @@ export function EditClientModal({ client, onClose, onSave }) {
                       ROA Available
                     </label>
                   </div>
-                 </div> 
+                </div> 
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Sample No.</label>
-                <input
-                  type="text"
-                  value={formData.sampleNo || ''}
-                  onChange={(e) => setFormData({ ...formData, sampleNo: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="e.g., S-001"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.sampleNo1 || ''}
+                    onChange={(e) => setFormData({ ...formData, sampleNo1: e.target.value })}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="10"
+                  />
+                  <span className="text-gray-300 font-medium">-</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.sampleNo2 || ''}
+                    onChange={(e) => setFormData({ ...formData, sampleNo2: e.target.value })}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    placeholder="15"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Specimen No.</label>
@@ -498,18 +525,12 @@ export function EditClientModal({ client, onClose, onSave }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Sample Count</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.sampleCount || ''}
-                  onChange={(e) => setFormData({ ...formData, sampleCount: Number(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="0"
-                />
+                <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white">
+                  {formData.sampleCount > 0 ? formData.sampleCount : '0'}
+                </div>
               </div>
             </div>
             
-            {/*EDITED UP TO LINE 546*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₱) <span className="text-red-500">*</span></label>
@@ -537,9 +558,9 @@ export function EditClientModal({ client, onClose, onSave }) {
               </div>
               <div> 
                 <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt</label>
-                  <div className="p-2.5 bg-white/5 border border-white/10 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <input
+                <div className="p-2.5 bg-white/5 border border-white/10 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <input
                       type="checkbox"
                       id="officialReceipt"
                       checked={formData.officialReceipt || false}
@@ -567,28 +588,28 @@ export function EditClientModal({ client, onClose, onSave }) {
 
           {/* Test Types */}
           <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Types</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-            {TEST_TYPES.map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => toggleTestType(type)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  formData.testTypes.includes(type)
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/50 border border-pink-500'
-                    : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
-                }`}
-                title={TEST_TYPE_LABELS[type] || type} // lookup label safely
-              >
-                {type}
-              </button>
-            ))}
+            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Types</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+              {TEST_TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => toggleTestType(type)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    formData.testTypes.includes(type)
+                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/50 border border-pink-500'
+                      : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+                  }`}
+                  title={TEST_TYPE_LABELS[type] || type}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400">
+              Selected: {formData.testTypes.length > 0 ? formData.testTypes.join(', ') : 'None'}
+            </p>
           </div>
-          <p className="text-xs text-gray-400">
-            Selected: {formData.testTypes.length > 0 ? formData.testTypes.join(', ') : 'None'}
-          </p>
-        </div>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-4 pt-6 border-t border-white/10">
@@ -598,7 +619,7 @@ export function EditClientModal({ client, onClose, onSave }) {
               className="flex items-center gap-2 px-6 py-2 rounded-lg bg-gray-500/20 text-gray-300 hover:bg-gray-500/30 border border-gray-500/30 hover:border-gray-500/50 transition-all"
             >
               <X className="w-4 h-4" />
-              Exit
+              Cancel
             </button>
             <button
               type="submit"

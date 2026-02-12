@@ -112,12 +112,19 @@ app.get("/clients", (req, res) => {
 
 // POST create new client - CORRECTED TO MATCH DATABASE SCHEMA
 app.post("/clients", (req, res) => {
+  console.log("=== RECEIVED CLIENT DATA ===");
+  console.log("sampleNo1:", req.body.sampleNo1, "Type:", typeof req.body.sampleNo1);
+  console.log("sampleNo2:", req.body.sampleNo2, "Type:", typeof req.body.sampleNo2);
+  console.log("company:", req.body.company);
+  console.log("Full body:", req.body);
+  console.log("============================");
+  
   const { 
     name, address, email, phone, category, serviceType, 
     status, progress, dateRequested, startDate, dueDate, 
     dateClaimed, dateReleased, requestForm, testDate, 
-    releasedROA, roa, sampleNo, specimenNo, sampleCount,
-    amount, officialReceipt, remarks, testTypes
+    releasedROA, roa, sampleNo1, sampleNo2, specimenNo, sampleCount,
+    amount, officialReceipt, remarks, testTypes, company
   } = req.body;
 
   // Validation
@@ -154,8 +161,9 @@ app.post("/clients", (req, res) => {
       (serviceNo, serviceRequestID, name, address, email, phone, category, 
        serviceType, status, progress, dateRequested, startDate, dueDate, 
        dateClaimed, dateReleased, requestForm, testDate, releasedROA, roa, 
-       sampleNo, sampleCount, amount, officialReceipt, remarks, testTypes, specimenNo)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       sampleNo1, sampleNo2, sampleCount, amount, officialReceipt, remarks, testTypes, 
+       specimenNo, company)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
@@ -178,13 +186,15 @@ app.post("/clients", (req, res) => {
       testDate || null,                       // testDate
       releasedROA || null,                    // releasedROA
       roa ? 1 : 0,                           // roa (boolean to 0/1)
-      sampleNo || null,                       // sampleNo
+      sampleNo1 || null,                       // sampleNo1
+      sampleNo2 || null,                      // sampleNo2
       sampleCount || 0,                       // sampleCount
       amount || 0,                            // amount
       officialReceipt ? 1 : 0,               // officialReceipt (boolean to 0/1)
       remarks || null,                        // remarks
       testTypes || null,                      // testTypes (already string from frontend)
       specimenNo || null,                     // specimenNo
+      company || null                         // company
     ];
 
     db.query(query, values, (err, result) => {
@@ -216,8 +226,8 @@ app.put("/clients/:id", (req, res) => {
     serviceNo, serviceRequestID, name, address, email, phone, 
     category, serviceType, status, progress, dateRequested, 
     startDate, dueDate, dateClaimed, dateReleased, requestForm, 
-    testDate, releasedROA, roa, sampleNo, specimenNo, sampleCount,
-    amount, officialReceipt, remarks, testTypes
+    testDate, releasedROA, roa, sampleNo1, sampleNo2, specimenNo, sampleCount,
+    amount, officialReceipt, remarks, testTypes, company
   } = req.body;
 
   const query = `
@@ -226,8 +236,9 @@ app.put("/clients/:id", (req, res) => {
         phone = ?, category = ?, serviceType = ?, status = ?, progress = ?,
         dateRequested = ?, startDate = ?, dueDate = ?, dateClaimed = ?, 
         dateReleased = ?, requestForm = ?, testDate = ?, releasedROA = ?, 
-        roa = ?, sampleNo = ?, sampleCount = ?, amount = ?, 
-        officialReceipt = ?, remarks = ?, testTypes = ?, specimenNo = ?
+        roa = ?, sampleNo1 = ?, sampleNo2 = ?, sampleCount = ?, amount = ?, 
+        officialReceipt = ?, remarks = ?, testTypes = ?, specimenNo = ?,
+        company = ?
     WHERE id = ?
   `;
 
@@ -251,13 +262,15 @@ app.put("/clients/:id", (req, res) => {
     testDate || null,
     releasedROA || null,
     roa ? 1 : 0,
-    sampleNo || null,
+    sampleNo1 || null,
+    sampleNo2 || null,
     sampleCount || 0,
     amount || 0,
     officialReceipt ? 1 : 0,
     remarks || null,
     testTypes || null,
     specimenNo || null,
+    company || null,
     id
   ];
 
