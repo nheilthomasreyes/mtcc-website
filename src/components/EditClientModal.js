@@ -93,8 +93,12 @@ export function EditClientModal({ client, onClose, onSave }) {
     sampleNo2: sanitizeValue(client.sampleNo2),
     specimenNo: sanitizeValue(client.specimenNo),
     remarks: sanitizeValue(client.remarks),
+    // ADD THESE BOOLEANS EXPLICITLY:
+    roa: client.roa === 1 || client.roa === true,
+    ts: client.ts === 1 || client.ts === true,
+    roaV: client.roaV === 1 || client.roaV === true,
     // Parse testTypes if it's a string
-    testTypes: Array.isArray(client.testTypes) 
+    testTypes: Array.isArray(client.testTypes)
       ? client.testTypes 
       : typeof client.testTypes === 'string' && client.testTypes.trim()
       ? client.testTypes.split(',').map(t => t.trim())
@@ -133,8 +137,18 @@ export function EditClientModal({ client, onClose, onSave }) {
       testTypes: Array.isArray(formData.testTypes) 
         ? formData.testTypes.join(', ') 
         : formData.testTypes,
+      roa: formData.roa || false,
+      ts: formData.ts || false,
+      roaV: formData.roaV || false,
     };
-  
+
+    console.log('=== EDIT CLIENT DATA BEING SENT ===');
+    console.log('roa:', dataForBackend.roa);
+    console.log('ts:', dataForBackend.ts);
+    console.log('roaV:', dataForBackend.roaV);
+    console.log('Full data:', dataForBackend);
+    console.log('===================================');
+
     onSave(dataForBackend);
     onClose();
   }
@@ -349,40 +363,41 @@ export function EditClientModal({ client, onClose, onSave }) {
                     return (
                       <div className="mt-3 p-3 bg-white/5 border border-white/8 rounded-lg flex gap-8 animate-in fade-in zoom-in-95 duration-200">
                         <label className="flex items-center block text-md font-md text-gray-300">Service Request Form<span className="text-red-500">*</span></label>
-                        <label className="flex items-center space-x-3 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            id='roa'
-                            checked={formData.roa || false}
-                            onChange={(e) => {
-                              setFormData({ ...formData, roa: e.target.checked });
-                              if (e.target.checked) setFormData(prev => ({ ...prev, ts: false }));
-                            }}
-                            className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
-                          />
-                          <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">ROA</span>
-                        </label>
+                          <label className="flex items-center space-x-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              id='roa'
+                              checked={formData.roa || false}
+                              onChange={(e) => {
+                                setFormData({ ...formData, roa: e.target.checked });
+                                if (e.target.checked) setFormData(prev => ({ ...prev, ts: false }));
+                              }}
+                              className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                            />
+                            <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">ROA</span>
+                          </label>
 
-                        <label className="flex items-center space-x-3 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            id='ts'
-                            checked={formData.ts || false}
-                            onChange={(e) => {
-                              setFormData({ ...formData, ts: e.target.checked });
-                              if (e.target.checked) setFormData(prev => ({ ...prev, roa: false }));
-                            }}
-                            className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
-                          />
-                          <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">TS</span>
-                        </label>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-              <div>
+                          <label className="flex items-center space-x-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              id='ts'
+                              checked={formData.ts || false}
+                              onChange={(e) => {
+                                setFormData({ ...formData, ts: e.target.checked });
+                                if (e.target.checked) setFormData(prev => ({ ...prev, roa: false }));
+                              }}
+                              className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                            />
+                            <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">TS</span>
+                          </label>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+                <div>
+
                 <label className="block text-sm font-medium text-gray-300 mb-2">Start Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"

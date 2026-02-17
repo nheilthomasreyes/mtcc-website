@@ -29,6 +29,20 @@ db.connect((err) => {
   console.log("Connected to MySQL database successfully!");
 });
 
+const generateServiceRequestFormName = (dateRequested, roa, ts, yearlySequence) => {
+  if (!dateRequested || (!roa && !ts)) return null;
+  
+  const date = new Date(dateRequested);
+  // Month and Year are kept separate
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const type = roa ? 'ROA' : 'TS';
+  
+  // Removed the "/" between month and year
+  return `${month}${year}-Material-Testing-Service-Request-Form_${type}#${yearlySequence}`;
+};
+
+
 // Test GET route
 app.get("/", (req, res) => {
   res.send("Server is running!");
@@ -99,7 +113,7 @@ app.post("/categories", (req, res) => {
 
 // GET all clients
 app.get("/clients", (req, res) => {
-  const query = "SELECT * FROM clients ORDER BY dateRequested DESC";
+  const query = "SELECT * FROM clients ORDER BY dateRequested ASC";
   
   db.query(query, (err, results) => {
     if (err) {
@@ -116,6 +130,8 @@ app.post("/clients", (req, res) => {
   console.log("sampleNo1:", req.body.sampleNo1, "Type:", typeof req.body.sampleNo1);
   console.log("sampleNo2:", req.body.sampleNo2, "Type:", typeof req.body.sampleNo2);
   console.log("company:", req.body.company);
+  console.log("roa:", req.body.roa);
+  console.log("ts:", req.body.ts);
   console.log("Full body:", req.body);
   console.log("============================");
   
@@ -123,7 +139,7 @@ app.post("/clients", (req, res) => {
     name, address, email, phone, category, serviceType, 
     status, progress, dateRequested, startDate, dueDate, 
     dateClaimed, dateReleased, requestForm, testDate, 
-    releasedROA, roa, sampleNo1, sampleNo2, specimenNo, sampleCount,
+    releasedROA, roa, ts, roaV, sampleNo1, sampleNo2, specimenNo, sampleCount,
     amount, officialReceipt, remarks, testTypes, company
   } = req.body;
 
@@ -146,75 +162,103 @@ app.post("/clients", (req, res) => {
   const countQuery = 'SELECT COUNT(*) as count FROM clients WHERE YEAR(dateRequested) = ?';
   
   db.query(countQuery, [year], (countErr, countResult) => {
-    if (countErr) {
-      console.error("Error counting clients:", countErr);
-      return res.status(500).json({ message: "Server error generating service number" });
-    }
+    if (countErr) return res.status(500).json({ message: "Server error" });
 
     const nextNumber = (countResult[0].count + 1).toString().padStart(4, '0');
     const serviceNo = `${year}-${nextNumber}`;
-    const serviceRequestID = `SRQ-${year}-${nextNumber}`;
 
-    // INSERT query matching ACTUAL database columns
-    const query = `
-      INSERT INTO clients 
-      (serviceNo, serviceRequestID, name, address, email, phone, category, 
-       serviceType, status, progress, dateRequested, startDate, dueDate, 
-       dateClaimed, dateReleased, requestForm, testDate, releasedROA, roa, 
-       sampleNo1, sampleNo2, sampleCount, amount, officialReceipt, remarks, testTypes, 
-       specimenNo, company)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    // --- GENERATE SERVICE REQUEST FORM ---
+    const type = roa ? 'ROA' : (ts ? 'TS' : null);
+    let serviceRequestForm = null;
+    
+    if (type) {
+      // Get count of same type in same year
+      const typeCountQuery = `
+        SELECT COUNT(*) as count FROM clients 
+        WHERE YEAR(dateRequested) = ? AND ${type === 'ROA' ? 'roa = 1' : 'ts = 1'}
+      `;
+      
+      db.query(typeCountQuery, [year], (typeErr, typeResult) => {
+        if (typeErr) {
+          console.error("Error counting type:", typeErr);
+          return res.status(500).json({ message: "Server error generating service request form" });
+        }
 
-    const values = [
-      serviceNo,                              // serviceNo
-      serviceRequestID,                       // serviceRequestID
-      name,                                   // name
-      address || null,                        // address
-      email || null,                          // email
-      phone || null,                          // phone
-      category || 'Industry',                 // category
-      serviceType || 'Material Testing',      // serviceType
-      status || 'Pending',                    // status
-      progress || 0,                          // progress
-      dateRequested,                          // dateRequested
-      startDate || null,                      // startDate
-      dueDate || null,                        // dueDate
-      dateClaimed || null,                    // dateClaimed
-      dateReleased || null,                   // dateReleased
-      requestForm || 'Waiting',               // requestForm
-      testDate || null,                       // testDate
-      releasedROA || null,                    // releasedROA
-      roa ? 1 : 0,                           // roa (boolean to 0/1)
-      sampleNo1 || null,                       // sampleNo1
-      sampleNo2 || null,                      // sampleNo2
-      sampleCount || 0,                       // sampleCount
-      amount || 0,                            // amount
-      officialReceipt ? 1 : 0,               // officialReceipt (boolean to 0/1)
-      remarks || null,                        // remarks
-      testTypes || null,                      // testTypes (already string from frontend)
-      specimenNo || null,                     // specimenNo
-      company || null                         // company
-    ];
+        const sequenceNumber = typeResult[0].count + 1;
+        serviceRequestForm = generateServiceRequestFormName(dateRequested, roa, ts, sequenceNumber);
 
-    db.query(query, values, (err, result) => {
-      if (err) {
-        console.error("Database error:", err);
-        console.error("Query:", query);
-        console.error("Values:", values);
-        return res.status(500).json({ 
-          message: "Server error", 
-          error: err.message,
-          details: "Check if all database columns exist"
-        });
-      }
-      res.json({ 
-        message: "Client added successfully", 
-        id: result.insertId,
-        serviceNo: serviceNo,
-        serviceRequestID: serviceRequestID
+        // Now insert with the generated serviceRequestForm
+        insertClient(serviceNo, serviceRequestForm);
       });
-    });
+    } else {
+      // No type selected, insert without serviceRequestForm
+      insertClient(serviceNo, null);
+    }
+
+    function insertClient(serviceNo, serviceRequestForm) {
+    // INSERT query matching ACTUAL database columns
+      const query = `
+        INSERT INTO clients
+        (serviceNo, serviceRequestForm, name, address, email, phone, category, 
+        serviceType, status, progress, dateRequested, startDate, dueDate, 
+        dateClaimed, dateReleased, requestForm, testDate, releasedROA, roa, ts, roaV, 
+        sampleNo1, sampleNo2, sampleCount, amount, officialReceipt, remarks, testTypes, 
+        specimenNo, company)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const values = [
+        serviceNo,                              // serviceNo
+        serviceRequestForm,                     // serviceRequestID
+        name,                                   // name
+        address || null,                        // address
+        email || null,                          // email
+        phone || null,                          // phone
+        category || 'Industry',                 // category
+        serviceType || 'Material Testing',      // serviceType
+        status || 'Pending',                    // status
+        progress || 0,                          // progress
+        dateRequested,                          // dateRequested
+        startDate || null,                      // startDate
+        dueDate || null,                        // dueDate
+        dateClaimed || null,                    // dateClaimed
+        dateReleased || null,                   // dateReleased
+        requestForm || 'Waiting',               // requestForm
+        testDate || null,                       // testDate
+        releasedROA || null,
+        roa ? 1 : 0,
+        ts ? 1 : 0,                    // releasedROA
+        roaV ? 1 : 0,                           // roaV (boolean to 0/1)
+        sampleNo1 || null,                       // sampleNo1
+        sampleNo2 || null,                      // sampleNo2
+        sampleCount || 0,                       // sampleCount
+        amount || 0,                            // amount
+        officialReceipt ? 1 : 0,               // officialReceipt (boolean to 0/1)
+        remarks || null,                        // remarks
+        testTypes || null,                      // testTypes (already string from frontend)
+        specimenNo || null,                     // specimenNo
+        company || null                         // company
+      ];
+
+      db.query(query, values, (err, result) => {
+        if (err) {
+          console.error("Database error:", err);
+          console.error("Query:", query);
+          console.error("Values:", values);
+          return res.status(500).json({ 
+            message: "Server error", 
+            error: err.message,
+            details: "Check if all database columns exist"
+          });
+        }
+        res.json({ 
+          message: "Client added successfully", 
+          id: result.insertId,
+          serviceNo: serviceNo,
+          serviceRequestForm: serviceRequestForm
+        });
+      });
+    };
   });
 });
 
@@ -223,64 +267,110 @@ app.put("/clients/:id", (req, res) => {
   const { id } = req.params;
 
   const { 
-    serviceNo, serviceRequestID, name, address, email, phone, 
+    serviceNo, serviceRequestForm, name, address, email, phone, 
     category, serviceType, status, progress, dateRequested, 
     startDate, dueDate, dateClaimed, dateReleased, requestForm, 
-    testDate, releasedROA, roa, sampleNo1, sampleNo2, specimenNo, sampleCount,
+    testDate, releasedROA, roa, ts, roaV, sampleNo1, sampleNo2, specimenNo, sampleCount,
     amount, officialReceipt, remarks, testTypes, company
   } = req.body;
+   const year = new Date(dateRequested).getFullYear();
+  const type = roa ? 'ROA' : (ts ? 'TS' : null);
+  
+  if (type) {
+    // Get the current client's data to determine its sequence
+    const getCurrentQuery = 'SELECT roa, ts, dateRequested FROM clients WHERE id = ?';
+    
+    db.query(getCurrentQuery, [id], (getCurrentErr, currentResult) => {
+      if (getCurrentErr) {
+        console.error("Error getting current client:", getCurrentErr);
+        return res.status(500).json({ message: "Server error" });
+      }
 
-  const query = `
-    UPDATE clients 
-    SET serviceNo = ?, serviceRequestID = ?, name = ?, address = ?, email = ?, 
-        phone = ?, category = ?, serviceType = ?, status = ?, progress = ?,
-        dateRequested = ?, startDate = ?, dueDate = ?, dateClaimed = ?, 
-        dateReleased = ?, requestForm = ?, testDate = ?, releasedROA = ?, 
-        roa = ?, sampleNo1 = ?, sampleNo2 = ?, sampleCount = ?, amount = ?, 
-        officialReceipt = ?, remarks = ?, testTypes = ?, specimenNo = ?,
-        company = ?
-    WHERE id = ?
-  `;
+      const currentClient = currentResult[0];
+      const typeChanged = (roa && !currentClient.roa) || (ts && !currentClient.ts);
 
-  const values = [
-    serviceNo || null,
-    serviceRequestID || null,
-    name,
-    address || null,
-    email || null,
-    phone || null,
-    category || 'Industry',
-    serviceType || 'Material Testing',
-    status || 'Pending',
-    progress || 0,
-    dateRequested,
-    startDate || null,
-    dueDate || null,
-    dateClaimed || null,
-    dateReleased || null,
-    requestForm || 'Waiting',
-    testDate || null,
-    releasedROA || null,
-    roa ? 1 : 0,
-    sampleNo1 || null,
-    sampleNo2 || null,
-    sampleCount || 0,
-    amount || 0,
-    officialReceipt ? 1 : 0,
-    remarks || null,
-    testTypes || null,
-    specimenNo || null,
-    company || null,
-    id
-  ];
+      if (typeChanged) {
+        // Type changed, need to recalculate sequence
+        const typeCountQuery = `
+          SELECT COUNT(*) as count FROM clients 
+          WHERE YEAR(dateRequested) = ? AND ${type === 'ROA' ? 'roa = 1' : 'ts = 1'}
+        `;
+        
+        db.query(typeCountQuery, [year], (typeErr, typeResult) => {
+          if (typeErr) {
+            console.error("Error counting type:", typeErr);
+            return res.status(500).json({ message: "Server error" });
+          }
 
-  db.query(query, values, (err, result) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ message: "Server error", error: err.message });
-    }
-    res.json({ message: "Client updated successfully" });
-  });
+          const sequenceNumber = typeResult[0].count + 1;
+          const serviceRequestForm = generateServiceRequestFormName(dateRequested, roa, ts, sequenceNumber);
+          updateClient(serviceRequestForm);
+        });
+      } else {
+        // Type didn't change, keep existing serviceRequestForm or regenerate if needed
+        const serviceRequestForm = generateServiceRequestFormName(dateRequested, roa, ts, 1);
+        updateClient(serviceRequestForm);
+      }
+    });
+  } else {
+    updateClient(null);
+  }
+
+  function updateClient(serviceRequestForm) {
+    const query = `
+      UPDATE clients 
+      SET serviceNo = ?, serviceRequestForm = ?, name = ?, address = ?, email = ?, 
+          phone = ?, category = ?, serviceType = ?, status = ?, progress = ?,
+          dateRequested = ?, startDate = ?, dueDate = ?, dateClaimed = ?, 
+          dateReleased = ?, requestForm = ?, testDate = ?, releasedROA = ?, roa = ?, ts = ?, 
+          roaV = ?, sampleNo1 = ?, sampleNo2 = ?, sampleCount = ?, amount = ?, 
+          officialReceipt = ?, remarks = ?, testTypes = ?, specimenNo = ?,
+          company = ?
+      WHERE id = ?
+    `;
+
+    const values = [
+      serviceNo || null,
+      serviceRequestForm,
+      name,
+      address || null,
+      email || null,
+      phone || null,
+      category || 'Industry',
+      serviceType || 'Material Testing',
+      status || 'Pending',
+      progress || 0,
+      dateRequested,
+      startDate || null,
+      dueDate || null,
+      dateClaimed || null,
+      dateReleased || null,
+      requestForm || 'Waiting',
+      testDate || null,
+      releasedROA || null,
+      roa ? 1 : 0,
+      ts ? 1 : 0,
+      roaV ? 1 : 0,
+      sampleNo1 || null,
+      sampleNo2 || null,
+      sampleCount || 0,
+      amount || 0,
+      officialReceipt ? 1 : 0,
+      remarks || null,
+      testTypes || null,
+      specimenNo || null,
+      company || null,
+      id
+    ];
+
+    db.query(query, values, (err, result) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ message: "Server error", error: err.message });
+      }
+      res.json({ message: "Client updated successfully", serviceRequestForm: serviceRequestForm });
+    });
+  }
 });
 
 // DELETE client

@@ -84,6 +84,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     
     // Documentation & Forms
     requestForm: 'Waiting',
+    roaV: false,
     roa: false,
     ts: false,
     
@@ -126,6 +127,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    
     // Validation
     if (!formData.dateRequested) {
       alert("Date Requested is required");
@@ -165,7 +167,9 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       
       // Documentation
       requestForm: formData.requestForm,
+      roaV: formData.roaV,
       roa: formData.roa,
+      ts: formData.ts,
       
       // Sample Information
       sampleNo1: formData.sampleRangeStart ? Number(formData.sampleRangeStart) : null,
@@ -189,6 +193,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     console.log('sampleNo1:', dataForBackend.sampleNo1, 'Type:', typeof dataForBackend.sampleNo1);
     console.log('sampleNo2:', dataForBackend.sampleNo2, 'Type:', typeof dataForBackend.sampleNo2);
     console.log('company:', dataForBackend.company);
+    console.log('roa:', dataForBackend.roa);
+    console.log('ts:', dataForBackend.ts);
     console.log('Full data:', dataForBackend);
     console.log('===================================');
     
@@ -213,6 +219,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       dateClaimed: '',
       testDate: '',
       releasedROA: '',
+      roaV: false,
       requestForm: 'Waiting',
       roa: false,
       ts: false,
@@ -526,35 +533,30 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   if (isComplete) {
                     return (
                       <div className="mt-3 p-3 bg-white/5 border border-white/8 rounded-lg flex gap-8 animate-in fade-in zoom-in-95 duration-200">
-                        <label className="flex items-center block text-md font-md text-gray-300">Service Request Form<span className="text-red-500">*</span></label>
-                        <label className="flex items-center space-x-3 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            id = 'roa'
-                            checked={formData.roa || false}
-                            onChange={(e) => {
-                              setFormData({ ...formData, roa: e.target.checked });
-                              if (e.target.checked) setFormData(prev => ({ ...prev, ts: false }));
-                            }}
-                            className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
-                          />
-                          <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">ROA</span>
+                        <label className="flex items-center block text-md font-md text-gray-300">
+                            Service Request Form<span className="text-red-500">*</span>
+                        </label>
+                        
+                        <label className="flex items-center space-x-3 cursor-pointer group text-gray-300 hover:text-gray-300 transition-colors">
+                            <input 
+                                type="checkbox" 
+                                checked={formData.roa} 
+                                onChange={(e) => setFormData({ ...formData, roa: e.target.checked, ts: false })}
+                                className="rounded border-gray-500 bg-transparent"
+                            /> 
+                            <span>ROA</span>
                         </label>
 
-                        <label className="flex items-center space-x-3 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            id = 'ts'
-                            checked={formData.ts || false}
-                            onChange={(e) => {
-                              setFormData({ ...formData, ts: e.target.checked });
-                              if (e.target.checked) setFormData(prev => ({ ...prev, roa: false }));
-                            }}
-                            className="w-4 h-4 rounded border-white/20 bg-transparent text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
-                          />
-                          <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">TS</span>
-                        </label>
-                      </div>
+                        <label className="flex items-center space-x-3 cursor-pointer group text-gray-300 hover:text-gray-300 transition-colors">
+                            <input 
+                                type="checkbox" 
+                                checked={formData.ts} 
+                                onChange={(e) => setFormData({ ...formData, ts: e.target.checked, roa: false })}
+                                className="rounded border-gray-500 bg-transparent"
+                            /> 
+                            <span>TS</span>
+                        </label>                
+                    </div>
                     );
                   }
                   return null;

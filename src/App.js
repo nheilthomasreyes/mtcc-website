@@ -280,7 +280,7 @@ export default function App() {
             ))}
           </select>
           <span className="text-blue-200 text-sm">
-            Showing {filteredClients.length} of {filteredClients.length} total services
+            Total Rendered Service: {filteredClients.length} Services
           </span>
         </div>
 

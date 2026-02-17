@@ -12,7 +12,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const availableCategories = useMemo(() => {
     const cats = new Set(clients.map(c => c.category).filter(Boolean));
@@ -123,10 +123,12 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     }
   };
 
+
+  
   const getServiceRequestName = (client, allClients) => {
     if (!client.dateRequested || (!client.roa && !client.ts)) return '-';
     const date = new Date(client.dateRequested);
-    const monthYear = format(date, 'MM/yyyy');
+    const monthYear = format(date, 'MMyyyy');
     const type = client.roa ? 'ROA' : 'TS';
     const yearlyGroup = allClients.filter(c => {
         if (!c.dateRequested) return false;
@@ -139,7 +141,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     return `${monthYear}-Material-Testing-Service-Request-Form_${type}#${sequenceNumber}`;
   };
 
-    const exportToExcel = async () => {
+  const exportToExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
       // Use the current year or a specific selected year logic
@@ -187,7 +189,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           // Logic for Checkbox Characters
           orStatus: (client.officialReceipt === true || client.officialReceipt === 1) ? '☑' : '☐',
           testDate: client.testDate ? format(new Date(client.testDate), 'yyyy-MM-dd') : '',
-          roaStatus: (client.roa === true || client.roa === 1) ? '☑' : '☐',
+          roaStatus: (client.roaV === true || client.roaV === 1) ? '☑' : '☐',
           roaReleasedDate: client.releasedROA ? format(new Date(client.releasedROA), 'yyyy-MM-dd') : '',
           sampleNo: client.sampleNo1 && client.sampleNo2 
             ? `${client.sampleNo1} - ${client.sampleNo2}` 
@@ -239,69 +241,76 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   return (
     <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden flex flex-col h-[calc(100vh-230px)]">
       {/* Frozen Header Section (Filters and Title) */}
-      <div className="flex-none p-6 border-b border-white/10 space-y-4 bg-slate-900/50 relative z-50">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Service Records</h2>
-          <p className="text-blue-200 text-sm mt-1">Manage all client services and requests</p>
-        </div>
-        
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-cyan-300" />
-            <span className="text-sm font-medium text-cyan-300">Filters:</span>
+      <div className="flex-none p-6 border-b border-white/10 bg-slate-900/50 relative z-50 w-full">
+        <div className="flex flex-row items-center justify-between w-full gap-4">
+          
+          {/* Left Side: Title and Subtitle - flex-shrink-0 prevents title from squashing */}
+          <div className="flex-shrink-0">
+            <h2 className="text-2xl font-bold text-white tracking-tight">Service Records</h2>
+            <p className="text-blue-200/70 text-sm mt-0.5">Manage all client services and requests</p>
           </div>
-
-          <select 
-            value={statusFilter} 
-            onChange={(e) => setStatusFilter(e.target.value)} 
-            className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          >
-            <option value="All" className="bg-gray-900">All Status ({clients.length})</option>
-            <option value="Ongoing" className="bg-gray-900">Ongoing ({clients.filter(c => c.status === 'Ongoing').length})</option>
-            <option value="Pending" className="bg-gray-900">Pending ({clients.filter(c => c.status === 'Pending').length})</option>
-            <option value="Completed" className="bg-gray-900">Completed ({clients.filter(c => c.status === 'Completed').length})</option>
-            <option value="Cancelled" className="bg-gray-900">Cancelled ({clients.filter(c => c.status === 'Cancelled').length})</option>
-          </select>
-
-          <select value={selectedClientType} onChange={(e) => setSelectedClientType(e.target.value)} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
-            {availableCategories.map(cat => (
-              <option key={cat} value={cat} className="bg-gray-900">{cat === 'All' ? 'All Clients' : cat}</option>
-            ))}
-          </select>
-
-          <select value={selectedTestType} onChange={(e) => setSelectedTestType(e.target.value)} className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
-            {availableTestTypes.map(type => (
-              <option key={type} value={type} className="bg-gray-900">{type === 'All' ? 'All Tests' : type}</option>
-            ))}
-          </select>
-          <div className="relative w-48">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Filter className="w-3.5 h-3.5 text-cyan-500/50" />
+          
+          {/* Right Side: Filters and Export Group - flex-1 and justify-end pushes it to the far right */}
+          <div className="flex flex-1 items-center justify-end gap-2 min-w-0">
+  
+            {/* Search Input - Changed to fixed width and reduced gap to look shorter/compact */}
+            <div className="relative w-48 xl:w-64">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Filter className="w-3.5 h-3.5 text-cyan-500/50" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchClientName}
+                onChange={(e) => setSearchClientName(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 placeholder:text-gray-500"
+              />
+              {searchClientName && (
+                <button 
+                  onClick={() => setSearchClientName('')}
+                  className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-500 hover:text-red-400"
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              placeholder="Search name/company..."
-              value={searchClientName}
-              onChange={(e) => setSearchClientName(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 placeholder:text-gray-300"
-            />
 
-            {searchClientName && (
-              <button 
-                onClick={() => setSearchClientName('')}
-                className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-500 hover:text-red-400 transition-colors"
+            {/* Select Filter Group */}
+            <div className="flex items-center gap-2">
+              <select 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)} 
+                className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
-                <XIcon className="w-4 h-4" />
-              </button>
-            )}
+                <option value="All" className="bg-gray-900">All Status</option>
+                <option value="Ongoing" className="bg-gray-900">Ongoing</option>
+                <option value="Pending" className="bg-gray-900">Pending</option>
+                <option value="Completed" className="bg-gray-900">Completed</option>
+                <option value="Cancelled" className="bg-gray-900">Cancelled</option>
+              </select>
+
+              <select value={selectedClientType} onChange={(e) => setSelectedClientType(e.target.value)} className="hidden md:block px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                {availableCategories.map(cat => (
+                  <option key={cat} value={cat} className="bg-gray-900">{cat === 'All' ? 'All Clients' : cat}</option>
+                ))}
+              </select>
+
+              <select value={selectedTestType} onChange={(e) => setSelectedTestType(e.target.value)} className="hidden lg:block px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                {availableTestTypes.map(type => (
+                  <option key={type} value={type} className="bg-gray-900">{type === 'All' ? 'All Tests' : type}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Export Button */}
+            <button
+              onClick={exportToExcel}
+              className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all shadow-lg border border-green-500/50 flex-shrink-0"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline font-bold">Export to Excel</span>
+            </button>
           </div>
-          <button
-            onClick={exportToExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all shadow-lg shadow-green-900/20 border border-green-500/50"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden md:inline font-bold">Export to Excel</span>
-          </button>
         </div>
       </div>
       
@@ -312,30 +321,37 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         <table className="w-full border-separate border-spacing-0">
           <thead className="sticky top-0 z-40">
             <tr className="bg-slate-900 shadow-md">
-              <th className="sticky left-0 top-0 z-50 px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+              {/* SERVICE NO - Centered Title */}
+              <th className="sticky left-0 top-0 z-50 w-[100px] min-w-[100px] px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase bg-slate-900 border-b border-white/10 border-r border-white/10">
                 Service No.
               </th>
-              <th className="sticky left-[100px] top-0 z-50 px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+              
+              {/* CLIENT NAME - Centered Title */}
+              <th className="sticky left-[100px] top-0 z-50 w-[250px] min-w-[250px] px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase bg-slate-900 border-b border-white/10 border-r border-white/10">
                 Client Name
               </th>
-              <th className="sticky left-[340px] top-0 z-50 px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
+              
+              {/* COMPANY - Centered Title */}
+              <th className="sticky left-[350px] top-0 z-50 w-[200px] min-w-[200px] px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                 Company
               </th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Category</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Service Request Form</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Request Date</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Signed Request Form</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Official Receipt</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Date of Test</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Report of Analysis</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Released of ROA</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample No.</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Specimen No.</th>
+
+              {/* Standard Headers - Changed text-left to text-center */}
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Category</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Service Request Form</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Request Date</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Signed Request Form</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Official Receipt</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Date of Test</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Report of Analysis</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Released of ROA</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample No.</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Specimen No.</th>
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Sample Count</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900 min-w-[200px]">Types of Test</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Amount</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Status</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Remarks</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900 min-w-[200px]">Types of Test</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Amount</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Status</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Remarks</th>
               <th className="px-3 py-2 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Actions</th>
             </tr>
           </thead>
@@ -343,24 +359,30 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             {paginatedClients.map((client, index) => {
               const clientTestTypes = parseTestTypes(client.testTypes);
               return (
-                <tr key={client.id ?? index} className={`hover:bg-white/5 transition-colors ${client.doNotDelete ? 'bg-red-500/5' : ''}`}>
-                  <td className="sticky left-0 z-30 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">{client.serviceNo}</span>
-                      {client.doNotDelete && <ShieldAlert className="w-4 h-4 text-red-400" title="DO NOT DELETE - Protected Record" />}
+                <tr key={client.id ?? index} className="hover:bg-white/5 transition-colors">
+                  {/* SERVICE NO - Match Width */}
+                  <td className="sticky left-0 z-30 w-[100px] min-w-[100px] px-5 py-5 bg-slate-900 border-r border-white/10">
+                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-500/50">
+                      {client.serviceNo}
+                    </span>
+                  </td>
+
+                  {/* CLIENT NAME - Match Width */}
+                  <td className="sticky left-[100px] z-30 w-[250px] min-w-[250px] px-5 py-5 bg-slate-900 border-r border-white/10">
+                    <div className="space-y-1">
+                      <p className="text-white font-semibold truncate">{client.name}</p>
+                      <p className="text-gray-400 text-sm truncate">{client.address}</p>
                     </div>
                   </td>
-                  <td className="sticky left-[100px] z-30 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5_rgba(0,0,0,0.5)]">
-                    <div className="space-y-1 min-w-[220px]">
-                      <p className="text-white font-semibold">{client.name}</p>
-                      <p className="text-gray-400 text-sm">{client.address}</p>
-                    </div>
-                  </td>
-                  <td className="sticky left-[340px] z-30 px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                    <p className="text-sm text-gray-300 whitespace-nowrap min-w-[150px]">{client.company || '-'}</p>
+
+                  {/* COMPANY - Match Width */}
+                  <td className="sticky left-[350px] z-30 w-[200px] min-w-[200px] px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
+                    <p className="text-sm text-gray-300 truncate">{client.company || '-'}</p>
                   </td>
                   <td className="px-5 py-5">
+
                     <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">{client.category}</span>
+
                   </td>
                   <td className="px-5 py-5">
                     <p className="inline-flex items-center px-3 py-1 rounded-lg text-md font-medium bg-blue-500/20 text-gray-300 border border-gray-500/30 whitespace-nowrap">{getServiceRequestName(client, clients)}</p>
@@ -391,7 +413,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   </td>
                   <td className="px-5 py-5 text-center">
                     <div className="flex justify-center">
-                      {(client.roa === true || client.roa === 1) ? (
+                      {(client.roaV === true || client.roaV === 1) ? (
                         <span className="flex items-center justify-center w-6 h-6 rounded-md bg-green-500/20 text-green-400 border border-green-500/40">
                           <CheckCircle className="h-4 w-4" />
                         </span>
@@ -470,7 +492,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         {filteredClients.length > 0 && (
           <div className="px-1 py-1 flex items-center justify-between border-t border-white/5 bg-slate-900/40 backdrop-blur-sm sticky bottom-0 left-0 w-full z-40">
             <div className="text-sm text-gray-400">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} entries
+              Showing {Math.min(endIndex, filteredClients.length)} of {filteredClients.length} entries
             </div>
             <div className="flex items-center gap-3">
               <button 
