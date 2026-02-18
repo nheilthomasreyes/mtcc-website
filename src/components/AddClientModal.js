@@ -6,7 +6,7 @@ import axios from 'axios';
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
 const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
-const TEST_TYPES = ['FTIR', 'C', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'HP', 'O'];
 
 // Helper to format date to YYYY-MM-DD
 const formatDateForInput = (dateValue) => {
@@ -23,7 +23,7 @@ const formatDateForInput = (dateValue) => {
 };
 
 export function AddClientModal({ isOpen, onClose, onAdd }) {
-
+  const [errors, setErrors] = useState({service: ""});
   const [categories, setCategories] = useState([
     'BatStateU College',
     'Private HEIs',
@@ -127,10 +127,14 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    
     // Validation
     if (!formData.dateRequested) {
       alert("Date Requested is required");
+      return;
+    }
+
+    if(!formData.roa && !formData.ts) {
+      setErrors({service: "Please select!"});
       return;
     }
     
@@ -304,7 +308,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Company Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  required
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -317,7 +320,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  required
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -335,7 +337,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Email <span className="text-red-500">*</span></label>
                 <input
                   type="email"
-                  required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -346,7 +347,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Phone <span className="text-red-500">*</span></label>
                 <input
                   type="tel"
-                  required
                   value={formData.phone}
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/\D/g, '');
@@ -538,25 +538,26 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                         </label>
                         
                         <label className="flex items-center space-x-3 cursor-pointer group text-gray-300 hover:text-gray-300 transition-colors">
-                            <input 
-                                type="checkbox" 
-                                checked={formData.roa} 
-                                onChange={(e) => setFormData({ ...formData, roa: e.target.checked, ts: false })}
-                                className="rounded border-gray-500 bg-transparent"
-                            /> 
-                            <span>ROA</span>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.roa} 
+                            onChange={(e) => setFormData({ ...formData, roa: e.target.checked, ts: false })}
+                            className="rounded border-gray-500 bg-transparent focus:ring-offset-0 focus:ring-0"
+                          /> 
+                          <span>ROA</span>
                         </label>
 
+                        {/* TS Checkbox */}
                         <label className="flex items-center space-x-3 cursor-pointer group text-gray-300 hover:text-gray-300 transition-colors">
-                            <input 
-                                type="checkbox" 
-                                checked={formData.ts} 
-                                onChange={(e) => setFormData({ ...formData, ts: e.target.checked, roa: false })}
-                                className="rounded border-gray-500 bg-transparent"
-                            /> 
-                            <span>TS</span>
-                        </label>                
-                    </div>
+                          <input 
+                            type="checkbox" 
+                            checked={formData.ts} 
+                            onChange={(e) => setFormData({ ...formData, ts: e.target.checked, roa: false })}
+                            className="rounded border-gray-500 bg-transparent focus:ring-offset-0 focus:ring-0"
+                          /> 
+                          <span>TS</span>
+                        </label>               
+                      </div>
                     );
                   }
                   return null;
@@ -566,7 +567,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Start Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
-                  required
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -577,7 +577,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Due Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
-                  required
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"

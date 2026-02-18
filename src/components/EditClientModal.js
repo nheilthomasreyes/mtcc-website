@@ -13,7 +13,7 @@ const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 
-const TEST_TYPES = ['FTIR', 'C', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'HP', 'O'];
 
 // Helper function to convert NULL string or null to empty string
 const sanitizeValue = (value) => {
@@ -199,7 +199,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Company Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  required
                   value={formData.company || ''}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -212,7 +211,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  required
                   value={formData.address || ''}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -230,7 +228,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Email <span className="text-red-500">*</span></label>
                 <input
                   type="email"
-                  required
                   value={formData.email || ''}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -241,7 +238,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Phone <span className="text-red-500">*</span></label>
                 <input
                   type="tel"
-                  required
                   value={formData.phone || ''}
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/\D/g, '');
@@ -401,7 +397,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Start Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
-                  required
                   value={formData.startDate || ''}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -412,7 +407,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Due Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
-                  required
                   value={formData.dueDate || ''}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"

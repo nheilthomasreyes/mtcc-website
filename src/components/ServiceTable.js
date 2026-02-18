@@ -19,7 +19,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     return ['All', ...Array.from(cats).sort()];
   }, [clients]);
 
-  const availableTestTypes = ['All', 'FTIR', 'C', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'NTA', 'O'];
+  const availableTestTypes = ['All', 'FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'HP', 'O'];
 
   const parseTestTypes = (testTypes) => {
     if (!testTypes) return [];

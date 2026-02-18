@@ -5,7 +5,7 @@ import { TEST_TYPE_LABELS } from "./types";
 import ExcelJS from 'exceljs';
 import axios from 'axios';
 
-const TEST_HEADERS = ['FTIR', 'C', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
+const TEST_HEADERS = ['FTIR', 'CN', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 const SAMPLES_TEST_HEADERS = ['FTIR', 'Material Testing', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 
 // Material Testing test types (all except FTIR and C)
@@ -38,7 +38,6 @@ export function TallyModal({ isOpen, onClose, customYears }) {
   const allCategories = useMemo(() => {
     const hardcoded = [
       'BatStateU College',
-      'University Linkage',
       'Private HEIs',
       'Private Individual',
       'Industry',
@@ -113,8 +112,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
 
     const data = categories.map(categoryName => {
       const categoryClients = yearFilteredClients.filter(c =>
-        c.category === categoryName ||
-        (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
+        c.category === categoryName
       );
 
       // FIXED: Unique clients by name (case-insensitive)
@@ -167,7 +165,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
         // shared test type fields (service = count, samples = sample count)
         service: {
           ftir: getTestTypeCount('FTIR'),
-          c: getTestTypeCount('C'),
+          c: getTestTypeCount('CN'),
           ct: getTestTypeCount('CT'),
           ft: getTestTypeCount('FT'),
           bt: getTestTypeCount('BT'),
@@ -235,8 +233,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
         const end = endOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
         
         const categoryClients = yearFilteredClients.filter(c => {
-          const matchCategory = c.category === categoryName || 
-            (categoryName === 'University Linkage' && c.category === 'BatStateU IS');
+          const matchCategory = c.category === categoryName
           const date = new Date(c.dateRequested);
           return matchCategory && isWithinInterval(date, { start, end });
         });
@@ -269,7 +266,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
           bioTech: 0,
           materialTesting: materialTestingCount,
           ftir: getTestTypeCount('FTIR'),
-          c: getTestTypeCount('C'),
+          c: getTestTypeCount('CN'),
           ct: getTestTypeCount('CT'),
           ft: getTestTypeCount('FT'),
           bt: getTestTypeCount('BT'),
@@ -335,8 +332,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
         const end = endOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
         
         const categoryClients = yearFilteredClients.filter(c => {
-          const matchCategory = c.category === categoryName || 
-            (categoryName === 'University Linkage' && c.category === 'BatStateU IS');
+          const matchCategory = c.category === categoryName
           const date = new Date(c.dateRequested);
           return matchCategory && isWithinInterval(date, { start, end });
         });
@@ -479,8 +475,6 @@ export function TallyModal({ isOpen, onClose, customYears }) {
     }
     const colors = {
       'BatStateU College': 'bg-red-500/20 border-red-500/50',
-      'University Linkage': 'bg-yellow-500/20 border-yellow-500/50',
-      'Private HEIs': 'bg-green-500/20 border-green-500/50',
       'Private Individual': 'bg-blue-500/20 border-blue-500/50',
       'Industry': 'bg-orange-500/20 border-orange-500/50',
       'Senior High': 'bg-purple-500/20 border-purple-500/50',
@@ -567,7 +561,6 @@ export function TallyModal({ isOpen, onClose, customYears }) {
     if (reportType === 'service') {
       const categoryColors = {
         'BatStateU College':  'FFF4CCCC',
-        'University Linkage': 'FFFFF2CC',
         'Private HEIs':       'FFD9EAD3',
         'Private Individual': 'FFCFE2F3',
         'Industry':           'FFFCE5CD',
@@ -618,7 +611,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
 
       ws.getRow(11).values = ['', 'Period', 'Types Of Client', 'No. of Unique\nClient',
         'No. of Service\nRequest', 'Income', 'Bio Tech\nTesting', 'Material\nTesting',
-        'FTIR', 'C', 'Universal Testing Machine', '', '', '',
+        'FTIR', 'CN', 'Universal Testing Machine', '', '', '',
         'Non-Destructive Testing', '', ''];
       ws.getRow(12).values = ['', '', '', '', '', '', '', '', '', '', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT'];
 
@@ -718,8 +711,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
         // FIX 1 & 6: correct field name + amount fallback
         const yearData = categories.map(categoryName => {
           const categoryClients = yearFilteredClients.filter(c =>
-            c.category === categoryName ||
-            (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
+            c.category === categoryName
           );
           const uniqueClients = new Set(
             categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
@@ -737,7 +729,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
             materialTesting: categoryClients.filter(c =>
               c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
             ).length,
-            ftir: getCount('FTIR'), c: getCount('C'), ct: getCount('CT'),
+            ftir: getCount('FTIR'), c: getCount('CN'), ct: getCount('CT'),
             ft: getCount('FT'), bt: getCount('BT'), is: getCount('TS'),
             ht: getCount('HT'), mo: getCount('MO'), ctt: getCount('CTT'),
           };
@@ -826,7 +818,6 @@ export function TallyModal({ isOpen, onClose, customYears }) {
     } else {
       const categoryColors = {
         'BatStateU College':  'FFF4CCCC',
-        'University Linkage': 'FFFFF2CC',
         'Private HEIs':       'FFD9EAD3',
         'Private Individual': 'FFCFE2F3',
         'Industry':           'FFFCE5CD',
@@ -955,7 +946,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
         endDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
       };
 
-      let currentRow = 13;
+      let currentRow = 12;
 
       // ── Whole Year Summary (All Quarters only) ──
       if (selectedQuarter === 'all') {
@@ -963,8 +954,7 @@ export function TallyModal({ isOpen, onClose, customYears }) {
 
         const yearData = categories.map(categoryName => {
           const categoryClients = yearFilteredClients.filter(c =>
-            c.category === categoryName ||
-            (categoryName === 'University Linkage' && c.category === 'BatStateU IS')
+            c.category === categoryName
           );
           const totalSamples = categoryClients.reduce((sum, c) => sum + (c.sampleCount || 0), 0);
           const getSampleCount = (type) =>

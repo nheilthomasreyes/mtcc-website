@@ -1,6 +1,6 @@
 export const TEST_TYPE_LABELS = {
   FTIR: 'FTIR Analysis',
-  C: 'Centrifuge',
+  CN: 'Centrifuge, Non-Refrigerated',
   CT: 'Compressive Test',
   CTT: 'Coating Thickness Test',
   MO: 'Moisture Test',
@@ -11,6 +11,6 @@ export const TEST_TYPE_LABELS = {
   RE: 'Rotary Evaporator',
   UC: 'Ultracentrifuge',
   FD: 'Freeze Dryer',
-  NTA: 'Nanoparticle Tracking Analyzer',
+  HP: 'Heating Plate and Magnetic Stirring',
   O: 'Other',
 };
