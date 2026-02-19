@@ -1,7 +1,7 @@
-import { Download, Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 import { format } from 'date-fns';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import ExcelJS from 'exceljs';
 
 export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
@@ -83,7 +83,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   const endIndex = startIndex + itemsPerPage;
   const paginatedClients = filteredClients.slice(startIndex, endIndex);
 
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, selectedClientType, selectedTestType]);
 

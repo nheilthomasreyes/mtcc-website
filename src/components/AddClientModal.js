@@ -23,7 +23,7 @@ const formatDateForInput = (dateValue) => {
 };
 
 export function AddClientModal({ isOpen, onClose, onAdd }) {
-  const [errors, setErrors] = useState({service: ""});
+  const [setErrors] = useState({service: ""});
   const [categories, setCategories] = useState([
     'BatStateU College',
     'Private HEIs',
@@ -43,11 +43,9 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       .catch(err => console.error(err));
   }, [isOpen]); // refetch whenever modal opens
 
-  {/*DECLARATION FOR ADDING NEW CATEGORY*/}
   const [isAdding, setIsAdding] = useState(false);
   const [newcat, setNewCat] = useState({ name: '', color: '#06b6d4' });
 
-  {/*DECLARATION FOR CALENDAR DATES*/}
   const today = new Date().toISOString().split('T')[0];
   const handleDateChange = (field, value) => {
     if (value > today) {
@@ -103,27 +101,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     testTypes: [],
     remarks: '',
   });
-
-  {/*SAVING NEW CATEGORY*/}
-  const handleSaveNewCategory = () => {
-    if (newcat.name.trim()) {
-      const categoryName = newcat.name.trim();
-
-      // --- ADD THIS SECTION ---
-      // Save color mapping to localStorage
-      const categoryColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
-      categoryColors[categoryName] = newcat.color; // Save the hex (e.g., #06b6d4)
-      localStorage.setItem('customCategoryColors', JSON.stringify(categoryColors));
-      // ------------------------
-
-      setCategories([...categories, categoryName]);
-      setFormData({ ...formData, category: categoryName });
-      setNewCat({ name: '', color: '#06b6d4' });
-      setIsAdding(false);
-    }
-  };
   
-  {/*SUBMIT HANDLER WITH DATA TRANSFORMATION*/}
   const handleSubmit = (e) => {
     e.preventDefault();
 

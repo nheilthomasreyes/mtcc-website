@@ -13,7 +13,6 @@ import {
   LogOut,
   BarChart3,
   Calculator,
-  Calendar,
 } from "lucide-react";
 
 const API_URL = "http://192.168.103.84:5000";
@@ -33,8 +32,6 @@ export default function App() {
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [customYears, setCustomYears] = useState([]);
-  const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
-  const [newYearInput, setNewYearInput] = useState("");
 
   // Load clients from backend - ONLY when logged in
   useEffect(() => {
@@ -159,21 +156,6 @@ export default function App() {
       (client) => new Date(client.dateRequested).getFullYear() === selectedYear
     );
   }, [clients, selectedYear]);
-
-  const handleAddYear = () => {
-    const year = parseInt(newYearInput);
-    if (!isNaN(year) && year >= 2000 && year <= 2100) {
-      if (!customYears.includes(year) && !availableYears.includes(year)) {
-        setCustomYears([...customYears, year]);
-        setNewYearInput("");
-        setIsAddYearModalOpen(false);
-      } else {
-        alert("This year already exists!");
-      }
-    } else {
-      alert("Please enter a valid year between 2000 and 2100");
-    }
-  };
 
   if (!isLoggedIn) {
     return (

@@ -11,7 +11,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { TEST_TYPE_LABELS } from "./types";
 import { TrendingUp, Users, FileText, TestTube } from "lucide-react";
 
 

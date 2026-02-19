@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Activity, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { format, startOfMonth, subMonths, isSameMonth } from 'date-fns';
+import { TrendingUp, DollarSign, Activity, CheckCircle, Clock} from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { format, subMonths, isSameMonth } from 'date-fns';
 
 const COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
 
