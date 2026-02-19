@@ -22,8 +22,8 @@ export function TallyModal({ isOpen, onClose, customYears }) {
   useEffect(() => {
   if (isOpen) {
     Promise.all([
-      axios.get('http://localhost:3000/categories'),
-      axios.get('http://localhost:3000/clients')
+      axios.get('http://192.168.103.84:5000/categories'),
+      axios.get('http://192.168.103.84:5000/clients')
     ])
       .then(([categoriesRes, clientsRes]) => {
         const saved = categoriesRes.data.map(cat => cat.company);

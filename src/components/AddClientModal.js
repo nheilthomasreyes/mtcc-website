@@ -34,7 +34,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
   ]);
 
   useEffect(() => {
-    axios.get('http://localhost:3000/categories')
+    axios.get('http://192.168.103.84:5000/categories')
       .then(res => {
         const saved = res.data.map(cat => cat.company);
         // Merge hardcoded + saved, avoid duplicates
@@ -432,7 +432,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                           localStorage.setItem('customCategoryColors', JSON.stringify(storedColors));
 
                           // 2. Existing axios call
-                          axios.post('http://localhost:3000/categories', { name: categoryName })
+                          axios.post('http://192.168.103.84:5000/categories', { name: categoryName })
                             .then(res => {
                               setCategories(prev => [...prev, categoryName]);
                               setFormData({ ...formData, category: categoryName });

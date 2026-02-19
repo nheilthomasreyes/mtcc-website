@@ -56,7 +56,7 @@ export function EditClientModal({ client, onClose, onSave }) {
 
   // Fetch saved categories from backend
   useEffect(() => {
-    axios.get('http://localhost:3000/categories')
+    axios.get('http://192.168.103.84:5000/categories')
       .then(res => {
         const saved = res.data.map(cat => cat.company || cat.name);
         // Merge default categories with saved ones, avoiding duplicates
