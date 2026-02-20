@@ -112,14 +112,13 @@ app.post("/categories", (req, res) => {
 
 
 // GET all clients
+// GET all clients - Numbers adjust automatically based on dateRequested
 app.get("/clients", (req, res) => {
-  const query = "SELECT * FROM clients ORDER BY dateRequested ASC";
+// We query the VIEW instead of the TABLE
+  const query = "SELECT * FROM client_list_view ORDER BY dateRequested ASC";
   
   db.query(query, (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ message: "Server error" });
-    }
+    if (err) return res.status(500).json({ message: "Server error" });
     res.json(results);
   });
 });
@@ -159,107 +158,95 @@ app.post("/clients", (req, res) => {
 
   // Generate serviceNo (example: 2026-0001)
   const year = new Date(dateRequested).getFullYear();
-  const countQuery = 'SELECT COUNT(*) as count FROM clients WHERE YEAR(dateRequested) = ?';
+  const type = roa ? 'ROA' : (ts ? 'TS' : null);
+  let serviceRequestForm = null;
   
-  db.query(countQuery, [year], (countErr, countResult) => {
-    if (countErr) return res.status(500).json({ message: "Server error" });
-
-    const nextNumber = (countResult[0].count + 1).toString().padStart(4, '0');
-    const serviceNo = `${year}-${nextNumber}`;
-
-    // --- GENERATE SERVICE REQUEST FORM ---
-    const type = roa ? 'ROA' : (ts ? 'TS' : null);
-    let serviceRequestForm = null;
+  if (type) {
+    // Get count of same type in same year
+    const typeCountQuery = `
+      SELECT COUNT(*) as count FROM clients 
+      WHERE YEAR(dateRequested) = ? AND ${type === 'ROA' ? 'roa = 1' : 'ts = 1'}
+    `;
     
-    if (type) {
-      // Get count of same type in same year
-      const typeCountQuery = `
-        SELECT COUNT(*) as count FROM clients 
-        WHERE YEAR(dateRequested) = ? AND ${type === 'ROA' ? 'roa = 1' : 'ts = 1'}
-      `;
-      
-      db.query(typeCountQuery, [year], (typeErr, typeResult) => {
-        if (typeErr) {
-          console.error("Error counting type:", typeErr);
-          return res.status(500).json({ message: "Server error generating service request form" });
-        }
+    db.query(typeCountQuery, [year], (typeErr, typeResult) => {
+      if (typeErr) {
+        console.error("Error counting type:", typeErr);
+        return res.status(500).json({ message: "Server error generating service request form" });
+      }
 
-        const sequenceNumber = typeResult[0].count + 1;
-        serviceRequestForm = generateServiceRequestFormName(dateRequested, roa, ts, sequenceNumber);
+      const sequenceNumber = typeResult[0].count + 1;
+      serviceRequestForm = generateServiceRequestFormName(dateRequested, roa, ts, sequenceNumber);
 
-        // Now insert with the generated serviceRequestForm
-        insertClient(serviceNo, serviceRequestForm);
-      });
-    } else {
-      // No type selected, insert without serviceRequestForm
-      insertClient(serviceNo, null);
-    }
+      // Now insert with the generated serviceRequestForm
+      insertClient(serviceRequestForm);
+    });
+  } else {
+    // No type selected, insert without serviceRequestForm
+    insertClient(ull);
+  }
 
-    function insertClient(serviceNo, serviceRequestForm) {
-    // INSERT query matching ACTUAL database columns
-      const query = `
-        INSERT INTO clients
-        (serviceNo, serviceRequestForm, name, address, email, phone, category, 
-        serviceType, status, progress, dateRequested, startDate, dueDate, 
-        dateClaimed, dateReleased, requestForm, testDate, releasedROA, roa, ts, roaV, 
-        sampleNo1, sampleNo2, sampleCount, amount, officialReceipt, remarks, testTypes, 
-        specimenNo, company)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
+  function insertClient(serviceRequestForm) {
+  // INSERT query matching ACTUAL database columns
+    const query = `
+      INSERT INTO clients
+      (serviceRequestForm, name, address, email, phone, category, 
+      serviceType, status, progress, dateRequested, startDate, dueDate, 
+      dateClaimed, dateReleased, requestForm, testDate, releasedROA, roa, ts, roaV, 
+      sampleNo1, sampleNo2, sampleCount, amount, officialReceipt, remarks, testTypes, 
+      specimenNo, company)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-      const values = [
-        serviceNo,                              // serviceNo
-        serviceRequestForm,                     // serviceRequestID
-        name,                                   // name
-        address || null,                        // address
-        email || null,                          // email
-        phone || null,                          // phone
-        category || 'Industry',                 // category
-        serviceType || 'Material Testing',      // serviceType
-        status || 'Pending',                    // status
-        progress || 0,                          // progress
-        dateRequested,                          // dateRequested
-        startDate || null,                      // startDate
-        dueDate || null,                        // dueDate
-        dateClaimed || null,                    // dateClaimed
-        dateReleased || null,                   // dateReleased
-        requestForm || 'Waiting',               // requestForm
-        testDate || null,                       // testDate
-        releasedROA || null,
-        roa ? 1 : 0,
-        ts ? 1 : 0,                    // releasedROA
-        roaV ? 1 : 0,                           // roaV (boolean to 0/1)
-        sampleNo1 || null,                       // sampleNo1
-        sampleNo2 || null,                      // sampleNo2
-        sampleCount || 0,                       // sampleCount
-        amount || 0,                            // amount
-        officialReceipt ? 1 : 0,               // officialReceipt (boolean to 0/1)
-        remarks || null,                        // remarks
-        testTypes || null,                      // testTypes (already string from frontend)
-        specimenNo || null,                     // specimenNo
-        company || null                         // company
-      ];
+    const values = [
+      serviceRequestForm,                     // serviceRequestID
+      name,                                   // name
+      address || null,                        // address
+      email || null,                          // email
+      phone || null,                          // phone
+      category || 'Industry',                 // category
+      serviceType || 'Material Testing',      // serviceType
+      status || 'Pending',                    // status
+      progress || 0,                          // progress
+      dateRequested,                          // dateRequested
+      startDate || null,                      // startDate
+      dueDate || null,                        // dueDate
+      dateClaimed || null,                    // dateClaimed
+      dateReleased || null,                   // dateReleased
+      requestForm || 'Waiting',               // requestForm
+      testDate || null,                       // testDate
+      releasedROA || null,
+      roa ? 1 : 0,
+      ts ? 1 : 0,                    // releasedROA
+      roaV ? 1 : 0,                           // roaV (boolean to 0/1)
+      sampleNo1 || null,                       // sampleNo1
+      sampleNo2 || null,                      // sampleNo2
+      sampleCount || 0,                       // sampleCount
+      amount || 0,                            // amount
+      officialReceipt ? 1 : 0,               // officialReceipt (boolean to 0/1)
+      remarks || null,                        // remarks
+      testTypes || null,                      // testTypes (already string from frontend)
+      specimenNo || null,                     // specimenNo
+      company || null                         // company
+    ];
 
-      db.query(query, values, (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          console.error("Query:", query);
-          console.error("Values:", values);
-          return res.status(500).json({ 
-            message: "Server error", 
-            error: err.message,
-            details: "Check if all database columns exist"
-          });
-        }
-        res.json({ 
-          message: "Client added successfully", 
-          id: result.insertId,
-          serviceNo: serviceNo,
-          serviceRequestForm: serviceRequestForm
+    db.query(query, values, (err, result) => {
+      if (err) {
+        console.error("Database error:", err);
+        console.error("Query:", query);
+        console.error("Values:", values);
+        return res.status(500).json({ 
+          message: "Server error", 
+          error: err.message,
+          details: "Check if all database columns exist"
         });
+      }
+      res.json({ 
+        message: "Client added successfully", 
+        id: result.insertId,
+        serviceRequestForm: serviceRequestForm
       });
-    };
-  });
+    });
+  };
 });
 
 // PUT update client - CORRECTED TO MATCH DATABASE SCHEMA
@@ -267,13 +254,13 @@ app.put("/clients/:id", (req, res) => {
   const { id } = req.params;
 
   const { 
-    serviceNo, serviceRequestForm, name, address, email, phone, 
+    serviceRequestForm, name, address, email, phone, 
     category, serviceType, status, progress, dateRequested, 
     startDate, dueDate, dateClaimed, dateReleased, requestForm, 
     testDate, releasedROA, roa, ts, roaV, sampleNo1, sampleNo2, specimenNo, sampleCount,
     amount, officialReceipt, remarks, testTypes, company
   } = req.body;
-   const year = new Date(dateRequested).getFullYear();
+  const year = new Date(dateRequested).getFullYear();
   const type = roa ? 'ROA' : (ts ? 'TS' : null);
   
   if (type) {
@@ -319,7 +306,7 @@ app.put("/clients/:id", (req, res) => {
   function updateClient(serviceRequestForm) {
     const query = `
       UPDATE clients 
-      SET serviceNo = ?, serviceRequestForm = ?, name = ?, address = ?, email = ?, 
+      SET serviceRequestForm = ?, name = ?, address = ?, email = ?, 
           phone = ?, category = ?, serviceType = ?, status = ?, progress = ?,
           dateRequested = ?, startDate = ?, dueDate = ?, dateClaimed = ?, 
           dateReleased = ?, requestForm = ?, testDate = ?, releasedROA = ?, roa = ?, ts = ?, 
@@ -330,7 +317,6 @@ app.put("/clients/:id", (req, res) => {
     `;
 
     const values = [
-      serviceNo || null,
       serviceRequestForm,
       name,
       address || null,

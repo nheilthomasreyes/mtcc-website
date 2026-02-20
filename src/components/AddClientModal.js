@@ -72,9 +72,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     progress: 0,
     
     // Dates
-    dateRequested: new Date().toISOString().split('T')[0],
-    startDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date().toISOString().split('T')[0],
+    dateRequested: '',
+    dueDate: '',
     dateReleased: '',
     dateClaimed: '',
     testDate: '',
@@ -139,9 +138,9 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       progress: Number(formData.progress),
       
       // Dates (ensure YYYY-MM-DD format, or null if empty)
-      dateRequested: formatDateForInput(formData.dateRequested),
-      startDate: formatDateForInput(formData.startDate),
-      dueDate: formatDateForInput(formData.dueDate),
+      dateRequested: formatDateForInput(formData.dateRequested) || null,
+      startDate: formatDateForInput(formData.startDate) || null,
+      dueDate: formatDateForInput(formData.dueDate) || null,
       dateReleased: formatDateForInput(formData.dateReleased) || null,
       dateClaimed: formatDateForInput(formData.dateClaimed) || null,
       testDate: formatDateForInput(formData.testDate) || null,
@@ -194,9 +193,9 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       serviceType: 'Material Testing',
       status: 'Pending',
       progress: 0,
-      dateRequested: new Date().toISOString().split('T')[0],
-      startDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date().toISOString().split('T')[0],
+      dateRequested: '',
+      startDate: '',
+      dueDate: '',
       dateReleased: '',
       dateClaimed: '',
       testDate: '',
