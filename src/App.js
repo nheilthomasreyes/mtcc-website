@@ -15,7 +15,7 @@ import {
   Calculator,
 } from "lucide-react";
 
-const API_URL = "http://192.168.0.121:5000";
+const API_URL = "http://192.168.100.182:5000";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
