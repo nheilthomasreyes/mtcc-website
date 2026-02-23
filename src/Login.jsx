@@ -9,7 +9,7 @@ import hidepasswordicon from './images/EYECLOSED.png';
 import showpasswordicon from './images/EYE.png';
 import './Login.css';
 
-const API_URL = "http://192.168.68.126:5000";
+const API_URL = "http://192.168.0.126:5000";
 
 const Login = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);

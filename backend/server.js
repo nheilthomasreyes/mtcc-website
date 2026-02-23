@@ -375,5 +375,5 @@ app.delete("/clients/:id", (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on http://192.168.68.126:${PORT}`);
+  console.log(`Server running on http://192.168.0.126:${PORT}`);
 });
