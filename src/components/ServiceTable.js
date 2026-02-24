@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { useState, useMemo, useEffect } from 'react';
 import ExcelJS from 'exceljs';
 
-export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
+export function ServiceTable({ clients, tests = [],  onEdit, onDelete, onComplete }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedClientType, setSelectedClientType] = useState('All');
   const [selectedTestType, setSelectedTestType] = useState('All');
@@ -178,6 +178,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
       // Add Rows
       dataToExport.forEach(client => {
+
+        const test = tests.find(t => t.service_id === client.id) || {};
         const row = ws.addRow({
           serviceNo: client.serviceNo || '',
           name: client.name || '',
@@ -191,13 +193,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           testDate: client.testDate ? format(new Date(client.testDate), 'yyyy-MM-dd') : '',
           roaStatus: (client.roaV === true || client.roaV === 1) ? '☑' : '☐',
           roaReleasedDate: client.releasedROA ? format(new Date(client.releasedROA), 'yyyy-MM-dd') : '',
-          sampleNo: client.sampleNo1 && client.sampleNo2 
-            ? `${client.sampleNo1} - ${client.sampleNo2}` 
-            : client.sampleNo1 || client.sampleNo2 || '',
-          specimenNo: client.specimenNo || '',
+          sampleNo: test.sampleNo1 && test.sampleNo2 
+            ? `${test.sampleNo1} - ${test.sampleNo2}` 
+            : test.sampleNo1 || test.sampleNo2 || '',
+          specimenNo: test.specimenNo || '',
           testTypes: Array.isArray(client.testTypes) ? client.testTypes.join(', ') : (client.testTypes || ''),
           amount: Number(client.amount) || 0,
-          sampleCount: Number(client.sampleCount) || 0,
+          sampleCount: Number(test.sampleCount) || 0,
           status: client.status || '',
           remarks: client.remarks || ''
         });
@@ -357,6 +359,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           </thead>
           <tbody className="divide-y divide-white/5">
             {paginatedClients.map((client, index) => {
+              const test = tests.find(t => t.service_id === client.id) || {};
               const clientTestTypes = parseTestTypes(client.testTypes);
               return (
                 <tr key={client.id ?? index} className="hover:bg-white/5 transition-colors">
@@ -429,16 +432,16 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   </td>
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-300 whitespace-nowrap">
-                      {client.sampleNo1 && client.sampleNo2 
-                        ? `${client.sampleNo1} - ${client.sampleNo2}` 
-                        : client.sampleNo1 || client.sampleNo2 || '-'}
+                      {test.sampleNo1 && test.sampleNo2 
+                        ? `${test.sampleNo1} - ${test.sampleNo2}` 
+                        : test.sampleNo1 || test.sampleNo2 || '-'}
                     </p>
                   </td>
                   <td className="px-5 py-5">
-                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.specimenNo || '-'}</p>
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{test.specimenNo || '-'}</p>
                   </td>
                   <td className="px-5 py-5">
-                    <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
+                    <p className="text-sm text-gray-300 text-center whitespace-nowrap">{test.sampleCount || '-'}</p>
                   </td>
                   <td className="px-5 py-5">
                     <div className="grid grid-cols-3 gap-2 w-fit max-w-xs">

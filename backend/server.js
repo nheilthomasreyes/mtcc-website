@@ -154,7 +154,7 @@ app.post("/clients", (req, res) => {
       releasedROA  || null,
       roa ? 1 : 0,
       ts  ? 1 : 0,
-      roaV           ? 1 : 0,
+      roaV            ? 1 : 0,
       officialReceipt ? 1 : 0,
       remarks || null,
     ];
@@ -168,48 +168,53 @@ app.post("/clients", (req, res) => {
       const clientId = result.insertId;
 
       // ── Insert service_tests rows ───────────────────────────────────────────
-      if (!serviceTests || serviceTests.length === 0) {
-        return res.json({
+      // We process tests if the array exists and has content
+      if (serviceTests && Array.isArray(serviceTests) && serviceTests.length > 0) {
+        const testQuery = `
+          INSERT INTO service_tests
+            (service_id, testType, sampleNo1, sampleNo2, sampleCount, specimenNo, amount)
+          VALUES ?
+        `;
+
+        const testValues = serviceTests.map(t => [
+          clientId,        // Links the test to the client we just created
+          t.testType,
+          t.sampleNo1   || null,
+          t.sampleNo2   || null,
+          t.sampleCount || 0,
+          t.specimenNo  || null,
+          t.amount      || 0,
+        ]);
+
+        db.query(testQuery, [testValues], (testErr) => {
+          if (testErr) {
+            console.error("Error inserting service_tests:", testErr);
+            // Partial success: Client is saved, but tests failed.
+            return res.status(207).json({
+              message: "Client added but tests failed",
+              id: clientId,
+              ...req.body,
+              serviceRequestForm
+            });
+          }
+
+          // Full Success: Return the new ID and the original body so frontend can update state
+          res.json({
+            message: "Client and tests added successfully",
+            id: clientId,
+            ...req.body,
+            serviceRequestForm
+          });
+        });
+      } else {
+        // Success without tests
+        res.json({
           message: "Client added successfully",
           id: clientId,
+          ...req.body,
           serviceRequestForm
         });
       }
-
-      const testQuery = `
-        INSERT INTO service_tests
-          (service_id, testType, sampleNo1, sampleNo2, sampleCount, specimenNo, amount)
-        VALUES ?
-      `;
-
-      const testValues = serviceTests.map(t => [
-        clientId,
-        t.testType,
-        t.sampleNo1   || null,
-        t.sampleNo2   || null,
-        t.sampleCount || 0,
-        t.specimenNo  || null,
-        t.amount      || 0,
-      ]);
-
-      db.query(testQuery, [testValues], (testErr) => {
-        if (testErr) {
-          console.error("Error inserting service_tests:", testErr);
-          // Client was already inserted — still return success but warn
-          return res.status(207).json({
-            message: "Client added but service tests failed to save",
-            id: clientId,
-            serviceRequestForm,
-            error: testErr.message
-          });
-        }
-
-        res.json({
-          message: "Client and service tests added successfully",
-          id: clientId,
-          serviceRequestForm
-        });
-      });
     });
   };
 
@@ -231,29 +236,64 @@ app.post("/clients", (req, res) => {
 // ─── SERVICE TESTS ────────────────────────────────────────────────────────────
 
 // GET all service_tests for a client
-app.get("/clients/:id/service-tests", (req, res) => {
-  const { id } = req.params;
-  const query = "SELECT * FROM service_tests WHERE service_id = ?";
-  db.query(query, [id], (err, results) => {
-    if (err) return res.status(500).json({ message: "Server error" });
-    res.json(results);
+app.get("/clients", (req, res) => {
+  // 1. Fetch all clients from your database view
+  db.query("SELECT * FROM client_list_view", (err, clients) => {
+    if (err) {
+      console.error("Error fetching clients:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+
+    // 2. Fetch ALL service tests in one go
+    db.query("SELECT * FROM service_tests", (err, allTests) => {
+      if (err) {
+        console.error("Error fetching tests:", err);
+        return res.status(500).json({ message: "Server error" });
+      }
+
+      // 3. Combine them: Attach tests to their matching client
+      const combinedData = clients.map(client => {
+        return {
+          ...client,
+          // We filter the tests by service_id and attach them as 'serviceTests'
+          // This name MUST match what your Frontend uses (serviceTests)
+          serviceTests: allTests
+            .filter(t => t.service_id === client.id)
+            .map(t => ({
+              ...t,
+              serviceId: t.service_id // Ensuring both naming versions exist for safety
+            }))
+        };
+      });
+
+      res.json(combinedData);
+    });
   });
 });
 
 // PUT update service_tests for a client
 // Replaces all existing service_tests rows for that client
-app.put("/clients/:id/service-tests", (req, res) => {
+app.put("/clients/:id/service_tests", (req, res) => {
   const { id } = req.params;
-  const { serviceTests } = req.body; // array same shape as POST
+  const { serviceTests } = req.body; // Expecting { serviceTests: [...] }
 
-  // Delete existing rows first
+  // 1. Delete existing rows for this specific client
   db.query("DELETE FROM service_tests WHERE service_id = ?", [id], (delErr) => {
-    if (delErr) return res.status(500).json({ message: "Server error deleting old tests" });
-
-    if (!serviceTests || serviceTests.length === 0) {
-      return res.json({ message: "Service tests cleared" });
+    if (delErr) {
+      console.error("Error deleting old tests:", delErr);
+      return res.status(500).json({ message: "Server error deleting old tests" });
     }
 
+    // 2. If the user cleared all tests, return success immediately
+    if (!serviceTests || !Array.isArray(serviceTests) || serviceTests.length === 0) {
+      return res.json({ 
+        message: "Service tests cleared", 
+        service_id: id, 
+        serviceTests: [] 
+      });
+    }
+
+    // 3. Prepare the new rows
     const testQuery = `
       INSERT INTO service_tests
         (service_id, testType, sampleNo1, sampleNo2, sampleCount, specimenNo, amount)
@@ -270,12 +310,20 @@ app.put("/clients/:id/service-tests", (req, res) => {
       t.amount      || 0,
     ]);
 
+    // 4. Perform the bulk insert
     db.query(testQuery, [testValues], (insertErr) => {
       if (insertErr) {
-        console.error("Error inserting service_tests:", insertErr);
+        console.error("Error inserting service_tests during update:", insertErr);
         return res.status(500).json({ message: "Server error", error: insertErr.message });
       }
-      res.json({ message: "Service tests updated successfully" });
+
+      // 5. Return success along with the updated tests
+      // This allows the frontend to update the specific client object in the state
+      res.json({ 
+        message: "Service tests updated successfully",
+        service_id: id,
+        serviceTests: serviceTests.map(t => ({ ...t, service_id: id }))
+      });
     });
   });
 });

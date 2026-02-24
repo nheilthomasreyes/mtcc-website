@@ -43,21 +43,11 @@ const fetchAllClients = async () => {
   try {
     const res = await fetch(`${API_URL}/clients`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    
+    // Data now already includes .serviceTests from the server logic we added
     const data = await res.json();
-
-    // Fetch service_tests for all clients in parallel
-    const withTests = await Promise.all(
-      data.map(async (client) => {
-        try {
-          const testRes = await fetch(`${API_URL}/clients/${client.id}/service-tests`);
-          const serviceTests = testRes.ok ? await testRes.json() : [];
-          return { ...client, serviceTests };
-        } catch {
-          return { ...client, serviceTests: [] };
-        }
-      })
-    );
-    setClients(withTests);
+    
+    setClients(data);
     setLoading(false);
   } catch (err) {
     console.error("Fetch error:", err);
@@ -117,7 +107,7 @@ const fetchAllClients = async () => {
     const result = await res.json();
 
     // Fetch back the saved service tests
-    const testRes = await fetch(`${API_URL}/clients/${result.id}/service-tests`);
+    const testRes = await fetch(`${API_URL}/clients/${result.id}/service_tests`);
     const serviceTests = testRes.ok ? await testRes.json() : [];
 
     setClients(prev => [...prev, {
@@ -289,6 +279,8 @@ const fetchAllClients = async () => {
         <div className="flex-1 overflow-hidden">
           <ServiceTable
             clients={filteredClients}
+            // This extracts all tests from all clients into one array for the table
+            service_tests={filteredClients.flatMap(c => c.serviceTests || [])}
             onEdit={setEditingClient}
             onDelete={handleDeleteClient}
             onComplete={handleCompleteClient}
