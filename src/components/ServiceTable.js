@@ -222,7 +222,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
       });
 
       dataToExport.forEach(client => {
-        const firstTest = client.serviceTests?.[0] || {};
         const row = ws.addRow({
           serviceNo:       client.serviceNo || '',
           name:            client.name || '',
@@ -235,7 +234,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           testDate:        client.testDate ? format(new Date(client.testDate), 'yyyy-MM-dd') : '',
           roaStatus:       (client.roaV === true || client.roaV === 1) ? '☑' : '☐',
           roaReleasedDate: client.releasedROA ? format(new Date(client.releasedROA), 'yyyy-MM-dd') : '',
-<<<<<<< HEAD
           // ── Use aggregated helpers ──────────────────────────────────────────
           sampleNo:        getSampleNoDisplay(client),
           specimenNo:      getSpecimenNoDisplay(client),
@@ -245,17 +243,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           // ───────────────────────────────────────────────────────────────────
           status:          client.status || '',
           remarks:         client.remarks || '',
-=======
-          sampleNo: firstTest.sampleNo1 && firstTest.sampleNo2 
-           ? `${firstTest.sampleNo1} - ${firstTest.sampleNo2}` 
-           : firstTest.sampleNo1 || firstTest.sampleNo2 || '',
-          specimenNo: firstTest.specimenNo || '',
-          amount: Number(firstTest.amount) || 0,
-          testTypes: Array.isArray(client.testTypes) ? client.testTypes.join(', ') : (client.testTypes || ''),
-          sampleCount: Number(client.sampleCount) || 0,
-          status: client.status || '',
-          remarks: client.remarks || ''
->>>>>>> ba2605476b75a1c61a4225f34e9b0bbf7a2caa59
         });
 
         const orCell  = row.getCell('orStatus');
@@ -460,7 +447,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'yyyy-MM-dd') : '-'}</p>
                   </td>
-<<<<<<< HEAD
 
                   {/* Sample No. — now from serviceTests */}
                   <td className="px-5 py-5">
@@ -480,35 +466,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   </td>
 
                   {/* Types of Test — from serviceTests */}
-=======
-                  <td className="px-4 py-3 text-sm text-gray-300">
-                   <p className="text-sm text-gray-300 whitespace-nowrap">
-                      {client.serviceTests && client.serviceTests.length > 0 
-                        ? client.serviceTests.map(test => {
-                            if (test.sampleNo1 && test.sampleNo2) {
-                              return `${test.sampleNo1} - ${test.sampleNo2}`;
-                            }
-                            return test.sampleNo1 || test.sampleNo2 || '';
-                          }).filter(Boolean).join(', ') // Joins multiple tests with a comma
-                        : (client.sampleNo1 && client.sampleNo2 
-                            ? `${client.sampleNo1} - ${client.sampleNo2}` 
-                            : client.sampleNo1 || client.sampleNo2 || '-')}
-                    </p>
-                  </td>
-                  <td className="px-5 py-5">
-                   <p className="text-sm text-gray-300 whitespace-nowrap">
-                      {client.serviceTests && client.serviceTests.length > 0 
-                        ? client.serviceTests
-                            .map(test => test.specimenNo)
-                            .filter(Boolean) // Removes empty values
-                            .join(', ')      // Joins multiple specimens with a comma (e.g., "Spec-1, Spec-2")
-                        : (client.specimenNo || '-')} 
-                    </p>
-                  </td>
-                  <td className="px-5 py-5">
-                    <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
-                  </td>
->>>>>>> ba2605476b75a1c61a4225f34e9b0bbf7a2caa59
                   <td className="px-5 py-5">
                     <div className="grid grid-cols-3 gap-2 w-fit max-w-xs">
                       {clientTestTypes.length > 0
