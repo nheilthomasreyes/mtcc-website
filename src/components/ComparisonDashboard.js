@@ -23,6 +23,15 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
       return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][monthIndex];
     };
 
+    // Helper to count unique customers by email (falls back to name)
+    const countUniqueCustomers = (clientList) => {
+      return new Set(
+        clientList.map(c =>
+          (c.email?.trim().toLowerCase()) || (c.name?.trim().toLowerCase())
+        )
+      ).size;
+    };
+
     // Filter clients by year
     const currentYearClients = clients.filter(c => {
       const year = new Date(c.dateRequested).getFullYear();
@@ -67,14 +76,10 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
         return date.getMonth() === month;
       });
 
-      // Count unique customers by ID
-      const currentUniqueCustomers = new Set(currentMonthClients.map(c => c.id)).size;
-      const previousUniqueCustomers = new Set(previousMonthClients.map(c => c.id)).size;
-
       monthlyCustomersData.push({
         month: getMonthName(month),
-        [selectedYear]: currentUniqueCustomers,
-        [comparisonYear]: previousUniqueCustomers,
+        [selectedYear]: countUniqueCustomers(currentMonthClients),
+        [comparisonYear]: countUniqueCustomers(previousMonthClients),
       });
     }
 
@@ -103,12 +108,12 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
     for (let month = 0; month < 12; month++) {
       const currentMonthFTIR = currentYearClients.filter(c => {
         const date = new Date(c.dateRequested);
-        return date.getMonth() === month && c.testTypes.includes('FTIR');
+        return date.getMonth() === month && c.testTypes && c.testTypes.includes('FTIR');
       });
 
       const previousMonthFTIR = previousYearClients.filter(c => {
         const date = new Date(c.dateRequested);
-        return date.getMonth() === month && c.testTypes.includes('FTIR');
+        return date.getMonth() === month && c.testTypes && c.testTypes.includes('FTIR');
       });
 
       monthlyFTIRData.push({
@@ -121,16 +126,16 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
     // Services Offer Comparison Table
     const currentYearStats = {
       totalServices: currentYearClients.length,
-      totalIncome: currentYearClients.reduce((sum, c) => sum + c.amount, 0),
-      totalCustomers: new Set(currentYearClients.map(c => c.id)).size,
+      totalIncome: currentYearClients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0),
+      totalCustomers: countUniqueCustomers(currentYearClients),
       materialTesting: currentYearClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length,
       calibration: currentYearClients.filter(c => c.serviceType === 'Calibration' || c.serviceType === 'Both').length,
     };
 
     const previousYearStats = {
       totalServices: previousYearClients.length,
-      totalIncome: previousYearClients.reduce((sum, c) => sum + c.amount, 0),
-      totalCustomers: new Set(previousYearClients.map(c => c.id)).size,
+      totalIncome: previousYearClients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0),
+      totalCustomers: countUniqueCustomers(previousYearClients),
       materialTesting: previousYearClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length,
       calibration: previousYearClients.filter(c => c.serviceType === 'Calibration' || c.serviceType === 'Both').length,
     };

@@ -169,6 +169,12 @@ const fetchAllClients = async () => {
     const yearArray = Array.from(years).sort((a, b) => b - a);
     return yearArray.length > 0 ? yearArray : [new Date().getFullYear()];
   }, [clients, customYears]);
+  
+  useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[0]); // snap to the most recent valid year
+    }
+  }, [availableYears]);
 
   const filteredClients = useMemo(() => {
     return clients.filter(
@@ -320,8 +326,8 @@ const fetchAllClients = async () => {
       <TallyModal
         isOpen={isTallyOpen}
         onClose={() => setIsTallyOpen(false)}
-        clients={filteredClients}
-        selectedYear={selectedYear}
+        customYears={customYears}
+        allClients={clients}
       />
     </div>
   );

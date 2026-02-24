@@ -12,22 +12,24 @@ export function Dashboard({ clients }) {
     const completed = clients.filter(c => c.status === 'Completed').length;
     const pending = clients.filter(c => c.status === 'Pending').length;
     const cancelled = clients.filter(c => c.status === 'Cancelled').length;
-    const totalRevenue = clients.reduce((sum, c) => sum + c.amount, 0);
+
+    // Use Number() to safely parse amount in case it comes as a string from the DB
+    const totalRevenue = clients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
     const completedRevenue = clients
       .filter(c => c.status === 'Completed')
-      .reduce((sum, c) => sum + c.amount, 0);
+      .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 
     // Monthly data for the last 6 months
     const monthlyData = [];
     for (let i = 5; i >= 0; i--) {
       const month = subMonths(new Date(), i);
-      const monthClients = clients.filter(c => 
+      const monthClients = clients.filter(c =>
         isSameMonth(new Date(c.startDate), month)
       );
       monthlyData.push({
         month: format(month, 'MMM yyyy'),
         services: monthClients.length,
-        revenue: monthClients.reduce((sum, c) => sum + c.amount, 0) / 1000,
+        revenue: monthClients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0) / 1000,
       });
     }
 
@@ -167,21 +169,21 @@ export function Dashboard({ clients }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
               <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #334155',
                   borderRadius: '12px',
                   color: '#fff'
-                }} 
+                }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="services" 
-                stroke="#06b6d4" 
+              <Area
+                type="monotone"
+                dataKey="services"
+                stroke="#06b6d4"
                 strokeWidth={3}
                 fillOpacity={1}
-                fill="url(#colorServices)" 
+                fill="url(#colorServices)"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -198,18 +200,18 @@ export function Dashboard({ clients }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
               <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #334155',
                   borderRadius: '12px',
                   color: '#fff'
-                }} 
+                }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#3b82f6" 
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#3b82f6"
                 strokeWidth={3}
                 dot={{ fill: '#3b82f6', r: 4 }}
                 activeDot={{ r: 6 }}
@@ -229,13 +231,13 @@ export function Dashboard({ clients }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="status" stroke="#94a3b8" fontSize={12} />
               <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #334155',
                   borderRadius: '12px',
                   color: '#fff'
-                }} 
+                }}
               />
               <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]}>
                 {stats.statusData.map((entry, index) => (
@@ -268,13 +270,13 @@ export function Dashboard({ clients }) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #334155',
                   borderRadius: '12px',
                   color: '#fff'
-                }} 
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
