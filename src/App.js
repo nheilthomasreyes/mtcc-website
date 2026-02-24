@@ -15,7 +15,7 @@ import {
   Calculator,
 } from "lucide-react";
 
-const API_URL = "http://192.168.100.182:5000";
+const API_URL = "";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -35,43 +35,36 @@ export default function App() {
 
   // Load clients from backend - ONLY when logged in
   useEffect(() => {
-    if (!isLoggedIn) {
-      setLoading(false);
-      return; // Don't fetch if not logged in
-    }
+  if (!isLoggedIn) { setLoading(false); return; }
+  fetchAllClients();
+}, [isLoggedIn]);
 
-    const fetchClients = async () => {
-      try {
-        console.log("Fetching clients from:", `${API_URL}/clients`);
-        const res = await fetch(`${API_URL}/clients`);
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+const fetchAllClients = async () => {
+  try {
+    const res = await fetch(`${API_URL}/clients`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+
+    // Fetch service_tests for all clients in parallel
+    const withTests = await Promise.all(
+      data.map(async (client) => {
+        try {
+          const testRes = await fetch(`${API_URL}/clients/${client.id}/service-tests`);
+          const serviceTests = testRes.ok ? await testRes.json() : [];
+          return { ...client, serviceTests };
+        } catch {
+          return { ...client, serviceTests: [] };
         }
-        
-        const data = await res.json();
-        console.log("Received clients:", data);
-        
-        // Convert testTypes from JSON string to array if needed
-        const processed = data.map((c) => ({
-          ...c,
-          testTypes: Array.isArray(c.testTypes)
-            ? c.testTypes
-            : typeof c.testTypes === 'string' && c.testTypes.trim()
-            ? c.testTypes.split(',').map(t => t.trim())
-            : [],
-        }));
-        setClients(processed);
-        setLoading(false);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setError(err);
-        setLoading(false);
-      }
-    };
-    
-    fetchClients();
-  }, [isLoggedIn]);
+      })
+    );
+    setClients(withTests);
+    setLoading(false);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    setError(err);
+    setLoading(false);
+  }
+};
 
   // Load custom years from localStorage
   useEffect(() => {
@@ -102,17 +95,43 @@ export default function App() {
     return `${year}-${String(count).padStart(4, "0")}`;
   };
 
-  const handleAddClient = async (client) => {
-    if (!client.dateRequested) {
-      alert("Date Requested is required");
-      return;
+  const handleAddClient = async (clientData) => {
+  if (!clientData.dateRequested) {
+    alert("Date Requested is required");
+    return;
+  }
+  try {
+    const payload = { ...clientData, serviceNo: generateServiceNo() };
+
+    const res = await fetch(`${API_URL}/clients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Failed to add client");
     }
-    
-    const newClient = { ...client, serviceNo: generateServiceNo() };
-    await saveClientToBackend(newClient, "POST");
-    setClients([...clients, newClient]);
+
+    const result = await res.json();
+
+    // Fetch back the saved service tests
+    const testRes = await fetch(`${API_URL}/clients/${result.id}/service-tests`);
+    const serviceTests = testRes.ok ? await testRes.json() : [];
+
+    setClients(prev => [...prev, {
+      ...payload,
+      id: result.id,
+      serviceRequestForm: result.serviceRequestForm,
+      serviceTests,
+    }]);
     setIsAddModalOpen(false);
-  };
+  } catch (err) {
+    console.error("Add client error:", err);
+    alert(`Failed to add client: ${err.message}`);
+  }
+};
 
   const handleEditClient = async (updatedClient) => {
     await saveClientToBackend(updatedClient, "PUT");
