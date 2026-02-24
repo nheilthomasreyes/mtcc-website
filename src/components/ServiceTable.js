@@ -178,6 +178,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
       // Add Rows
       dataToExport.forEach(client => {
+        const firstTest = client.serviceTests?.[0] || {};
         const row = ws.addRow({
           serviceNo: client.serviceNo || '',
           name: client.name || '',
@@ -191,12 +192,12 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           testDate: client.testDate ? format(new Date(client.testDate), 'yyyy-MM-dd') : '',
           roaStatus: (client.roaV === true || client.roaV === 1) ? '☑' : '☐',
           roaReleasedDate: client.releasedROA ? format(new Date(client.releasedROA), 'yyyy-MM-dd') : '',
-          sampleNo: client.sampleNo1 && client.sampleNo2 
-            ? `${client.sampleNo1} - ${client.sampleNo2}` 
-            : client.sampleNo1 || client.sampleNo2 || '',
-          specimenNo: client.specimenNo || '',
+          sampleNo: firstTest.sampleNo1 && firstTest.sampleNo2 
+           ? `${firstTest.sampleNo1} - ${firstTest.sampleNo2}` 
+           : firstTest.sampleNo1 || firstTest.sampleNo2 || '',
+          specimenNo: firstTest.specimenNo || '',
+          amount: Number(firstTest.amount) || 0,
           testTypes: Array.isArray(client.testTypes) ? client.testTypes.join(', ') : (client.testTypes || ''),
-          amount: Number(client.amount) || 0,
           sampleCount: Number(client.sampleCount) || 0,
           status: client.status || '',
           remarks: client.remarks || ''
@@ -427,15 +428,29 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'MMM dd, yyyy') : '-'}</p>
                   </td>
-                  <td className="px-5 py-5">
-                    <p className="text-sm text-gray-300 whitespace-nowrap">
-                      {client.sampleNo1 && client.sampleNo2 
-                        ? `${client.sampleNo1} - ${client.sampleNo2}` 
-                        : client.sampleNo1 || client.sampleNo2 || '-'}
+                  <td className="px-4 py-3 text-sm text-gray-300">
+                   <p className="text-sm text-gray-300 whitespace-nowrap">
+                      {client.serviceTests && client.serviceTests.length > 0 
+                        ? client.serviceTests.map(test => {
+                            if (test.sampleNo1 && test.sampleNo2) {
+                              return `${test.sampleNo1} - ${test.sampleNo2}`;
+                            }
+                            return test.sampleNo1 || test.sampleNo2 || '';
+                          }).filter(Boolean).join(', ') // Joins multiple tests with a comma
+                        : (client.sampleNo1 && client.sampleNo2 
+                            ? `${client.sampleNo1} - ${client.sampleNo2}` 
+                            : client.sampleNo1 || client.sampleNo2 || '-')}
                     </p>
                   </td>
                   <td className="px-5 py-5">
-                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.specimenNo || '-'}</p>
+                   <p className="text-sm text-gray-300 whitespace-nowrap">
+                      {client.serviceTests && client.serviceTests.length > 0 
+                        ? client.serviceTests
+                            .map(test => test.specimenNo)
+                            .filter(Boolean) // Removes empty values
+                            .join(', ')      // Joins multiple specimens with a comma (e.g., "Spec-1, Spec-2")
+                        : (client.specimenNo || '-')} 
+                    </p>
                   </td>
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-300 text-center whitespace-nowrap">{client.sampleCount || '-'}</p>
