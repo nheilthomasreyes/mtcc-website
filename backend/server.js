@@ -86,6 +86,21 @@ app.post("/categories", (req, res) => {
   });
 });
 
+app.patch("/clients/:id/status", (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status) return res.status(400).json({ message: "status is required" });
+
+  db.query("UPDATE clients SET status = ? WHERE id = ?", [status, id], (err) => {
+    if (err) {
+      console.error("Error updating status:", err);
+      return res.status(500).json({ message: "Server error", error: err.message });
+    }
+    res.json({ message: "Status updated successfully" });
+  });
+});
+
 // ─── CLIENTS ──────────────────────────────────────────────────────────────────
 app.get("/clients", (req, res) => {
   const query = "SELECT * FROM client_list_view ORDER BY dateRequested ASC";

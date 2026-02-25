@@ -13,23 +13,31 @@ export function Dashboard({ clients }) {
     const pending = clients.filter(c => c.status === 'Pending').length;
     const cancelled = clients.filter(c => c.status === 'Cancelled').length;
 
+    const getRevenue = (client) => {
+      if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
+        return client.serviceTests.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      }
+      return Number(client.amount) || 0;
+    };
+
     // Use Number() to safely parse amount in case it comes as a string from the DB
-    const totalRevenue = clients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+    const totalRevenue = clients.reduce((sum, c) => sum + getRevenue(c), 0);
     const completedRevenue = clients
       .filter(c => c.status === 'Completed')
-      .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+      .reduce((sum, c) => sum + getRevenue(c), 0);
 
     // Monthly data for the last 6 months
     const monthlyData = [];
     for (let i = 5; i >= 0; i--) {
       const month = subMonths(new Date(), i);
-      const monthClients = clients.filter(c =>
-        isSameMonth(new Date(c.startDate), month)
-      );
+      const monthClients = clients.filter(c => {
+        if (!c.dateRequested) return false;          // guard against nulls
+        return isSameMonth(new Date(c.dateRequested), month);
+      });
       monthlyData.push({
         month: format(month, 'MMM yyyy'),
         services: monthClients.length,
-        revenue: monthClients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0) / 1000,
+        revenue: monthClients.reduce((sum, c) => sum + getRevenue(c), 0) / 1000,
       });
     }
 

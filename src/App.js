@@ -147,18 +147,24 @@ const fetchAllClients = async () => {
   };
 
   const handleCompleteClient = async (id) => {
-  try {
-    const clientToUpdate = clients.find(c => c.id === id);
-    if (!clientToUpdate) return;
+    try {
+      const res = await fetch(`${API_URL}/clients/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Completed' }),
+      });
 
-    const updatedClient = { ...clientToUpdate, status: 'Completed' };
-    await saveClientToBackend(updatedClient, "PUT");
-    setClients(clients.map((c) => (c.id === id ? updatedClient : c)));
-  } catch (error) {
-    console.error("Error completing client:", error);
-    alert("Failed to mark client as completed");
-  }
-};
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to update');
+      }
+
+      setClients(clients.map((c) => (c.id === id ? { ...c, status: 'Completed' } : c)));
+    } catch (error) {
+      console.error('Error completing client:', error);
+      alert(`Failed to mark client as completed: ${error.message}`);
+    }
+  };
 
   const availableYears = useMemo(() => {
     const years = new Set(customYears);
