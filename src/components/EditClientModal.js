@@ -753,20 +753,26 @@ export function EditClientModal({ client, onClose, onSave }) {
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-400 mb-1">Amount (₱) <span className="text-red-400">*</span></label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={td.amount ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === "") { handleTestFieldChange(type, 'amount', ""); return; }
-                            const numValue = Number(val);
-                            handleTestFieldChange(type, 'amount', numValue < 0 ? "" : numValue);
-                          }}
-                          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                          placeholder="0"
-                        />
+                        <label className="block text-xs font-medium text-gray-400 mb-1">Amount (₱)</label>
+                        {formData.officialReceipt ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={td.amount ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "") { handleTestFieldChange(type, 'amount', ""); return; }
+                              const numValue = Number(val);
+                              handleTestFieldChange(type, 'amount', numValue < 0 ? "" : numValue);
+                            }}
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                            placeholder="0"
+                          />
+                        ) : (
+                          <div className="w-full px-3 py-2 bg-white/3 border border-white/8 rounded-lg text-gray-500 text-sm italic select-none">
+                            Awaiting Official Receipt
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
