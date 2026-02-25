@@ -103,10 +103,20 @@ app.patch("/clients/:id/status", (req, res) => {
 
 // ─── CLIENTS ──────────────────────────────────────────────────────────────────
 app.get("/clients", (req, res) => {
-  const query = "SELECT * FROM client_list_view ORDER BY dateRequested ASC";
+  const query = "SELECT * FROM client_list_view ORDER BY dateRequested ASC, id ASC";
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ message: "Server error" });
-    res.json(results);
+
+    const yearCounters = {};
+    const withServiceNo = results.map((client) => {
+      const year = new Date(client.dateRequested).getFullYear();
+      if (!yearCounters[year]) yearCounters[year] = 1;
+      const serviceNo = `${year}-${String(yearCounters[year]).padStart(4, '0')}`;
+      yearCounters[year]++;
+      return { ...client, serviceNo };
+    });
+
+    res.json(withServiceNo);
   });
 });
 

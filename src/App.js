@@ -134,9 +134,39 @@ const fetchAllClients = async () => {
 };
 
   const handleEditClient = async (updatedClient) => {
-    await saveClientToBackend(updatedClient, "PUT");
-    setClients(clients.map((c) => (c.id === updatedClient.id ? updatedClient : c)));
-    setEditingClient(null);
+    try {
+    // 1. Save the client fields
+      const res = await fetch(`${API_URL}/clients/${updatedClient.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedClient),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to update client');
+      }
+
+      // 2. Save the service tests separately
+      const testRes = await fetch(`${API_URL}/clients/${updatedClient.id}/service-tests`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceTests: updatedClient.serviceTests }),
+      });
+
+      if (!testRes.ok) {
+        const err = await testRes.json();
+        throw new Error(err.message || 'Failed to update service tests');
+      }
+
+      // 3. Update local state
+      setClients(clients.map((c) => (c.id === updatedClient.id ? updatedClient : c)));
+      setEditingClient(null);
+
+    } catch (error) {
+      console.error('Error saving client:', error);
+      alert(`Failed to save changes: ${error.message}`);
+    }
   };
 
   const handleDeleteClient = async (id) => {

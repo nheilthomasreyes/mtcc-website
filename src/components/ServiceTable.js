@@ -445,7 +445,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
                   {/* Released of ROA */}
                   <td className="px-5 py-5">
-                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'yyyy-MM-dd') : '-'}</p>
+                    <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'MMMM dd, yyyy') : '-'}</p>
                   </td>
 
                   {/* Sample No. — now from serviceTests */}

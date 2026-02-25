@@ -28,7 +28,7 @@ export function Dashboard({ clients }) {
 
     // Monthly data for the last 6 months
     const monthlyData = [];
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 13; i >= 0; i--) {
       const month = subMonths(new Date(), i);
       const monthClients = clients.filter(c => {
         if (!c.dateRequested) return false;          // guard against nulls
