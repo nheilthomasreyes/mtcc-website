@@ -17,10 +17,19 @@ const sanitizeValue = (value) => {
 // Helper to convert dates to YYYY-MM-DD format
 const sanitizeDate = (value) => {
   if (!value || value === 'NULL' || value === 'null') return '';
+  
+  // Already in YYYY-MM-DD format, return as-is
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  
   try {
     const date = new Date(value);
-    if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
+    if (!isNaN(date.getTime())) {
+      // Use local date parts instead of UTC to avoid timezone shift
+      const yyyy = date.getFullYear();
+      const mm   = String(date.getMonth() + 1).padStart(2, '0');
+      const dd   = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
   } catch (e) {
     return '';
   }

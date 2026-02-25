@@ -129,7 +129,7 @@ app.post("/clients", (req, res) => {
     requestForm, testDate, releasedROA,
     roa, ts, roaV, officialReceipt,
     remarks,
-    serviceTests   // array: [{ testType, sampleNo1, sampleNo2, sampleCount, specimenNo, amount }]
+    serviceTests
   } = req.body;
 
   // ── Validation ──────────────────────────────────────────────────────────────
@@ -143,114 +143,130 @@ app.post("/clients", (req, res) => {
     return res.status(400).json({ message: "Invalid dateRequested" });
   }
 
-  // ── Generate serviceRequestForm ─────────────────────────────────────────────
   const year = new Date(dateRequested).getFullYear();
   const type = roa ? 'ROA' : (ts ? 'TS' : null);
 
-  const doInsert = (serviceRequestForm) => {
-    const clientQuery = `
-      INSERT INTO clients
-        (serviceRequestForm, name, address, email, phone, company,
-         category, serviceType, status, progress,
-         dateRequested, startDate, dueDate, dateClaimed, dateReleased,
-         requestForm, testDate, releasedROA,
-         roa, ts, roaV, officialReceipt, remarks)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+  // ── Generate serviceNo based on dateRequested order within the year ─────────
+  const serviceNoQuery = `
+    SELECT COUNT(*) as count FROM clients
+    WHERE YEAR(dateRequested) = ?
+  `;
 
-    const clientValues = [
-      serviceRequestForm,
-      name.trim(),
-      address   || null,
-      email     || null,
-      phone     || null,
-      company   || null,
-      category  || 'Industry',
-      serviceType || 'Material Testing',
-      status    || 'Pending',
-      progress  || 0,
-      dateRequested,
-      startDate    || null,
-      dueDate      || null,
-      dateClaimed  || null,
-      dateReleased || null,
-      requestForm  || 'Waiting',
-      testDate     || null,
-      releasedROA  || null,
-      roa ? 1 : 0,
-      ts  ? 1 : 0,
-      roaV           ? 1 : 0,
-      officialReceipt ? 1 : 0,
-      remarks || null,
-    ];
+  db.query(serviceNoQuery, [year], (serviceNoErr, serviceNoResult) => {
+    if (serviceNoErr) return res.status(500).json({ message: "Server error generating service number" });
 
-    db.query(clientQuery, clientValues, (err, result) => {
-      if (err) {
-        console.error("Error inserting client:", err);
-        return res.status(500).json({ message: "Server error", error: err.message });
-      }
+    const sequence = serviceNoResult[0].count + 1;
+    const serviceNo = `${year}-${String(sequence).padStart(4, '0')}`;
 
-      const clientId = result.insertId;
-
-      // ── Insert service_tests rows ───────────────────────────────────────────
-      if (!serviceTests || serviceTests.length === 0) {
-        return res.json({
-          message: "Client added successfully",
-          id: clientId,
-          serviceRequestForm
-        });
-      }
-
-      const testQuery = `
-        INSERT INTO service_tests
-          (service_id, testType, sampleNo1, sampleNo2, sampleCount, specimenNo, amount)
-        VALUES ?
+    // ── Generate serviceRequestForm ───────────────────────────────────────────
+    const doInsert = (serviceRequestForm) => {
+      const clientQuery = `
+        INSERT INTO clients
+          (serviceNo, serviceRequestForm, name, address, email, phone, company,
+           category, serviceType, status, progress,
+           dateRequested, startDate, dueDate, dateClaimed, dateReleased,
+           requestForm, testDate, releasedROA,
+           roa, ts, roaV, officialReceipt, remarks)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      const testValues = serviceTests.map(t => [
-        clientId,
-        t.testType,
-        t.sampleNo1   || null,
-        t.sampleNo2   || null,
-        t.sampleCount || 0,
-        t.specimenNo  || null,
-        t.amount      || 0,
-      ]);
+      const clientValues = [
+        serviceNo,          // ← added
+        serviceRequestForm,
+        name.trim(),
+        address   || null,
+        email     || null,
+        phone     || null,
+        company   || null,
+        category  || 'Industry',
+        serviceType || 'Material Testing',
+        status    || 'Pending',
+        progress  || 0,
+        dateRequested,
+        startDate    || null,
+        dueDate      || null,
+        dateClaimed  || null,
+        dateReleased || null,
+        requestForm  || 'Waiting',
+        testDate     || null,
+        releasedROA  || null,
+        roa ? 1 : 0,
+        ts  ? 1 : 0,
+        roaV            ? 1 : 0,
+        officialReceipt ? 1 : 0,
+        remarks || null,
+      ];
 
-      db.query(testQuery, [testValues], (testErr) => {
-        if (testErr) {
-          console.error("Error inserting service_tests:", testErr);
-          // Client was already inserted — still return success but warn
-          return res.status(207).json({
-            message: "Client added but service tests failed to save",
+      db.query(clientQuery, clientValues, (err, result) => {
+        if (err) {
+          console.error("Error inserting client:", err);
+          return res.status(500).json({ message: "Server error", error: err.message });
+        }
+
+        const clientId = result.insertId;
+
+        if (!serviceTests || serviceTests.length === 0) {
+          return res.json({
+            message: "Client added successfully",
             id: clientId,
-            serviceRequestForm,
-            error: testErr.message
+            serviceNo,
+            serviceRequestForm
           });
         }
 
-        res.json({
-          message: "Client and service tests added successfully",
-          id: clientId,
-          serviceRequestForm
+        const testQuery = `
+          INSERT INTO service_tests
+            (service_id, testType, sampleNo1, sampleNo2, sampleCount, specimenNo, amount)
+          VALUES ?
+        `;
+
+        const testValues = serviceTests.map(t => [
+          clientId,
+          t.testType,
+          t.sampleNo1   || null,
+          t.sampleNo2   || null,
+          t.sampleCount || 0,
+          t.specimenNo  || null,
+          t.amount      || 0,
+        ]);
+
+        db.query(testQuery, [testValues], (testErr) => {
+          if (testErr) {
+            console.error("Error inserting service_tests:", testErr);
+            return res.status(207).json({
+              message: "Client added but service tests failed to save",
+              id: clientId,
+              serviceNo,
+              serviceRequestForm,
+              error: testErr.message
+            });
+          }
+
+          res.json({
+            message: "Client and service tests added successfully",
+            id: clientId,
+            serviceNo,
+            serviceRequestForm
+          });
         });
       });
-    });
-  };
+    };
 
-  if (type) {
-    const typeCountQuery = `
-      SELECT COUNT(*) as count FROM clients
-      WHERE YEAR(dateRequested) = ? AND ${type === 'ROA' ? 'roa = 1' : 'ts = 1'}
-    `;
-    db.query(typeCountQuery, [year], (err, result) => {
-      if (err) return res.status(500).json({ message: "Server error generating service request form" });
-      const sequenceNumber = result[0].count + 1;
-      doInsert(generateServiceRequestFormName(dateRequested, roa, ts, sequenceNumber));
-    });
-  } else {
-    doInsert(null);
-  }
+    // ── Generate serviceRequestForm ───────────────────────────────────────────
+    if (type) {
+      const typeCountQuery = `
+        SELECT COUNT(*) as count FROM clients
+        WHERE YEAR(dateRequested) = ? AND ${type === 'ROA' ? 'roa = 1' : 'ts = 1'}
+      `;
+      db.query(typeCountQuery, [year], (err, result) => {
+        if (err) return res.status(500).json({ message: "Server error generating service request form" });
+        const sequenceNumber = result[0].count + 1;
+        doInsert(generateServiceRequestFormName(dateRequested, roa, ts, sequenceNumber));
+      });
+    } else {
+      doInsert(null);
+    }
+  });
 });
 
 // ─── SERVICE TESTS ────────────────────────────────────────────────────────────
