@@ -174,7 +174,7 @@ const fetchAllClients = async () => {
     if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
       setSelectedYear(availableYears[0]); // snap to the most recent valid year
     }
-  }, [availableYears]);
+  }, [selectedYear, availableYears]);
 
   const filteredClients = useMemo(() => {
     return clients.filter(

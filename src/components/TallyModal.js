@@ -11,62 +11,10 @@ const ALL_TEST_TYPES = ['FTIR', 'CN', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT',
 // Service tally headers (test type columns) — amount per test type
 const TEST_HEADERS = ['FTIR', 'CN', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT', 'RE', 'UC', 'FD', 'HP', 'O'];
 
-// Samples tally headers — same test types for sample counts
-const SAMPLES_TEST_HEADERS = ['FTIR', 'Material Testing', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT', 'RE', 'UC', 'FD', 'HP', 'O'];
-
 // Material Testing test types (all except FTIR and CN)
 const MATERIAL_TESTING_TYPES = ['CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT', 'RE', 'UC', 'FD', 'HP', 'O'];
 
-export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedQuarter, setSelectedQuarter] = useState('all');
-  const [reportType, setReportType] = useState('service'); // 'service' or 'samples'
-
-  const [dbCategories, setDbCategories] = useState([]);
-
-  useEffect(() => {
-    if (isOpen) {
-      axios.get('http://192.168.100.182:5000/categories')
-        .then((categoriesRes) => {
-          const saved = categoriesRes.data.map(cat => cat.company);
-          setDbCategories(saved);
-        })
-        .catch(err => console.error("Error fetching categories:", err));
-    }
-  }, [isOpen]);
-
-  const allCategories = useMemo(() => {
-    const hardcoded = [
-      'BatStateU College',
-      'Private HEIs',
-      'Private Individual',
-      'Industry',
-      'Senior High',
-      'BatStateU IS',
-    ];
-    return [...hardcoded, ...dbCategories.filter(s => !hardcoded.includes(s))];
-  }, [dbCategories]);
-
-  // Get unique years from ALL clients in database
-  const availableYears = useMemo(() => {
-    const years = new Set();
-    if (customYears && Array.isArray(customYears)) {
-      customYears.forEach(year => years.add(year));
-    }
-    allClients.forEach(client => {
-      if (client.dateRequested) {
-        const date = new Date(client.dateRequested);
-        const year = date.getFullYear();
-        if (!isNaN(year) && year > 1900 && year < 2100) {
-          years.add(year);
-        }
-      }
-    });
-    const yearArray = Array.from(years).sort((a, b) => b - a);
-    return yearArray.length > 0 ? yearArray : [new Date().getFullYear()];
-  }, [allClients, customYears]);
-
-  // Helper: parse testTypes (handles string or array)
+ // Helper: parse testTypes (handles string or array)
   const parseTestTypes = (testTypes) => {
     if (!testTypes) return [];
     if (Array.isArray(testTypes)) return testTypes;
@@ -117,6 +65,57 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
     }
     return 0;
   };
+  
+export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedQuarter, setSelectedQuarter] = useState('all');
+  const [reportType, setReportType] = useState('service'); // 'service' or 'samples'
+
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      axios.get('http://192.168.100.182:5000/categories')
+        .then((categoriesRes) => {
+          const saved = categoriesRes.data.map(cat => cat.company);
+          setDbCategories(saved);
+        })
+        .catch(err => console.error("Error fetching categories:", err));
+    }
+  }, [isOpen]);
+
+  const allCategories = useMemo(() => {
+    const hardcoded = [
+      'BatStateU College',
+      'Private HEIs',
+      'Private Individual',
+      'Industry',
+      'Senior High',
+      'BatStateU IS',
+    ];
+    return [...hardcoded, ...dbCategories.filter(s => !hardcoded.includes(s))];
+  }, [dbCategories]);
+
+  // Get unique years from ALL clients in database
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    if (customYears && Array.isArray(customYears)) {
+      customYears.forEach(year => years.add(year));
+    }
+    allClients.forEach(client => {
+      if (client.dateRequested) {
+        const date = new Date(client.dateRequested);
+        const year = date.getFullYear();
+        if (!isNaN(year) && year > 1900 && year < 2100) {
+          years.add(year);
+        }
+      }
+    });
+    const yearArray = Array.from(years).sort((a, b) => b - a);
+    return yearArray.length > 0 ? yearArray : [new Date().getFullYear()];
+  }, [allClients, customYears]);
+
+ 
 
   // Filter clients by selected year
   const yearFilteredClients = useMemo(() => {
@@ -229,185 +228,185 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
   }, [yearFilteredClients, allCategories]);
 
   // ── SERVICE TALLY BY QUARTER ─────────────────────────────────────────────────
-  const serviceTallyDataByQuarter = useMemo(() => {
-    const quarters = [1, 2, 3, 4];
+    const serviceTallyDataByQuarter = useMemo(() => {
+      const quarters = [1, 2, 3, 4];
 
-    const quarterlyResults = quarters.map(quarter => {
-      const getQuarterlyData = (categoryName) => {
-        const start = startOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
-        const end = endOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
+      const quarterlyResults = quarters.map(quarter => {
+        const getQuarterlyData = (categoryName) => {
+          const start = startOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
+          const end = endOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
 
-        const categoryClients = yearFilteredClients.filter(c => {
-          const date = new Date(c.dateRequested);
-          return c.category === categoryName && isWithinInterval(date, { start, end });
-        });
+          const categoryClients = yearFilteredClients.filter(c => {
+            const date = new Date(c.dateRequested);
+            return c.category === categoryName && isWithinInterval(date, { start, end });
+          });
 
-        const uniqueClients = new Set(
-          categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
-        ).size;
-        const serviceRequests = categoryClients.length;
-        const totalIncome = categoryClients.reduce((sum, c) => sum + getTotalAmount(c), 0);
+          const uniqueClients = new Set(
+            categoryClients.map(c => c.name?.toLowerCase().trim()).filter(Boolean)
+          ).size;
+          const serviceRequests = categoryClients.length;
+          const totalIncome = categoryClients.reduce((sum, c) => sum + getTotalAmount(c), 0);
 
-        const materialTestingCount = categoryClients.filter(c =>
-          c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
-        ).length;
+          const materialTestingCount = categoryClients.filter(c =>
+            c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
+          ).length;
 
-        const incomeByType = {};
-        ALL_TEST_TYPES.forEach(type => {
-          incomeByType[type] = categoryClients.reduce((sum, c) => sum + getAmountForTestType(c, type), 0);
-        });
+          const incomeByType = {};
+          ALL_TEST_TYPES.forEach(type => {
+            incomeByType[type] = categoryClients.reduce((sum, c) => sum + getAmountForTestType(c, type), 0);
+          });
 
-        return {
-          category: categoryName,
-          noOfClient: uniqueClients,
-          noOfServices: serviceRequests,
-          income: totalIncome,
-          bioTech: 0,
-          materialTesting: materialTestingCount,
-          income_by_type: incomeByType,
+          return {
+            category: categoryName,
+            noOfClient: uniqueClients,
+            noOfServices: serviceRequests,
+            income: totalIncome,
+            bioTech: 0,
+            materialTesting: materialTestingCount,
+            income_by_type: incomeByType,
+          };
         };
-      };
 
-      const data = allCategories.map(getQuarterlyData);
+        const data = allCategories.map(getQuarterlyData);
 
-      const totals = {
-        category: 'Total Income',
-        noOfClient: data.reduce((s, d) => s + d.noOfClient, 0),
-        noOfServices: data.reduce((s, d) => s + d.noOfServices, 0),
-        income: data.reduce((s, d) => s + d.income, 0),
+        const totals = {
+          category: 'Total Income',
+          noOfClient: data.reduce((s, d) => s + d.noOfClient, 0),
+          noOfServices: data.reduce((s, d) => s + d.noOfServices, 0),
+          income: data.reduce((s, d) => s + d.income, 0),
+          bioTech: 0,
+          materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
+          income_by_type: {},
+        };
+        ALL_TEST_TYPES.forEach(type => {
+          totals.income_by_type[type] = data.reduce((s, d) => s + (d.income_by_type[type] || 0), 0);
+        });
+
+        return { quarter, data, totals };
+      });
+
+      const grandTotals = {
+        category: 'Grand Total',
+        noOfClient: quarterlyResults.reduce((s, q) => s + q.totals.noOfClient, 0),
+        noOfServices: quarterlyResults.reduce((s, q) => s + q.totals.noOfServices, 0),
+        income: quarterlyResults.reduce((s, q) => s + q.totals.income, 0),
         bioTech: 0,
-        materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
+        materialTesting: quarterlyResults.reduce((s, q) => s + q.totals.materialTesting, 0),
         income_by_type: {},
       };
       ALL_TEST_TYPES.forEach(type => {
-        totals.income_by_type[type] = data.reduce((s, d) => s + (d.income_by_type[type] || 0), 0);
+        grandTotals.income_by_type[type] = quarterlyResults.reduce((s, q) => s + (q.totals.income_by_type[type] || 0), 0);
       });
 
-      return { quarter, data, totals };
-    });
+      return { quarterlyResults, grandTotals };
+    }, [yearFilteredClients, selectedYear, allCategories]);
 
-    const grandTotals = {
-      category: 'Grand Total',
-      noOfClient: quarterlyResults.reduce((s, q) => s + q.totals.noOfClient, 0),
-      noOfServices: quarterlyResults.reduce((s, q) => s + q.totals.noOfServices, 0),
-      income: quarterlyResults.reduce((s, q) => s + q.totals.income, 0),
-      bioTech: 0,
-      materialTesting: quarterlyResults.reduce((s, q) => s + q.totals.materialTesting, 0),
-      income_by_type: {},
-    };
-    ALL_TEST_TYPES.forEach(type => {
-      grandTotals.income_by_type[type] = quarterlyResults.reduce((s, q) => s + (q.totals.income_by_type[type] || 0), 0);
-    });
+    // ── SAMPLES TALLY BY QUARTER ─────────────────────────────────────────────────
+    const samplesTallyDataByQuarter = useMemo(() => {
+      const quarters = [1, 2, 3, 4];
 
-    return { quarterlyResults, grandTotals };
-  }, [yearFilteredClients, selectedYear, allCategories]);
+      const quarterlyResults = quarters.map(quarter => {
+        const getQuarterlyData = (categoryName) => {
+          const start = startOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
+          const end = endOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
 
-  // ── SAMPLES TALLY BY QUARTER ─────────────────────────────────────────────────
-  const samplesTallyDataByQuarter = useMemo(() => {
-    const quarters = [1, 2, 3, 4];
+          const categoryClients = yearFilteredClients.filter(c => {
+            const date = new Date(c.dateRequested);
+            return c.category === categoryName && isWithinInterval(date, { start, end });
+          });
 
-    const quarterlyResults = quarters.map(quarter => {
-      const getQuarterlyData = (categoryName) => {
-        const start = startOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
-        const end = endOfQuarter(new Date(selectedYear, (quarter - 1) * 3, 1));
-
-        const categoryClients = yearFilteredClients.filter(c => {
-          const date = new Date(c.dateRequested);
-          return c.category === categoryName && isWithinInterval(date, { start, end });
-        });
-
-        const totalSamples = categoryClients.reduce((sum, c) => {
-          if (Array.isArray(c.serviceTests) && c.serviceTests.length > 0) {
-            return sum + c.serviceTests.reduce((s, t) => s + (Number(t.sampleCount) || 0), 0);
-          }
-          return sum + (Number(c.sampleCount) || 0);
-        }, 0);
-
-        const samplesByType = {};
-        ALL_TEST_TYPES.forEach(type => {
-          samplesByType[type] = categoryClients.reduce((sum, c) => sum + getSampleCountForTestType(c, type), 0);
-        });
-
-        const materialTestingSamples = categoryClients.reduce((sum, c) => {
-          const hasMT = c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type));
-          if (hasMT) {
+          const totalSamples = categoryClients.reduce((sum, c) => {
             if (Array.isArray(c.serviceTests) && c.serviceTests.length > 0) {
-              return sum + c.serviceTests
-                .filter(t => MATERIAL_TESTING_TYPES.includes(t.testType))
-                .reduce((s, t) => s + (Number(t.sampleCount) || 0), 0);
+              return sum + c.serviceTests.reduce((s, t) => s + (Number(t.sampleCount) || 0), 0);
             }
             return sum + (Number(c.sampleCount) || 0);
-          }
-          return sum;
-        }, 0);
+          }, 0);
 
-        return {
-          category: categoryName,
-          totalSamples,
-          materialTesting: materialTestingSamples,
-          samples: samplesByType,
+          const samplesByType = {};
+          ALL_TEST_TYPES.forEach(type => {
+            samplesByType[type] = categoryClients.reduce((sum, c) => sum + getSampleCountForTestType(c, type), 0);
+          });
+
+          const materialTestingSamples = categoryClients.reduce((sum, c) => {
+            const hasMT = c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type));
+            if (hasMT) {
+              if (Array.isArray(c.serviceTests) && c.serviceTests.length > 0) {
+                return sum + c.serviceTests
+                  .filter(t => MATERIAL_TESTING_TYPES.includes(t.testType))
+                  .reduce((s, t) => s + (Number(t.sampleCount) || 0), 0);
+              }
+              return sum + (Number(c.sampleCount) || 0);
+            }
+            return sum;
+          }, 0);
+
+          return {
+            category: categoryName,
+            totalSamples,
+            materialTesting: materialTestingSamples,
+            samples: samplesByType,
+          };
         };
-      };
 
-      const data = allCategories.map(getQuarterlyData);
+        const data = allCategories.map(getQuarterlyData);
 
-      const totals = {
-        category: 'Total Samples',
-        totalSamples: data.reduce((s, d) => s + d.totalSamples, 0),
-        materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
+        const totals = {
+          category: 'Total Samples',
+          totalSamples: data.reduce((s, d) => s + d.totalSamples, 0),
+          materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
+          samples: {},
+        };
+        ALL_TEST_TYPES.forEach(type => {
+          totals.samples[type] = data.reduce((s, d) => s + (d.samples[type] || 0), 0);
+        });
+
+        return { quarter, data, totals };
+      });
+
+      const grandTotals = {
+        category: 'Grand Total',
+        totalSamples: quarterlyResults.reduce((s, q) => s + q.totals.totalSamples, 0),
+        materialTesting: quarterlyResults.reduce((s, q) => s + q.totals.materialTesting, 0),
         samples: {},
       };
       ALL_TEST_TYPES.forEach(type => {
-        totals.samples[type] = data.reduce((s, d) => s + (d.samples[type] || 0), 0);
+        grandTotals.samples[type] = quarterlyResults.reduce((s, q) => s + (q.totals.samples[type] || 0), 0);
       });
 
-      return { quarter, data, totals };
-    });
+      return { quarterlyResults, grandTotals };
+    }, [yearFilteredClients, selectedYear, allCategories]);
 
-    const grandTotals = {
-      category: 'Grand Total',
-      totalSamples: quarterlyResults.reduce((s, q) => s + q.totals.totalSamples, 0),
-      materialTesting: quarterlyResults.reduce((s, q) => s + q.totals.materialTesting, 0),
-      samples: {},
-    };
-    ALL_TEST_TYPES.forEach(type => {
-      grandTotals.samples[type] = quarterlyResults.reduce((s, q) => s + (q.totals.samples[type] || 0), 0);
-    });
+    const tallyDataByQuarter = reportType === 'service' ? serviceTallyDataByQuarter : samplesTallyDataByQuarter;
 
-    return { quarterlyResults, grandTotals };
-  }, [yearFilteredClients, selectedYear, allCategories]);
+    const displayedQuarters = useMemo(() => {
+      if (selectedQuarter === 'all') return tallyDataByQuarter.quarterlyResults;
+      return tallyDataByQuarter.quarterlyResults.filter(q => q.quarter === parseInt(selectedQuarter));
+    }, [tallyDataByQuarter.quarterlyResults, selectedQuarter]);
 
-  const tallyDataByQuarter = reportType === 'service' ? serviceTallyDataByQuarter : samplesTallyDataByQuarter;
+    const displayedGrandTotals = useMemo(() => {
+      if (selectedQuarter === 'all') return tallyDataByQuarter.grandTotals;
+      const filteredQuarter = displayedQuarters[0];
+      if (!filteredQuarter) return tallyDataByQuarter.grandTotals;
 
-  const displayedQuarters = useMemo(() => {
-    if (selectedQuarter === 'all') return tallyDataByQuarter.quarterlyResults;
-    return tallyDataByQuarter.quarterlyResults.filter(q => q.quarter === parseInt(selectedQuarter));
-  }, [tallyDataByQuarter.quarterlyResults, selectedQuarter]);
-
-  const displayedGrandTotals = useMemo(() => {
-    if (selectedQuarter === 'all') return tallyDataByQuarter.grandTotals;
-    const filteredQuarter = displayedQuarters[0];
-    if (!filteredQuarter) return tallyDataByQuarter.grandTotals;
-
-    if (reportType === 'service') {
-      return {
-        category: 'Grand Total',
-        noOfClient: filteredQuarter.totals.noOfClient,
-        noOfServices: filteredQuarter.totals.noOfServices,
-        income: filteredQuarter.totals.income,
-        bioTech: filteredQuarter.totals.bioTech,
-        materialTesting: filteredQuarter.totals.materialTesting,
-        income_by_type: { ...filteredQuarter.totals.income_by_type },
-      };
-    } else {
-      return {
-        category: 'Grand Total',
-        totalSamples: filteredQuarter.totals.totalSamples,
-        materialTesting: filteredQuarter.totals.materialTesting,
-        samples: { ...filteredQuarter.totals.samples },
-      };
-    }
-  }, [displayedQuarters, selectedQuarter, tallyDataByQuarter.grandTotals, reportType]);
+      if (reportType === 'service') {
+        return {
+          category: 'Grand Total',
+          noOfClient: filteredQuarter.totals.noOfClient,
+          noOfServices: filteredQuarter.totals.noOfServices,
+          income: filteredQuarter.totals.income,
+          bioTech: filteredQuarter.totals.bioTech,
+          materialTesting: filteredQuarter.totals.materialTesting,
+          income_by_type: { ...filteredQuarter.totals.income_by_type },
+        };
+      } else {
+        return {
+          category: 'Grand Total',
+          totalSamples: filteredQuarter.totals.totalSamples,
+          materialTesting: filteredQuarter.totals.materialTesting,
+          samples: { ...filteredQuarter.totals.samples },
+        };
+      }
+    }, [displayedQuarters, selectedQuarter, tallyDataByQuarter.grandTotals, reportType]);
 
   const getCategoryColor = (category) => {
     const customColors = JSON.parse(localStorage.getItem('customCategoryColors') || '{}');
