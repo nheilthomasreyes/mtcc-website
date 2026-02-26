@@ -8,9 +8,8 @@ export const TEST_TYPE_LABELS = {
   FT: 'Flexural Test',
   TS: 'Tensile Strength',
   BT: 'Bending Test',
+  HP: 'Heating Plate and Magnetic Stirring',
   RE: 'Rotary Evaporator',
   UC: 'Ultracentrifuge',
   FD: 'Freeze Dryer',
-  HP: 'Heating Plate and Magnetic Stirring',
-  O: 'Other',
 };

@@ -1,11 +1,28 @@
 import { useMemo } from 'react';
-import { TrendingUp, DollarSign, Activity, CheckCircle, Clock} from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { TrendingUp, DollarSign, Activity, CheckCircle, Clock, TestTube } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { format, subMonths, isSameMonth } from 'date-fns';
 
 const COLORS = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
 
-export function Dashboard({ clients }) {
+const SERVICE_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
+const SERVICE_COLORS = {
+  'FTIR': '#06b6d4',
+  'CN':   '#3b82f6',
+  'CT':   '#8b5cf6',
+  'CTT':  '#ec4899',
+  'MO':   '#f59e0b',
+  'HT':   '#10b981',
+  'FT':   '#ef4444',
+  'TS':   '#f97316',
+  'BT':   '#84cc16',
+  'HP':   '#0ea5e9',
+  'RE':   '#14b8a6',
+  'UC':   '#a855f7',
+  'FD':   '#e11d48',
+};
+
+export function Dashboard({ clients, selectedYear }) {
   const stats = useMemo(() => {
     const total = clients.length;
     const ongoing = clients.filter(c => c.status === 'Ongoing').length;
@@ -66,6 +83,39 @@ export function Dashboard({ clients }) {
       { status: 'Cancelled', count: cancelled, color: '#ec4899' },
     ];
 
+    // Individual service type tally by month for the selected year
+    // Default to the most recent year found in clients data, not the current calendar year
+    const mostRecentDataYear = clients.reduce((maxYear, c) => {
+      if (!c.dateRequested) return maxYear;
+      const y = new Date(c.dateRequested).getFullYear();
+      return y > maxYear ? y : maxYear;
+    }, 0);
+    const activeYear = selectedYear || mostRecentDataYear || new Date().getFullYear();
+    const yearClients = clients.filter(c => {
+      if (!c.dateRequested) return false;
+      return new Date(c.dateRequested).getFullYear() === activeYear;
+    });
+
+    const getMonthName = (i) =>
+      ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i];
+
+    const serviceTypeTallyData = [];
+    for (let month = 0; month < 12; month++) {
+      const monthClients = yearClients.filter(c => new Date(c.dateRequested).getMonth() === month);
+      const monthData = { month: getMonthName(month) };
+      SERVICE_TYPES.forEach(type => {
+        monthData[type] = monthClients.filter(c =>
+          Array.isArray(c.testTypes) ? c.testTypes.includes(type) : c.testTypes === type
+        ).length;
+      });
+      serviceTypeTallyData.push(monthData);
+    }
+
+    // Only include service types that have at least one entry
+    const activeServiceTypes = SERVICE_TYPES.filter(type =>
+      serviceTypeTallyData.some(d => d[type] > 0)
+    );
+
     return {
       total,
       ongoing,
@@ -78,8 +128,11 @@ export function Dashboard({ clients }) {
       serviceTypeData,
       categoryData,
       statusData,
+      serviceTypeTallyData,
+      activeServiceTypes,
+      activeYear,
     };
-  }, [clients]);
+  }, [clients, selectedYear]);
 
   return (
     <div className="space-y-6">
@@ -228,6 +281,40 @@ export function Dashboard({ clients }) {
           </ResponsiveContainer>
         </div>
 
+                {/* Individual Service Type Tally */}
+        <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 p-6 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 lg:col-span-2">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <TestTube className="w-5 h-5 text-cyan-400" />
+            {stats.activeYear} MTCC Types of Test Tally
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={stats.serviceTypeTallyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+              <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
+              <YAxis stroke="#94a3b8" fontSize={12} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #334155',
+                  borderRadius: '12px',
+                  color: '#fff'
+                }}
+              />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+              {stats.activeServiceTypes.map((type) => (
+                <Line
+                  key={type}
+                  type="monotone"
+                  dataKey={type}
+                  stroke={SERVICE_COLORS[type]}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
         {/* Status Distribution */}
         <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 p-6 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">

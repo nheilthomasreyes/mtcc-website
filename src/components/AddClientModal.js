@@ -6,7 +6,7 @@ import axios from 'axios';
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
 const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
-const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'HP', 'O'];
+const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
 // Helper to format date to YYYY-MM-DD
 const formatDateForInput = (dateValue) => {

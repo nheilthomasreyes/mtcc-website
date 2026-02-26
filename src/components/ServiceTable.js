@@ -19,7 +19,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     return ['All', ...Array.from(cats).sort()];
   }, [clients]);
 
-  const availableTestTypes = ['All', 'FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'RE', 'UC', 'FD', 'HP', 'O'];
+  const availableTestTypes = ['All', 'FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
   // ─── Helpers to derive fields from serviceTests array ────────────────────────
 
@@ -294,7 +294,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                 type="text"
                 placeholder="Search..."
                 value={searchClientName}
-                onChange={(e) => setSearchClientName(e.target.value)}
+                onChange={(e) => { setSearchClientName(e.target.value); setCurrentPage(1); }}
                 className="w-full pl-9 pr-8 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 placeholder:text-gray-500"
               />
               {searchClientName && (
