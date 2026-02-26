@@ -21,6 +21,16 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const availableTestTypes = ['All', 'FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
+  const statusCounts = useMemo(() => {
+    return {
+      All:       clients.length,
+      Ongoing:   clients.filter(c => c.status === 'Ongoing').length,
+      Pending:   clients.filter(c => c.status === 'Pending').length,
+      Completed: clients.filter(c => c.status === 'Completed').length,
+      Cancelled: clients.filter(c => c.status === 'Cancelled').length,
+    };
+  }, [clients]);
+
   // ─── Helpers to derive fields from serviceTests array ────────────────────────
 
   /** Returns array of test type strings, e.g. ['FTIR', 'CN'] */
@@ -307,11 +317,11 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             {/* Selects */}
             <div className="flex items-center gap-2">
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                <option value="All" className="bg-gray-900">All Status</option>
-                <option value="Ongoing" className="bg-gray-900">Ongoing</option>
-                <option value="Pending" className="bg-gray-900">Pending</option>
-                <option value="Completed" className="bg-gray-900">Completed</option>
-                <option value="Cancelled" className="bg-gray-900">Cancelled</option>
+                <option value="All" className="bg-gray-900">All Status ({statusCounts.All})</option>
+                <option value="Ongoing" className="bg-gray-900">Ongoing ({statusCounts.Ongoing})</option>
+                <option value="Pending" className="bg-gray-900">Pending ({statusCounts.Pending})</option>
+                <option value="Completed" className="bg-gray-900">Completed ({statusCounts.Completed})</option>
+                <option value="Cancelled" className="bg-gray-900">Cancelled ({statusCounts.Cancelled})</option>
               </select>
 
               <select value={selectedClientType} onChange={(e) => setSelectedClientType(e.target.value)} className="hidden md:block px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
