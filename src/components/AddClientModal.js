@@ -8,38 +8,24 @@ const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
-// Helper to format date to YYYY-MM-DD
 const formatDateForInput = (dateValue) => {
   if (!dateValue) return '';
   try {
     const date = new Date(dateValue);
     if (!isNaN(date.getTime())) {
       return date.toISOString().split('T')[0];
-    }
-  } catch (e) {
-    return '';
-  }
-  return '';
+    }} catch (e) { return '';
+  }  return '';
 };
 
-// Default per-test data structure
 const defaultTestData = () => ({
-  sampleRangeStart: '',
-  sampleRangeEnd: '',
-  sampleCount: 0,
-  specimenNo: '',
-  amount: 0,
+  sampleRangeStart: '', sampleRangeEnd: '', sampleCount: 0, specimenNo: '', amount: 0,
 });
 
 export function AddClientModal({ isOpen, onClose, onAdd }) {
   const [errors, setErrors] = useState({ service: "" });
   const [categories, setCategories] = useState([
-    'BatStateU College',
-    'Private HEIs',
-    'Industry',
-    'Private Individual',
-    'Senior High',
-    'BatStateU IS',
+    'BatStateU College', 'Private HEIs', 'Industry', 'Private Individual', 'Senior High', 'BatStateU IS',
   ]);
 
   useEffect(() => {
@@ -47,18 +33,15 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       .then(res => {
         const saved = res.data.map(cat => cat.company);
         setCategories(prev => [...prev, ...saved.filter(s => !prev.includes(s))]);
-      })
-      .catch(err => console.error(err));
-  }, [isOpen]);
+      }) .catch(err => console.error(err)); 
+    }, [isOpen]);
 
   const [isAdding, setIsAdding] = useState(false);
   const [newcat, setNewCat] = useState({ name: '', color: '#06b6d4' });
-
   const today = new Date().toISOString().split('T')[0];
 
   const handleDateChange = (field, value) => {
-    if (value > today) {
-      setFormData(prev => ({ ...prev, [field]: '' }));
+    if (value > today) { setFormData(prev => ({ ...prev, [field]: '' }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
@@ -92,58 +75,38 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     log: '',
   });
 
-  // Keep testData in sync when testTypes change
   const toggleTestType = (type) => {
     setFormData(prev => {
       const isSelected = prev.testTypes.includes(type);
-      const newTestTypes = isSelected
-        ? prev.testTypes.filter(t => t !== type)
-        : [...prev.testTypes, type];
-
+      const newTestTypes = isSelected ? prev.testTypes.filter(t => t !== type) : [...prev.testTypes, type];
       const newTestData = { ...prev.testData };
       if (!isSelected) {
-        if (!newTestData[type]) {
-          newTestData[type] = defaultTestData();
+        if (!newTestData[type]) { newTestData[type] = defaultTestData(); 
         }
       } else {
         delete newTestData[type];
-      }
-
-      return { ...prev, testTypes: newTestTypes, testData: newTestData };
+      } return { ...prev, testTypes: newTestTypes, testData: newTestData };
     });
   };
 
   const handleSampleRangeChange = (testType, field, value) => {
     setFormData(prev => {
       const current = { ...(prev.testData[testType] || defaultTestData()), [field]: value };
-
       const start = field === 'sampleRangeStart' ? parseInt(value) : parseInt(current.sampleRangeStart);
       const end = field === 'sampleRangeEnd' ? parseInt(value) : parseInt(current.sampleRangeEnd);
-
-      if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) {
-        current.sampleCount = (end - start) + 1;
+      if (!isNaN(start) && !isNaN(end) && start > 0 && end >= start) { current.sampleCount = (end - start) + 1;
       } else {
         current.sampleCount = 0;
       }
-
       return {
-        ...prev,
-        testData: {
-          ...prev.testData,
-          [testType]: current,
+        ...prev, testData: { ...prev.testData, [testType]: current,
         },
       };
     });
   };
 
   const handleTestFieldChange = (testType, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      testData: {
-        ...prev.testData,
-        [testType]: {
-          ...(prev.testData[testType] || defaultTestData()),
-          [field]: value,
+    setFormData(prev => ({ ...prev, testData: { ...prev.testData, [testType]: { ...(prev.testData[testType] || defaultTestData()), [field]: value,
         },
       },
     }));
@@ -151,27 +114,20 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (!formData.dateRequested) {
       alert("Date Requested is required.");
       return;
     }
-
     if (new Date(formData.dateRequested) > new Date()) {
       alert("Date Requested cannot be in the future.");
       return;
     }
-
     if (!formData.roa && !formData.ts) {
       setErrors({ service: "Please select either ROA or TS!" });
       alert("Please select a Service Request Form type (ROA or TS) before submitting.");
       return;
-    }
+    } setErrors({ service: "" });
 
-    // Clear errors if all good
-    setErrors({ service: "" });
-
-    // Build serviceTests array
     const serviceTests = formData.testTypes.map(type => ({
       testType:    type,
       sampleNo1:   formData.testData[type]?.sampleRangeStart ? Number(formData.testData[type].sampleRangeStart) : null,
