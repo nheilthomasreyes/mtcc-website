@@ -33,7 +33,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       .then(res => {
         const saved = res.data.map(cat => cat.company);
         setCategories(prev => [...prev, ...saved.filter(s => !prev.includes(s))]);
-      }) .catch(err => console.error(err)); 
+      }).catch(err => console.error(err)); 
     }, [isOpen]);
 
   const [isAdding, setIsAdding] = useState(false);

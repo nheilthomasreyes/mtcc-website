@@ -79,15 +79,15 @@ const fetchAllClients = async () => {
     localStorage.setItem("customYears", JSON.stringify(customYears));
   }, [customYears]);
 
-  const saveClientToBackend = async (client, method = "POST") => {
-    const url = method === "POST" ? `${API_URL}/clients` : `${API_URL}/clients/${client.id}`;
-    const body = { ...client, testTypes: JSON.stringify(client.testTypes) };
-    await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  };
+  // const saveClientToBackend = async (client, method = "POST") => {
+  //   const url = method === "POST" ? `${API_URL}/clients` : `${API_URL}/clients/${client.id}`;
+  //   const body = { ...client, testTypes: JSON.stringify(client.testTypes) };
+  //   await fetch(url, {
+  //     method,
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(body),
+  //   });
+  // };
 
   const generateServiceNo = () => {
     const year = new Date().getFullYear();
