@@ -104,9 +104,17 @@ export function Dashboard({ clients, selectedYear }) {
       const monthClients = yearClients.filter(c => new Date(c.dateRequested).getMonth() === month);
       const monthData = { month: getMonthName(month) };
       SERVICE_TYPES.forEach(type => {
-        monthData[type] = monthClients.filter(c =>
-          Array.isArray(c.testTypes) ? c.testTypes.includes(type) : c.testTypes === type
-        ).length;
+        monthData[type] = monthClients.filter(c => {
+          // Check serviceTests array first (e.g. [{testType: 'FTIR'}, ...])
+          if (Array.isArray(c.serviceTests) && c.serviceTests.length > 0) {
+            return c.serviceTests.some(t =>
+              t.testType === type || t.type === type || t.code === type || t.name === type
+            );
+          }
+          // Fallback: top-level testTypes field
+          if (Array.isArray(c.testTypes)) return c.testTypes.includes(type);
+          return c.testTypes === type;
+        }).length;
       });
       serviceTypeTallyData.push(monthData);
     }
@@ -220,13 +228,7 @@ export function Dashboard({ clients, selectedYear }) {
             Monthly Service Trend
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={stats.monthlyData}>
-              <defs>
-                <linearGradient id="colorServices" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
+            <LineChart data={stats.monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
               <YAxis stroke="#94a3b8" fontSize={12} />
@@ -238,15 +240,15 @@ export function Dashboard({ clients, selectedYear }) {
                   color: '#fff'
                 }}
               />
-              <Area
+              <Line
                 type="monotone"
                 dataKey="services"
                 stroke="#06b6d4"
                 strokeWidth={3}
-                fillOpacity={1}
-                fill="url(#colorServices)"
+                dot={{ fill: '#06b6d4', r: 4 }}
+                activeDot={{ r: 6 }}
               />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
 
@@ -333,6 +335,8 @@ export function Dashboard({ clients, selectedYear }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
               <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]}>
                 {stats.statusData.map((entry, index) => (
@@ -372,6 +376,8 @@ export function Dashboard({ clients, selectedYear }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
             </PieChart>
           </ResponsiveContainer>

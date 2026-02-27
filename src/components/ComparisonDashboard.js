@@ -23,6 +23,13 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
       return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][monthIndex];
     };
 
+    const getRevenue = (client) => {
+      if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
+        return client.serviceTests.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+      }
+      return Number(client.amount) || 0;
+    };
+
     // Helper to count unique customers by email (falls back to name)
     const countUniqueCustomers = (clientList) => {
       return new Set(
@@ -126,7 +133,7 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
     // Services Offer Comparison Table
     const currentYearStats = {
       totalServices: currentYearClients.length,
-      totalIncome: currentYearClients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0),
+      totalIncome: currentYearClients.reduce((sum, c) => sum + getRevenue(c), 0),      
       totalCustomers: countUniqueCustomers(currentYearClients),
       materialTesting: currentYearClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length,
       calibration: currentYearClients.filter(c => c.serviceType === 'Calibration' || c.serviceType === 'Both').length,
@@ -134,7 +141,7 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
 
     const previousYearStats = {
       totalServices: previousYearClients.length,
-      totalIncome: previousYearClients.reduce((sum, c) => sum + (Number(c.amount) || 0), 0),
+      totalIncome: previousYearClients.reduce((sum, c) => sum + getRevenue(c), 0),
       totalCustomers: countUniqueCustomers(previousYearClients),
       materialTesting: previousYearClients.filter(c => c.serviceType === 'Material Testing' || c.serviceType === 'Both').length,
       calibration: previousYearClients.filter(c => c.serviceType === 'Calibration' || c.serviceType === 'Both').length,
@@ -336,6 +343,8 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
               <Line
                 type="monotone"
@@ -363,6 +372,8 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
               <Line
                 type="monotone"
@@ -393,10 +404,14 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
-              <Legend />
-              <Bar dataKey={comparisonYear} fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              <Bar dataKey={selectedYear} fill="#f59e0b" radius={[8, 8, 0, 0]} />
+              <Legend
+                formatter={(value) => <span style={{ color: '#fff', fontSize: '12px' }}>{value}</span>}
+              />
+              <Bar dataKey={comparisonYear} name={String(comparisonYear)} fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey={selectedYear} name={String(selectedYear)} fill="#f59e0b" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -419,10 +434,14 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
-              <Legend />
-              <Bar dataKey={comparisonYear} fill="#10b981" radius={[8, 8, 0, 0]} />
-              <Bar dataKey={selectedYear} fill="#f59e0b" radius={[8, 8, 0, 0]} />
+              <Legend
+                formatter={(value) => <span style={{ color: '#fff', fontSize: '12px' }}>{value}</span>}
+              />
+              <Bar dataKey={comparisonYear} name={String(comparisonYear)} fill="#10b981" radius={[8, 8, 0, 0]} />
+              <Bar dataKey={selectedYear} name={String(selectedYear)} fill="#f59e0b" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -442,6 +461,8 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
               {Object.keys(categoryColors).map((category) => (
@@ -473,6 +494,8 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
               <Legend wrapperStyle={{ fontSize: '11px' }} />
               {Object.keys(categoryColors).map((category) => (
@@ -507,10 +530,14 @@ export function ComparisonDashboard({ clients, selectedYear, customYears }) {
                   borderRadius: '12px',
                   color: '#fff'
                 }}
+                labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#fff' }}
               />
-              <Legend />
-              <Bar dataKey={comparisonYear} fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              <Bar dataKey={selectedYear} fill="#f59e0b" radius={[8, 8, 0, 0]} />
+              <Legend
+                formatter={(value) => <span style={{ color: '#fff', fontSize: '12px' }}>{value}</span>}
+              />
+              <Bar dataKey={comparisonYear} name={String(comparisonYear)} fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey={selectedYear} name={String(selectedYear)} fill="#f59e0b" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

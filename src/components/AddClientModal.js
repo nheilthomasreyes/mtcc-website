@@ -89,6 +89,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     testTypes: [],
     testData: {},
     remarks: '',
+    log: '',
   });
 
   // Keep testData in sync when testTypes change
@@ -203,6 +204,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       ts:              formData.ts,
       officialReceipt: formData.officialReceipt,
       remarks:         formData.remarks.trim() || null,
+      log:             formData.log.trim() || null,
       serviceTests,
     };
 
@@ -216,7 +218,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       progress: 0, dateRequested: '', startDate: '', dueDate: '',
       dateReleased: '', dateClaimed: '', testDate: '', releasedROA: '',
       requestForm: 'Waiting', roaV: false, roa: false, ts: false,
-      officialReceipt: false, testTypes: [], testData: {}, remarks: '',
+      officialReceipt: false, testTypes: [], testData: {}, remarks: '', log: '',
     });
     setErrors({ service: "" });
   };
@@ -639,6 +641,17 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
                 placeholder="Additional notes or remarks"
                 rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Received By <span className="text-red-500">*</span></label>
+              <textarea
+                required
+                value={formData.log || ''}
+                onChange={(e) => setFormData({ ...formData, log: e.target.value })}
+                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                placeholder="Enter name of receiver"
               />
             </div>
           </div>

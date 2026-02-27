@@ -128,7 +128,7 @@ app.post("/clients", (req, res) => {
     dateRequested, startDate, dueDate, dateClaimed, dateReleased,
     requestForm, testDate, releasedROA,
     roa, ts, roaV, officialReceipt,
-    remarks,
+    remarks, log,
     serviceTests
   } = req.body;
 
@@ -166,8 +166,8 @@ app.post("/clients", (req, res) => {
            category, serviceType, status, progress,
            dateRequested, startDate, dueDate, dateClaimed, dateReleased,
            requestForm, testDate, releasedROA,
-           roa, ts, roaV, officialReceipt, remarks)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           roa, ts, roaV, officialReceipt, remarks, log)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const clientValues = [
@@ -195,6 +195,7 @@ app.post("/clients", (req, res) => {
         roaV            ? 1 : 0,
         officialReceipt ? 1 : 0,
         remarks || null,
+        log     || null,
       ];
 
       db.query(clientQuery, clientValues, (err, result) => {
@@ -329,7 +330,7 @@ app.put("/clients/:id", (req, res) => {
     category, serviceType, status, progress,
     dateRequested, startDate, dueDate, dateClaimed, dateReleased,
     requestForm, testDate, releasedROA,
-    roa, ts, roaV, officialReceipt, remarks
+    roa, ts, roaV, officialReceipt, remarks, log
   } = req.body;
 
   const year = new Date(dateRequested).getFullYear();
@@ -342,7 +343,7 @@ app.put("/clients/:id", (req, res) => {
         category = ?, serviceType = ?, status = ?, progress = ?,
         dateRequested = ?, startDate = ?, dueDate = ?, dateClaimed = ?, dateReleased = ?,
         requestForm = ?, testDate = ?, releasedROA = ?,
-        roa = ?, ts = ?, roaV = ?, officialReceipt = ?, remarks = ?
+        roa = ?, ts = ?, roaV = ?, officialReceipt = ?, remarks = ?, log = ?
       WHERE id = ?
     `;
 
@@ -370,6 +371,7 @@ app.put("/clients/:id", (req, res) => {
       roaV            ? 1 : 0,
       officialReceipt ? 1 : 0,
       remarks || null,
+      log     || null,
       id
     ];
 

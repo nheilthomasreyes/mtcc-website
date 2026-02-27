@@ -119,6 +119,7 @@ export function EditClientModal({ client, onClose, onSave }) {
     testDate:      sanitizeDate(client.testDate),
     releasedROA:   sanitizeDate(client.releasedROA),
     remarks:       sanitizeValue(client.remarks),
+    log:           sanitizeValue(client.log),
     roa:           client.roa  === 1 || client.roa  === true,
     ts:            client.ts   === 1 || client.ts   === true,
     roaV:          client.roaV === 1 || client.roaV === true,
@@ -221,6 +222,7 @@ export function EditClientModal({ client, onClose, onSave }) {
       ts:            formData.ts   || false,
       roaV:          formData.roaV || false,
       remarks:       formData.remarks?.trim() || null,
+      log:           formData.log?.trim() || null,
       serviceTests,
       // Keep testTypes as comma-separated string for any legacy consumers
       testTypes: formData.testTypes.join(', '),
@@ -655,6 +657,17 @@ export function EditClientModal({ client, onClose, onSave }) {
                 placeholder="Additional notes or remarks"
                 rows={3}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Received By</label>
+              <textarea
+                disbaled
+                value={formData.log || ''}
+                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-500 cursor-not-allowed opacity-60"
+                placeholder=""
+              />
+              <p className="mt-1 text-xs text-gray-500 italic">This field cannot be edited after submission.</p>
             </div>
           </div>
 

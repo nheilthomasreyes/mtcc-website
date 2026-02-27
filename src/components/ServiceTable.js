@@ -202,8 +202,10 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   const exportToExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
-      const selectedYear = new Date().getFullYear();
-      const ws = workbook.addWorksheet(`Service Records ${selectedYear}`);
+      const exportYear = clients.length > 0 && clients[0].dateRequested
+        ? new Date(clients[0].dateRequested).getFullYear()
+        : new Date().getFullYear();
+      const ws = workbook.addWorksheet(`Service Records ${exportYear}`);
 
       ws.columns = [
         { header: 'Service No.',         key: 'serviceNo',       width: 15 },
@@ -224,12 +226,10 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         { header: 'Sample Count',         key: 'sampleCount',     width: 12 },
         { header: 'Status',               key: 'status',          width: 15 },
         { header: 'Remarks',              key: 'remarks',         width: 30 },
+        { header: 'Received By',          key: 'log',             width: 25 },
       ];
 
-      const dataToExport = clients.filter(client => {
-        if (!client.dateRequested) return false;
-        return new Date(client.dateRequested).getFullYear() === selectedYear;
-      });
+      const dataToExport = clients;
 
       dataToExport.forEach(client => {
         const row = ws.addRow({
@@ -253,6 +253,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
           // ───────────────────────────────────────────────────────────────────
           status:          client.status || '',
           remarks:         client.remarks || '',
+          log:             client.log || '',
         });
 
         const orCell  = row.getCell('orStatus');
@@ -274,7 +275,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Service_Records_${selectedYear}.xlsx`;
+      link.download = `Service_Records_${exportYear}.xlsx`;
       link.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
@@ -369,6 +370,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Amount</th>
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Status</th>
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Remarks</th>
+              <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Received By</th>
               <th className="px-3 py-2 text-right text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Actions</th>
             </tr>
           </thead>
@@ -511,6 +513,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-400 italic max-w-[200px] truncate" title={client.remarks || ''}>
                       {client.remarks || <span className="text-gray-600">No remarks</span>}
+                    </p>
+                  </td>
+
+                  {/* Received By */}
+                  <td className="px-5 py-5">
+                    <p className="text-sm text-gray-400 italic max-w-[200px] truncate" title={client.log || ''}>
+                      {client.log || <span className="text-gray-600">No Receiver</span>}
                     </p>
                   </td>
 
