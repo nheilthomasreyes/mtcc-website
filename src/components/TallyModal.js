@@ -5,14 +5,17 @@ import { TEST_TYPE_LABELS } from "./types";
 import ExcelJS from 'exceljs';
 import axios from 'axios';
 
-// All test types matching AddClientModal
-const ALL_TEST_TYPES = ['FTIR', 'CN', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT', 'RE', 'UC', 'FD', 'HP', 'O'];
+// Material Testing test types (FTIR, CN, CT, FT, BT, TS, HT, MO, CTT, HP)
+const MATERIAL_TESTING_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP'];
 
-// Service tally headers (test type columns) — amount per test type
-const TEST_HEADERS = ['FTIR', 'CN', 'CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT', 'RE', 'UC', 'FD', 'HP', 'O'];
+// Bio Testing test types (RE, UC, FD)
+const BIO_TESTING_TYPES = ['RE', 'UC', 'FD'];
 
-// Material Testing test types (all except FTIR and CN)
-const MATERIAL_TESTING_TYPES = ['CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT', 'RE', 'UC', 'FD', 'HP', 'O'];
+// All test types — Material Testing first, then Bio Testing last. No 'O'.
+const ALL_TEST_TYPES = [...MATERIAL_TESTING_TYPES, ...BIO_TESTING_TYPES];
+
+// Service tally headers — same order as ALL_TEST_TYPES
+const TEST_HEADERS = [...MATERIAL_TESTING_TYPES, ...BIO_TESTING_TYPES];
 
  // Helper: parse testTypes (handles string or array)
   const parseTestTypes = (testTypes) => {
@@ -65,6 +68,25 @@ const MATERIAL_TESTING_TYPES = ['CT', 'FT', 'BT', 'TS', 'HT', 'MO', 'CTT', 'RE',
     }
     return 0;
   };
+
+  // Helper: derive testTypes array from serviceTests (since clients table has no testTypes column)
+  const deriveTestTypes = (client) => {
+    if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
+      return [...new Set(client.serviceTests.map(t => t.testType).filter(Boolean))];
+    }
+    return parseTestTypes(client.testTypes);
+  };
+
+// ── THEME COLORS (from "White, Background 1" darkened) ──────────────────────
+// Darker 15% → FFD9D9D9  (header banner B2:U9)
+// Darker  5% → FFF2F2F2  (title row B10)
+// Darker 50% → FF808080  (column headers row 11/12 + Grand Total row)
+// Plain white → FFFFFFFF  (all data cells D–U)
+const COLOR_HEADER_BG    = 'FFD9D9D9'; // B2:U9  — Darker 15%
+const COLOR_TITLE_BG     = 'FFF2F2F2'; // B10    — Darker 5%
+const COLOR_SUBHEADER_BG = 'FF808080'; // Row 11 & Grand Total — Darker 50%
+const COLOR_DATA_BG      = 'FFFFFFFF'; // Data cells — plain white
+const COLOR_TOTAL_CAT_BG = 'FFD9D9D9'; // "Total Income / Samples" category cell
   
 export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -115,18 +137,22 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
     return yearArray.length > 0 ? yearArray : [new Date().getFullYear()];
   }, [allClients, customYears]);
 
- 
-
-  // Filter clients by selected year
   const yearFilteredClients = useMemo(() => {
-    return allClients.filter(client => {
-      if (!client.dateRequested) return false;
-      const date = new Date(client.dateRequested);
-      return date.getFullYear() === selectedYear;
-    }).map(client => ({
-      ...client,
-      testTypes: parseTestTypes(client.testTypes)
-    }));
+    const seen = new Set();
+    return allClients
+      .filter(client => {
+        if (!client.dateRequested) return false;
+        const date = new Date(client.dateRequested);
+        if (date.getFullYear() !== selectedYear) return false;
+        if (seen.has(client.id)) return false;
+        seen.add(client.id);
+        return true;
+      })
+      .map(client => ({
+        ...client,
+        category: client.category === 'BatstateU IS' ? 'BatStateU IS' : client.category,
+        testTypes: deriveTestTypes(client),
+      }));
   }, [allClients, selectedYear]);
 
   // ── WHOLE YEAR SUMMARY DATA ──────────────────────────────────────────────────
@@ -147,15 +173,12 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
         return sum + (Number(c.sampleCount) || 0);
       }, 0);
 
-      // Per test type: count of service requests that include this test type
       const getTestTypeCount = (testType) =>
         categoryClients.filter(c => c.testTypes.includes(testType)).length;
 
-      // Per test type: INCOME (sum of amounts for that test type across all clients)
       const getTestTypeIncome = (testType) =>
         categoryClients.reduce((sum, c) => sum + getAmountForTestType(c, testType), 0);
 
-      // Per test type: sample count
       const getSampleCountByTestType = (testType) =>
         categoryClients.reduce((sum, c) => sum + getSampleCountForTestType(c, testType), 0);
 
@@ -176,7 +199,23 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
         c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
       ).length;
 
-      // Build per-test-type objects
+      const bioTestingCount = categoryClients.filter(c =>
+        c.testTypes.some(type => BIO_TESTING_TYPES.includes(type))
+      ).length;
+
+      const bioTestingSamples = categoryClients.reduce((sum, c) => {
+        const hasBT = c.testTypes.some(type => BIO_TESTING_TYPES.includes(type));
+        if (hasBT) {
+          if (Array.isArray(c.serviceTests) && c.serviceTests.length > 0) {
+            return sum + c.serviceTests
+              .filter(t => BIO_TESTING_TYPES.includes(t.testType))
+              .reduce((s, t) => s + (Number(t.sampleCount) || 0), 0);
+          }
+          return sum + (Number(c.sampleCount) || 0);
+        }
+        return sum;
+      }, 0);
+
       const serviceByType = {};
       const incomeByType = {};
       const samplesByType = {};
@@ -191,30 +230,29 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
         noOfClient: uniqueClients,
         noOfServices: serviceRequests,
         income: totalIncome,
-        bioTech: 0,
+        bioTech: bioTestingCount,
         materialTesting: materialTestingCount,
         totalSamples,
         materialTestingSamples,
+        bioTestingSamples,
         service: serviceByType,
         income_by_type: incomeByType,
         samples: samplesByType,
       };
     });
 
-    // Service totals row
     const serviceTotals = {
       category: 'Total Income',
       noOfClient: data.reduce((s, d) => s + d.noOfClient, 0),
       noOfServices: data.reduce((s, d) => s + d.noOfServices, 0),
       income: data.reduce((s, d) => s + d.income, 0),
-      bioTech: 0,
+      bioTech: data.reduce((s, d) => s + d.bioTech, 0),
       materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
     };
     ALL_TEST_TYPES.forEach(type => {
       serviceTotals[`income_${type}`] = data.reduce((s, d) => s + (d.income_by_type[type] || 0), 0);
     });
 
-    // Samples totals row
     const samplesTotals = {
       category: 'Total Samples',
       totalSamples: data.reduce((s, d) => s + d.totalSamples, 0),
@@ -251,6 +289,10 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
             c.testTypes.some(type => MATERIAL_TESTING_TYPES.includes(type))
           ).length;
 
+          const bioTestingCount = categoryClients.filter(c =>
+            c.testTypes.some(type => BIO_TESTING_TYPES.includes(type))
+          ).length;
+
           const incomeByType = {};
           ALL_TEST_TYPES.forEach(type => {
             incomeByType[type] = categoryClients.reduce((sum, c) => sum + getAmountForTestType(c, type), 0);
@@ -261,7 +303,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
             noOfClient: uniqueClients,
             noOfServices: serviceRequests,
             income: totalIncome,
-            bioTech: 0,
+            bioTech: bioTestingCount,
             materialTesting: materialTestingCount,
             income_by_type: incomeByType,
           };
@@ -274,7 +316,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
           noOfClient: data.reduce((s, d) => s + d.noOfClient, 0),
           noOfServices: data.reduce((s, d) => s + d.noOfServices, 0),
           income: data.reduce((s, d) => s + d.income, 0),
-          bioTech: 0,
+          bioTech: data.reduce((s, d) => s + d.bioTech, 0),
           materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
           income_by_type: {},
         };
@@ -290,7 +332,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
         noOfClient: quarterlyResults.reduce((s, q) => s + q.totals.noOfClient, 0),
         noOfServices: quarterlyResults.reduce((s, q) => s + q.totals.noOfServices, 0),
         income: quarterlyResults.reduce((s, q) => s + q.totals.income, 0),
-        bioTech: 0,
+        bioTech: quarterlyResults.reduce((s, q) => s + q.totals.bioTech, 0),
         materialTesting: quarterlyResults.reduce((s, q) => s + q.totals.materialTesting, 0),
         income_by_type: {},
       };
@@ -340,10 +382,20 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
             return sum;
           }, 0);
 
+          const bioTestingSamplesQ = categoryClients.reduce((sum, c) => {
+            const hasBT = c.testTypes.some(type => BIO_TESTING_TYPES.includes(type));
+            if (hasBT) {
+              if (Array.isArray(c.serviceTests) && c.serviceTests.length > 0)
+                return sum + c.serviceTests.filter(t => BIO_TESTING_TYPES.includes(t.testType)).reduce((s, t) => s + (Number(t.sampleCount) || 0), 0);
+              return sum + (Number(c.sampleCount) || 0);
+            }
+            return sum;
+          }, 0);
           return {
             category: categoryName,
             totalSamples,
             materialTesting: materialTestingSamples,
+            bioTesting: bioTestingSamplesQ,
             samples: samplesByType,
           };
         };
@@ -354,6 +406,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
           category: 'Total Samples',
           totalSamples: data.reduce((s, d) => s + d.totalSamples, 0),
           materialTesting: data.reduce((s, d) => s + d.materialTesting, 0),
+          bioTesting: data.reduce((s, d) => s + (d.bioTesting || 0), 0),
           samples: {},
         };
         ALL_TEST_TYPES.forEach(type => {
@@ -367,6 +420,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
         category: 'Grand Total',
         totalSamples: quarterlyResults.reduce((s, q) => s + q.totals.totalSamples, 0),
         materialTesting: quarterlyResults.reduce((s, q) => s + q.totals.materialTesting, 0),
+        bioTesting: quarterlyResults.reduce((s, q) => s + (q.totals.bioTesting || 0), 0),
         samples: {},
       };
       ALL_TEST_TYPES.forEach(type => {
@@ -431,7 +485,6 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
     return colors[quarter - 1] || colors[0];
   };
 
-  // ── FORMAT HELPERS ───────────────────────────────────────────────────────────
   const formatPeso = (val) =>
     val > 0 ? `₱${val.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '₱0';
 
@@ -484,24 +537,12 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
           'Senior High': 'FFEAD1DC', 'BatStateU IS': 'FFD0E0E3',
         };
 
-        // Total columns: B(Period) C(Category) D(UniqueClients) E(Services) F(Income) G(BioTech) H(MatTesting) + 14 test types
-        // Columns: B=2, C=3, D=4, E=5, F=6, G=7, H=8, then I(9)..V(22) for 14 test types
-        const totalCols = 22; // B through V
+        const totalCols = 21;
 
-        // Color banding per test-type column (col index, 1-based)
-        // Col 9=FTIR, 10=CN, 11=CT, 12=FT, 13=BT, 14=TS, 15=HT, 16=MO, 17=CTT (UTM group)
-        // Col 18=RE, 19=UC, 20=FD, 21=HP, 22=O (NDT group)
-        const serviceTestTypeColors = {
-          9:  'F2DCDB', 10: 'F2DCDB',                         // FTIR, CN — light red
-          11: 'DAEEF3', 12: 'DAEEF3', 13: 'DAEEF3',           // CT, FT, BT — light blue
-          14: 'DAEEF3', 15: 'DAEEF3', 16: 'DAEEF3', 17: 'DAEEF3', // TS, HT, MO, CTT — light blue
-          18: 'FFF2CC', 19: 'FFF2CC', 20: 'FFF2CC',           // RE, UC, FD — light yellow
-          21: 'FFF2CC', 22: 'FFF2CC',                         // HP, O — light yellow
-        };
-
-        ws.mergeCells(`B2:V9`);
+        // ── HEADER (B2:U9) — White Background 1, Darker 15% = FFD9D9D9 ──
+        ws.mergeCells('B2:U9');
         const headerCell = ws.getCell('B2');
-        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };
         headerCell.border = thinBorder;
         ws.addImage(logoId, { tl: { col: 2.9, row: 2 }, br: { col: 3.5, row: 8.3 }, editAs: 'oneCell' });
         headerCell.value = [
@@ -518,40 +559,42 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
         headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         for (let i = 2; i <= 9; i++) ws.getRow(i).height = 20;
 
-        ws.mergeCells('B10:V10');
+        // ── TITLE ROW (B10) — White Background 1, Darker 5% = FFF2F2F2 ──
+        ws.mergeCells('B10:U10');
         const titleCell = ws.getCell('B10');
         titleCell.value = `${selectedYear} MATERIAL TESTING SERVICES OFFER - ${quarterText}`;
         titleCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF000000' } };
-        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_TITLE_BG } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
         titleCell.border = thinBorder;
         ws.getRow(10).height = 25;
 
-        // Row 11: group headers
-        ws.getRow(11).values = ['', 'Period', 'Types Of Client', 'No. of Unique\nClient',
-          'No. of Service\nRequest', 'Total Income', 'Bio Tech\nTesting', 'Material\nTesting',
-          ...ALL_TEST_TYPES.map(t => t)];
-        // Row 12: sub-headers (only test types need no sub-header, merge row 11-12 for non-test cols)
-        ws.getRow(12).values = ['', '', '', '', '', '', '', '', ...ALL_TEST_TYPES.map(() => 'Income')];
-
+        // ── COLUMN HEADERS (Row 11–12) — White Background 1, Darker 50% = FF808080 ──
         ws.mergeCells('B11:B12'); ws.mergeCells('C11:C12'); ws.mergeCells('D11:D12');
         ws.mergeCells('E11:E12'); ws.mergeCells('F11:F12'); ws.mergeCells('G11:G12');
         ws.mergeCells('H11:H12');
-        // Merge each test type col rows 11-12
-        for (let col = 9; col <= 9 + ALL_TEST_TYPES.length - 1; col++) {
+        for (let col = 9; col <= 8 + ALL_TEST_TYPES.length; col++) {
           ws.mergeCells(11, col, 12, col);
         }
 
+        const svcHeaders = ['Period', 'Types Of Client', 'No. of Unique\nClient',
+          'No. of Service\nRequest', 'Total Income', 'Bio Tech\nTesting', 'Material\nTesting',
+          ...ALL_TEST_TYPES];
+        svcHeaders.forEach((val, i) => {
+          ws.getCell(11, i + 2).value = val;
+        });
+
+        ws.getRow(12).height = 5;
+
         for (let col = 2; col <= totalCols; col++) {
-          for (let row = 11; row <= 12; row++) {
-            const cell = ws.getCell(row, col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F6228' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            cell.border = thinBorder;
-          }
+          const cell = ws.getCell(11, col);
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_SUBHEADER_BG } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          cell.border = thinBorder;
         }
 
+        // ── DATA ROW WRITER ──
         const writeServiceDataRow = (ws, rowNum, row) => {
           const excelRow = ws.getRow(rowNum);
           const incomeValues = ALL_TEST_TYPES.map(type => row.income_by_type[type] || 0);
@@ -562,27 +605,29 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
 
           for (let col = 2; col <= totalCols; col++) {
             const cell = excelRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
             cell.border = thinBorder;
+
             if (col === 3) {
+              // Category cell: colored background per category, black text
+              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
               cell.alignment = { horizontal: 'left', vertical: 'middle' };
               applyCategoryFill(cell, row.category, categoryColors);
+            } else {
+              // All other data cells: white background, black text
+              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_DATA_BG } };
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
+
             if (col === 6 || col >= 9) {
               cell.alignment = { horizontal: 'right', vertical: 'middle' };
-              if (typeof cell.value === 'number' && cell.value > 0) {
-                cell.numFmt = '"₱"#,##0.00';
-              }
+              if (typeof cell.value === 'number' && cell.value > 0) cell.numFmt = '"₱"#,##0.00';
             }
             if (typeof cell.value === 'number' && col !== 6 && col < 9) cell.numFmt = '#,##0';
-            // Color banding for test type columns
-            if (serviceTestTypeColors[col]) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: serviceTestTypeColors[col] } };
-            }
           }
         };
 
+        // ── SUBTOTAL ROW WRITER ("Total Income" per quarter/year) ──
         const writeServiceTotalRow = (ws, rowNum, totals, label) => {
           const totalRow = ws.getRow(rowNum);
           const incomeValues = ALL_TEST_TYPES.map(type => totals.income_by_type?.[type] || 0);
@@ -593,20 +638,25 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
 
           for (let col = 2; col <= totalCols; col++) {
             const cell = totalRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
             cell.border = thinBorder;
-            if (col === 3) cell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+            if (col === 3) {
+              // "Total Income" label cell: gray background, black bold text
+              cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF000000' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_TOTAL_CAT_BG } };
+              cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            } else {
+              // Data cells: white background, black bold text
+              cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF000000' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_DATA_BG } };
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
+
             if (col === 6 || col >= 9) {
               cell.alignment = { horizontal: 'right', vertical: 'middle' };
               if (typeof cell.value === 'number' && cell.value > 0) cell.numFmt = '"₱"#,##0.00';
             }
             if (typeof cell.value === 'number' && col !== 6 && col < 9) cell.numFmt = '#,##0';
-            // Color banding for test type columns (overrides grey)
-            if (serviceTestTypeColors[col]) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: serviceTestTypeColors[col] } };
-            }
           }
         };
 
@@ -644,8 +694,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
               noOfClient: uniqueClients,
               noOfServices: categoryClients.length,
               income: totalIncome,
-              bioTech: 0,
               materialTesting: categoryClients.filter(c => c.testTypes.some(t => MATERIAL_TESTING_TYPES.includes(t))).length,
+              bioTech: categoryClients.filter(c => c.testTypes.some(t => BIO_TESTING_TYPES.includes(t))).length,
               income_by_type: incomeByType,
             };
           });
@@ -656,7 +706,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
             noOfClient: yearData.reduce((s, d) => s + d.noOfClient, 0),
             noOfServices: yearData.reduce((s, d) => s + d.noOfServices, 0),
             income: yearData.reduce((s, d) => s + d.income, 0),
-            bioTech: 0,
+            bioTech: yearData.reduce((s, d) => s + (d.bioTech || 0), 0),
             materialTesting: yearData.reduce((s, d) => s + d.materialTesting, 0),
             income_by_type: {},
           };
@@ -692,17 +742,24 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
           );
         });
 
+        // ── GRAND TOTAL ROW — White Background 1, Darker 50% = FF808080, white text ──
         writeServiceTotalRow(ws, currentRow, displayedGrandTotals, 'Grand Total');
         for (let col = 2; col <= totalCols; col++) {
           const cell = ws.getRow(currentRow).getCell(col);
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F6228' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_SUBHEADER_BG } };
           cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
         }
 
-        ws.getColumn(1).width = 3; ws.getColumn(2).width = 12; ws.getColumn(3).width = 22;
-        ws.getColumn(4).width = 12; ws.getColumn(5).width = 12; ws.getColumn(6).width = 15;
-        ws.getColumn(7).width = 10; ws.getColumn(8).width = 13;
-        for (let col = 9; col <= totalCols; col++) ws.getColumn(col).width = 12;
+        ws.getColumn(1).width = 3;
+        ws.getColumn(2).width = 14;
+        ws.getColumn(3).width = 24;
+        ws.getColumn(4).width = 17;
+        ws.getColumn(5).width = 17;
+        ws.getColumn(6).width = 16;
+        ws.getColumn(7).width = 15;
+        ws.getColumn(8).width = 13;
+        for (let col = 9; col <= totalCols; col++) ws.getColumn(col).width = 13;
+        ws.getRow(11).height = 36;
 
       // ── SAMPLES TALLY EXPORT ─────────────────────────────────────────────────
       } else {
@@ -712,13 +769,12 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
           'Senior High': 'FFEAD1DC', 'BatStateU IS': 'FFD0E0E3',
         };
 
-        // B(Period) C(Category) D(TotalSamples) E(FTIR) F(MatTesting) G..T (12 remaining types)
-        // 14 test types + 4 fixed = 18 cols total (B..S = col 2..19)
         const totalCols = 19;
 
-        ws.mergeCells(`B2:S9`);
+        // ── HEADER (B2:S9) — White Background 1, Darker 15% = FFD9D9D9 ──
+        ws.mergeCells('B2:S9');
         const headerCell = ws.getCell('B2');
-        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+        headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };
         headerCell.border = thinBorder;
         ws.addImage(logoId, { tl: { col: 1.3, row: 2 }, br: { col: 2.9, row: 8.3 }, editAs: 'oneCell' });
         headerCell.value = [
@@ -732,95 +788,83 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
         headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         for (let i = 2; i <= 9; i++) ws.getRow(i).height = 20;
 
+        // ── TITLE ROW (B10) — White Background 1, Darker 5% = FFF2F2F2 ──
         ws.mergeCells('B10:S10');
         const titleCell = ws.getCell('B10');
         titleCell.value = `${selectedYear} MATERIAL TESTING SAMPLES TALLY - ${quarterText}`;
         titleCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF000000' } };
-        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F9438' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_TITLE_BG } };
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
         titleCell.border = thinBorder;
         ws.getRow(10).height = 25;
 
-        ws.getRow(11).values = ['', 'Period', 'Types Of Client', 'Sample Total\nPer Client Type',
-          'FTIR', 'Material\nTesting', ...ALL_TEST_TYPES.filter(t => !['FTIR', 'CN'].includes(t))];
-        ws.getRow(12).values = ['', '', '', '', '', '', ...ALL_TEST_TYPES.filter(t => !['FTIR', 'CN'].includes(t)).map(() => '')];
-
-        ws.mergeCells('B11:B12'); ws.mergeCells('C11:C12'); ws.mergeCells('D11:D12');
-        ws.mergeCells('E11:E12'); ws.mergeCells('F11:F12');
-        for (let col = 7; col <= totalCols; col++) {
-          ws.mergeCells(11, col, 12, col);
-        }
+        // ── COLUMN HEADERS (Row 11) — White Background 1, Darker 50% = FF808080 ──
+        ws.getRow(11).values = [
+          '', 'Period', 'Types Of Client', 'Sample Total\nPer Client Type',
+          'Material\nTesting', 'Bio\nTesting',
+          ...MATERIAL_TESTING_TYPES, ...BIO_TESTING_TYPES,
+        ];
+        ws.getRow(11).height = 30;
 
         for (let col = 2; col <= totalCols; col++) {
-          for (let row = 11; row <= 12; row++) {
-            const cell = ws.getCell(row, col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4F6228' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            cell.border = thinBorder;
-          }
+          const cell = ws.getCell(11, col);
+          cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_SUBHEADER_BG } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          cell.border = thinBorder;
         }
 
-        const mtTypes = ALL_TEST_TYPES.filter(t => !['FTIR', 'CN'].includes(t));
-
-        // Color banding for samples columns:
-        // D=4(TotalSamples) — no color
-        // E=5(FTIR)         — light red
-        // F=6(MatTesting)   — light red
-        // G=7(CT) H=8(FT) I=9(BT) J=10(TS) K=11(HT) L=12(MO) M=13(CTT) — light blue (UTM group)
-        // N=14(RE) O=15(UC) P=16(FD) Q=17(HP) R=18(O) — light yellow (NDT group)
-        const samplesTestTypeColors = {
-          5:  'F2DCDB', // FTIR
-          6:  'F2DCDB', // Material Testing
-          7:  'DAEEF3', 8:  'DAEEF3', 9:  'DAEEF3', 10: 'DAEEF3',  // CT, FT, BT, TS
-          11: 'DAEEF3', 12: 'DAEEF3', 13: 'DAEEF3',                // HT, MO, CTT
-          14: 'FFF2CC', 15: 'FFF2CC', 16: 'FFF2CC',                // RE, UC, FD
-          17: 'FFF2CC', 18: 'FFF2CC',                              // HP, O
-        };
-
+        // ── DATA ROW WRITER ──
         const writeSamplesDataRow = (ws, rowNum, row) => {
           const excelRow = ws.getRow(rowNum);
-          excelRow.values = ['', '', row.category,
+          excelRow.values = [
+            '', '', row.category,
             row.totalSamples,
-            row.samples?.['FTIR'] || 0,
             row.materialTesting || 0,
-            ...mtTypes.map(type => row.samples?.[type] || 0)];
+            row.bioTesting || 0,
+            ...ALL_TEST_TYPES.map(type => row.samples?.[type] || 0),
+          ];
           for (let col = 2; col <= totalCols; col++) {
             const cell = excelRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
             cell.border = thinBorder;
             if (col === 3) {
+              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
               cell.alignment = { horizontal: 'left', vertical: 'middle' };
               applyCategoryFill(cell, row.category, categoryColors);
+            } else {
+              // White background, black text
+              cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF000000' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_DATA_BG } };
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
             if (typeof cell.value === 'number') cell.numFmt = '#,##0';
-            // Color banding for test type columns
-            if (samplesTestTypeColors[col]) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: samplesTestTypeColors[col] } };
-            }
           }
         };
 
+        // ── SUBTOTAL ROW WRITER ──
         const writeSamplesTotalRow = (ws, rowNum, totals, label) => {
           const totalRow = ws.getRow(rowNum);
-          totalRow.values = ['', '', label,
+          totalRow.values = [
+            '', '', label,
             totals.totalSamples,
-            totals.samples?.['FTIR'] || 0,
             totals.materialTesting || 0,
-            ...mtTypes.map(type => totals.samples?.[type] || 0)];
+            totals.bioTesting || 0,
+            ...ALL_TEST_TYPES.map(type => totals.samples?.[type] || 0),
+          ];
           for (let col = 2; col <= totalCols; col++) {
             const cell = totalRow.getCell(col);
-            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: '000000' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
             cell.border = thinBorder;
-            if (col === 3) cell.alignment = { horizontal: 'left', vertical: 'middle' };
-            if (typeof cell.value === 'number') cell.numFmt = '#,##0';
-            // Color banding overrides grey on test type columns
-            if (samplesTestTypeColors[col]) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: samplesTestTypeColors[col] } };
+            if (col === 3) {
+              cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF000000' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_TOTAL_CAT_BG } };
+              cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            } else {
+              // White background, black bold text
+              cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF000000' } };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_DATA_BG } };
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
+            if (typeof cell.value === 'number') cell.numFmt = '#,##0';
           }
         };
 
@@ -865,7 +909,16 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
               }
               return sum;
             }, 0);
-            return { category: categoryName, totalSamples, samples: samplesByType, materialTesting: materialTestingSamples };
+            const bioTestingSamples = categoryClients.reduce((sum, c) => {
+              const hasBT = c.testTypes.some(type => BIO_TESTING_TYPES.includes(type));
+              if (hasBT) {
+                if (Array.isArray(c.serviceTests) && c.serviceTests.length > 0)
+                  return sum + c.serviceTests.filter(t => BIO_TESTING_TYPES.includes(t.testType)).reduce((s, t) => s + (Number(t.sampleCount) || 0), 0);
+                return sum + (Number(c.sampleCount) || 0);
+              }
+              return sum;
+            }, 0);
+            return { category: categoryName, totalSamples, samples: samplesByType, materialTesting: materialTestingSamples, bioTesting: bioTestingSamples };
           });
 
           yearData.forEach(row => { writeSamplesDataRow(ws, currentRow, row); currentRow++; });
@@ -873,6 +926,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
           const yearTotals = {
             totalSamples: yearData.reduce((s, d) => s + d.totalSamples, 0),
             materialTesting: yearData.reduce((s, d) => s + d.materialTesting, 0),
+            bioTesting: yearData.reduce((s, d) => s + (d.bioTesting || 0), 0),
             samples: {},
           };
           ALL_TEST_TYPES.forEach(type => {
@@ -907,10 +961,11 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
           );
         });
 
+        // ── GRAND TOTAL ROW — White Background 1, Darker 50% = FF808080, white text ──
         writeSamplesTotalRow(ws, currentRow, displayedGrandTotals, 'Grand Total');
         for (let col = 2; col <= totalCols; col++) {
           const cell = ws.getRow(currentRow).getCell(col);
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F6228' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_SUBHEADER_BG } };
           cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
         }
 
@@ -1024,7 +1079,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Unique Clients</th>
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Service Requests</th>
                           <th className="px-3 py-2 text-right font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Total Income</th>
-                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Bio Tech</th>
+                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Bio Testing</th>
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Mat. Testing</th>
                           {TEST_HEADERS.map(type => (
                             <th key={type} className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap" title={TEST_TYPE_LABELS?.[type] || type}>
@@ -1051,7 +1106,6 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                             ))}
                           </tr>
                         ))}
-                        {/* Total row */}
                         <tr className="bg-gradient-to-r from-rose-500/30 to-pink-500/30 border-t-2 border-rose-500/60 font-bold">
                           <td className="px-3 py-3 text-white border-r border-white/10">Total Income</td>
                           <td className="px-3 py-3 text-center text-white border-r border-white/10">{wholeYearData.serviceTotals.noOfClient}</td>
@@ -1089,7 +1143,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Unique Clients</th>
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Service Requests</th>
                           <th className="px-3 py-2 text-right font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Total Income</th>
-                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Bio Tech</th>
+                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Bio Testing</th>
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Mat. Testing</th>
                           {TEST_HEADERS.map(type => (
                             <th key={type} className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap" title={TEST_TYPE_LABELS?.[type] || type}>
@@ -1147,6 +1201,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                   <div><p className="text-xs text-green-200">Total Services</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.noOfServices}</p></div>
                   <div><p className="text-xs text-green-200">Total Income</p><p className="text-2xl font-bold text-white">₱{(displayedGrandTotals.income || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p></div>
                   <div><p className="text-xs text-green-200">Material Testing</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.materialTesting}</p></div>
+                  <div><p className="text-xs text-green-200">Bio Testing</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.bioTech || 0}</p></div>
                 </div>
               </div>
             </>
@@ -1169,6 +1224,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                         <tr className="bg-gradient-to-r from-rose-500/20 to-pink-500/20 border-b border-rose-500/50">
                           <th className="px-3 py-2 text-left font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Type of Client</th>
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Total Samples</th>
+                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Mat. Testing</th>
+                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Bio Testing</th>
                           {ALL_TEST_TYPES.map(type => (
                             <th key={type} className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap" title={TEST_TYPE_LABELS?.[type] || type}>
                               {type}
@@ -1181,6 +1238,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                           <tr key={i} className="hover:bg-white/5 transition-colors">
                             <CategoryCell category={row.category} />
                             <td className="px-3 py-3 text-center text-gray-300 border-r border-white/10">{row.totalSamples || 0}</td>
+                            <td className="px-3 py-3 text-center text-blue-300 border-r border-white/10">{row.materialTestingSamples || 0}</td>
+                            <td className="px-3 py-3 text-center text-yellow-300 border-r border-white/10">{row.bioTestingSamples || 0}</td>
                             {ALL_TEST_TYPES.map(type => (
                               <td key={type} className="px-3 py-3 text-center text-pink-300 border-r border-white/10">
                                 {row.samples[type] || 0}
@@ -1191,6 +1250,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                         <tr className="bg-gradient-to-r from-rose-500/30 to-pink-500/30 border-t-2 border-rose-500/60 font-bold">
                           <td className="px-3 py-3 text-white border-r border-white/10">Total Samples</td>
                           <td className="px-3 py-3 text-center text-white border-r border-white/10">{wholeYearData.samplesTotals.totalSamples || 0}</td>
+                          <td className="px-3 py-3 text-center text-blue-300 border-r border-white/10">{wholeYearData.samplesTotals.materialTesting || 0}</td>
+                          <td className="px-3 py-3 text-center text-yellow-300 border-r border-white/10">{wholeYearData.samplesTotals.bioTesting || 0}</td>
                           {ALL_TEST_TYPES.map(type => (
                             <td key={type} className="px-3 py-3 text-center text-pink-300 border-r border-white/10">
                               {wholeYearData.samplesTotals[`samples_${type}`] || 0}
@@ -1215,6 +1276,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                         <tr className={`bg-gradient-to-r ${getQuarterColor(quarter)} border-b`}>
                           <th className="px-3 py-2 text-left font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Type of Client</th>
                           <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Total Samples</th>
+                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Mat. Testing</th>
+                          <th className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap">Bio Testing</th>
                           {ALL_TEST_TYPES.map(type => (
                             <th key={type} className="px-3 py-2 text-center font-bold text-white uppercase border-r border-white/10 whitespace-nowrap" title={TEST_TYPE_LABELS?.[type] || type}>
                               {type}
@@ -1227,6 +1290,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                           <tr key={i} className="hover:bg-white/5 transition-colors">
                             <CategoryCell category={row.category} />
                             <td className="px-3 py-3 text-center text-gray-300 border-r border-white/10">{row.totalSamples || 0}</td>
+                            <td className="px-3 py-3 text-center text-blue-300 border-r border-white/10">{row.materialTesting || 0}</td>
+                            <td className="px-3 py-3 text-center text-yellow-300 border-r border-white/10">{row.bioTesting || 0}</td>
                             {ALL_TEST_TYPES.map(type => (
                               <td key={type} className="px-3 py-3 text-center text-pink-300 border-r border-white/10">
                                 {row.samples[type] || 0}
@@ -1237,6 +1302,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                         <tr className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-t-2 border-amber-500/50 font-bold">
                           <td className="px-3 py-3 text-white border-r border-white/10">Total Samples</td>
                           <td className="px-3 py-3 text-center text-white border-r border-white/10">{totals.totalSamples || 0}</td>
+                          <td className="px-3 py-3 text-center text-blue-300 border-r border-white/10">{totals.materialTesting || 0}</td>
+                          <td className="px-3 py-3 text-center text-yellow-300 border-r border-white/10">{totals.bioTesting || 0}</td>
                           {ALL_TEST_TYPES.map(type => (
                             <td key={type} className="px-3 py-3 text-center text-pink-300 border-r border-white/10">
                               {totals.samples[type] || 0}
@@ -1256,8 +1323,8 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div><p className="text-xs text-green-200">Total Samples</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.totalSamples}</p></div>
-                  <div><p className="text-xs text-green-200">FTIR Samples</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.samples?.['FTIR'] || 0}</p></div>
                   <div><p className="text-xs text-green-200">Material Testing</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.materialTesting || 0}</p></div>
+                  <div><p className="text-xs text-green-200">Bio Testing</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.bioTesting || 0}</p></div>
                   <div><p className="text-xs text-green-200">CT Samples</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.samples?.['CT'] || 0}</p></div>
                 </div>
               </div>
