@@ -4,7 +4,7 @@ import { TEST_TYPE_LABELS } from "./types";
 import axios from 'axios';
 
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
-const STATUSES = ['Pending', 'Ongoing', 'Completed', 'Cancelled'];
+const STATUSES = ['Pending', 'Ongoing', 'For Release', 'Completed', 'Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
@@ -354,11 +354,11 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
-                <select
+               <select
                   required
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"
                 >
                   {STATUSES.map((status) => (
                     <option key={status} value={status} className="bg-slate-800">{status}</option>

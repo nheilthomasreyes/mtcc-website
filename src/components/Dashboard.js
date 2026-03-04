@@ -29,6 +29,7 @@ export function Dashboard({ clients, selectedYear }) {
     const completed = clients.filter(c => c.status === 'Completed').length;
     const pending = clients.filter(c => c.status === 'Pending').length;
     const cancelled = clients.filter(c => c.status === 'Cancelled').length;
+    const forRelease = clients.filter(c => c.status === 'For Release').length;
 
     const getRevenue = (client) => {
       if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
@@ -79,6 +80,7 @@ export function Dashboard({ clients, selectedYear }) {
     const statusData = [
       { status: 'Pending', count: pending, color: '#f59e0b' },
       { status: 'Ongoing', count: ongoing, color: '#3b82f6' },
+      { status: 'For Release', count: forRelease, color: '#eab308' },
       { status: 'Completed', count: completed, color: '#10b981' },
       { status: 'Cancelled', count: cancelled, color: '#ec4899' },
     ];
@@ -130,6 +132,7 @@ export function Dashboard({ clients, selectedYear }) {
       completed,
       pending,
       cancelled,
+      forRelease,
       totalRevenue,
       completedRevenue,
       monthlyData,

@@ -23,11 +23,12 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const statusCounts = useMemo(() => {
     return {
-      All:       clients.length,
-      Ongoing:   clients.filter(c => c.status === 'Ongoing').length,
-      Pending:   clients.filter(c => c.status === 'Pending').length,
-      Completed: clients.filter(c => c.status === 'Completed').length,
-      Cancelled: clients.filter(c => c.status === 'Cancelled').length,
+      All:        clients.length,
+      Ongoing:    clients.filter(c => c.status === 'Ongoing').length,
+      Pending:    clients.filter(c => c.status === 'Pending').length,
+      ForRelease: clients.filter(c => c.status === 'For Release').length,
+      Completed:  clients.filter(c => c.status === 'Completed').length,
+      Cancelled:  clients.filter(c => c.status === 'Cancelled').length,
     };
   }, [clients]);
 
@@ -143,21 +144,23 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Pending':   return <AlertCircle className="w-5 h-5 text-amber-400" />;
-      case 'Ongoing':   return <Clock className="w-5 h-5 text-blue-400" />;
-      case 'Completed': return <CheckCircle className="w-5 h-5 text-green-400" />;
-      case 'Cancelled': return <XIcon className="w-5 h-5 text-red-400" />;
-      default:          return null;
+      case 'Pending':     return <AlertCircle className="w-5 h-5 text-amber-400" />;
+      case 'Ongoing':     return <Clock className="w-5 h-5 text-blue-400" />;
+      case 'For Release': return <Download className="w-5 h-5 text-yellow-400" />;
+      case 'Completed':   return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'Cancelled':   return <XIcon className="w-5 h-5 text-red-400" />;
+      default:            return null;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Pending':   return 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300';
-      case 'Ongoing':   return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300';
-      case 'Completed': return 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300';
-      case 'Cancelled': return 'from-red-500/20 to-rose-500/20 border-red-500/30 text-red-300';
-      default:          return '';
+      case 'Pending':     return 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300';
+      case 'Ongoing':     return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300';
+      case 'For Release': return 'from-yellow-500/20 to-yellow-400/20 border-yellow-500/30 text-yellow-300';
+      case 'Completed':   return 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300';
+      case 'Cancelled':   return 'from-red-500/20 to-rose-500/20 border-red-500/30 text-red-300';
+      default:            return '';
     }
   };
 
@@ -321,6 +324,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                 <option value="All" className="bg-gray-900">All Status ({statusCounts.All})</option>
                 <option value="Ongoing" className="bg-gray-900">Ongoing ({statusCounts.Ongoing})</option>
                 <option value="Pending" className="bg-gray-900">Pending ({statusCounts.Pending})</option>
+                <option value="For Release" className="bg-gray-900">For Release ({statusCounts.ForRelease})</option>
                 <option value="Completed" className="bg-gray-900">Completed ({statusCounts.Completed})</option>
                 <option value="Cancelled" className="bg-gray-900">Cancelled ({statusCounts.Cancelled})</option>
               </select>
@@ -354,7 +358,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
             <tr className="bg-slate-900 shadow-md">
               <th className="sticky left-0 top-0 z-50 w-[100px] min-w-[100px] px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase bg-slate-900 border-b border-white/10 border-r border-white/10">Service No.</th>
               <th className="sticky left-[100px] top-0 z-50 w-[250px] min-w-[250px] px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase bg-slate-900 border-b border-white/10 border-r border-white/10">Client Name</th>
-              <th className="sticky left-[350px] top-0 z-50 w-[200px] min-w-[200px] px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase bg-slate-900 border-b border-white/10 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">Company</th>
+              <th className="sticky left-[350px] top-0 z-50 w-[200px] min-w-[200px] px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase bg-slate-900 border-b border-white/10 border-r border-white/10">Company</th>
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Category</th>
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Service Request Form</th>
               <th className="px-3 py-2 text-center text-xs font-semibold text-cyan-300 uppercase tracking-wider border-b border-white/10 bg-slate-900">Request Date</th>
@@ -402,7 +406,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   </td>
 
                   {/* Company */}
-                  <td className="sticky left-[350px] z-30 w-[200px] min-w-[200px] px-5 py-5 bg-slate-900 border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
+                  <td className="sticky left-[350px] z-30 w-[200px] px-5 py-5 bg-slate-900 overflow-hidden border-r border-white/10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
                     <p className="text-sm text-gray-300 truncate">{client.company || '-'}</p>
                   </td>
 
