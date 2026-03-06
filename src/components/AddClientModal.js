@@ -4,7 +4,7 @@ import { TEST_TYPE_LABELS } from "./types";
 import axios from 'axios';
 
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
-const STATUSES = ['Pending', 'Ongoing', 'For Release', 'Completed', 'Cancelled'];
+const STATUSES = ['On-Hold', 'For Test', 'For Release', 'Service Completed', 'Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
@@ -55,7 +55,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     phone: '',
     category: 'Industry',
     serviceType: 'Material Testing',
-    status: 'Pending',
+    status: 'On-Hold',
     progress: 0,
     dateRequested: '',
     startDate: '',
@@ -170,7 +170,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     // Reset
     setFormData({
       name: '', companyName: '', address: '', email: '', phone: '',
-      category: 'Industry', serviceType: 'Material Testing', status: 'Pending',
+      category: 'Industry', serviceType: 'Material Testing', status: 'On-Hold',
       progress: 0, dateRequested: '', startDate: '', dueDate: '',
       dateReleased: '', dateClaimed: '', testDate: '', releasedROA: '',
       requestForm: 'Waiting', roaV: false, roa: false, ts: false,

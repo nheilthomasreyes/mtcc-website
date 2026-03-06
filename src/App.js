@@ -181,7 +181,7 @@ const fetchAllClients = async () => {
       const res = await fetch(`${API_URL}/clients/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Completed' }),
+        body: JSON.stringify({ status: 'Service Completed' }),
       });
 
       if (!res.ok) {
@@ -189,7 +189,7 @@ const fetchAllClients = async () => {
         throw new Error(err.message || 'Failed to update');
       }
 
-      setClients(clients.map((c) => (c.id === id ? { ...c, status: 'Completed' } : c)));
+      setClients(clients.map((c) => (c.id === id ? { ...c, status: 'Service Completed' } : c)));
     } catch (error) {
       console.error('Error completing client:', error);
       alert(`Failed to mark client as completed: ${error.message}`);
@@ -330,6 +330,7 @@ const fetchAllClients = async () => {
         {/* Service Table */}
         <div className="flex-1 overflow-hidden">
           <ServiceTable
+            key={selectedYear}
             clients={filteredClients}
             onEdit={setEditingClient}
             onDelete={handleDeleteClient}

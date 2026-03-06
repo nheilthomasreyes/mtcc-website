@@ -21,26 +21,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const availableTestTypes = ['All', 'FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
-  const clientTypeCounts = useMemo(() => {
-    const counts = { All: clients.length };
-    clients.forEach(c => {
-      const cat = c.category || '(No Category)';
-      counts[cat] = (counts[cat] || 0) + 1;
-    });
-    return counts;
-  }, [clients]);
-
-  const statusCounts = useMemo(() => {
-    return {
-      All:        clients.length,
-      Ongoing:    clients.filter(c => c.status === 'Ongoing').length,
-      Pending:    clients.filter(c => c.status === 'Pending').length,
-      ForRelease: clients.filter(c => c.status === 'For Release').length,
-      Completed:  clients.filter(c => c.status === 'Completed').length,
-      Cancelled:  clients.filter(c => c.status === 'Cancelled').length,
-    };
-  }, [clients]);
-
   // ─── Helpers to derive fields from serviceTests array ────────────────────────
 
   /** Returns array of test type strings, e.g. ['FTIR', 'CN'] */
@@ -57,14 +37,51 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   };
 
   const testTypeCounts = useMemo(() => {
-    const counts = { All: clients.length };
-    clients.forEach(c => {
+    const base = clients.filter(c => {
+      const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
+      const matchesClientType = selectedClientType === 'All' ||
+        (selectedClientType === '(No Category)' ? !c.category : c.category === selectedClientType);
+      return matchesStatus && matchesClientType;
+    });
+    const counts = { All: base.length };
+    base.forEach(c => {
       getTestTypes(c).forEach(t => {
         counts[t] = (counts[t] || 0) + 1;
       });
     });
     return counts;
-  }, [clients]);
+  }, [clients, statusFilter, selectedClientType]);
+
+  const clientTypeCounts = useMemo(() => {
+    const base = clients.filter(c => {
+      const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
+      const matchesTestType = selectedTestType === 'All' || getTestTypes(c).includes(selectedTestType);
+      return matchesStatus && matchesTestType;
+    });
+    const counts = { All: base.length };
+    base.forEach(c => {
+      const cat = c.category || '(No Category)';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [clients, statusFilter, selectedTestType]);
+
+  const statusCounts = useMemo(() => {
+    const base = clients.filter(c => {
+      const matchesClientType = selectedClientType === 'All' ||
+        (selectedClientType === '(No Category)' ? !c.category : c.category === selectedClientType);
+      const matchesTestType = selectedTestType === 'All' || getTestTypes(c).includes(selectedTestType);
+      return matchesClientType && matchesTestType;
+    });
+    return {
+      All:              base.length,
+      ForTest:          base.filter(c => c.status === 'For Test').length,
+      OnHold:           base.filter(c => c.status === 'On-Hold').length,
+      ForRelease:       base.filter(c => c.status === 'For Release').length,
+      ServiceCompleted: base.filter(c => c.status === 'Service Completed').length,
+      Cancelled:        base.filter(c => c.status === 'Cancelled').length,
+    };
+  }, [clients, selectedClientType, selectedTestType]);
 
   /** Total amount: sum across all serviceTests rows */
   const getTotalAmount = (client) => {
@@ -164,10 +181,10 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Pending':     return <AlertCircle className="w-5 h-5 text-amber-400" />;
-      case 'Ongoing':     return <Clock className="w-5 h-5 text-blue-400" />;
+      case 'On-Hold':     return <AlertCircle className="w-5 h-5 text-amber-400" />;
+      case 'For Test':     return <Clock className="w-5 h-5 text-blue-400" />;
       case 'For Release': return <Download className="w-5 h-5 text-yellow-400" />;
-      case 'Completed':   return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'Service Completed':   return <CheckCircle className="w-5 h-5 text-green-400" />;
       case 'Cancelled':   return <XIcon className="w-5 h-5 text-red-400" />;
       default:            return null;
     }
@@ -175,10 +192,10 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Pending':     return 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300';
-      case 'Ongoing':     return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300';
+      case 'On-Hold':     return 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300';
+      case 'For Test':     return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300';
       case 'For Release': return 'from-yellow-500/20 to-yellow-400/20 border-yellow-500/30 text-yellow-300';
-      case 'Completed':   return 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300';
+      case 'Service Completed':   return 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300';
       case 'Cancelled':   return 'from-red-500/20 to-rose-500/20 border-red-500/30 text-red-300';
       default:            return '';
     }
@@ -396,8 +413,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                 setOpen={setStatusDropdownOpen}
                 value={statusFilter}
                 onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
-                options={['All', 'Ongoing', 'Pending', 'For Release', 'Completed', 'Cancelled']}
-                getCounts={{ All: statusCounts.All, Ongoing: statusCounts.Ongoing, Pending: statusCounts.Pending, 'For Release': statusCounts.ForRelease, Completed: statusCounts.Completed, Cancelled: statusCounts.Cancelled }}
+                options={['All', 'On-Hold', 'For Test', 'For Release', 'Service Completed', 'Cancelled']}
+                getCounts={{ 'All': statusCounts.All, 'For Test': statusCounts.ForTest, 'On-Hold': statusCounts.OnHold, 'For Release': statusCounts.ForRelease, 'Service Completed': statusCounts.ServiceCompleted, 'Cancelled': statusCounts.Cancelled }}
                 formatLabel={(v) => v === 'All' ? 'All Status' : v}
               />
 
@@ -611,7 +628,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                   <td className="px-5 py-5">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => onEdit(client)} className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110" title="Edit"><Edit className="w-4 h-4" /></button>
-                      {client.status !== 'Completed' && onComplete && (
+                      {client.status !== 'Service Completed' && onComplete && (
                         <button onClick={() => onComplete(client.id)} className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110" title="Mark as Completed"><CheckCircle className="w-4 h-4" /></button>
                       )}
                       <button onClick={() => onDelete(client.id)} className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110" title="Delete"><Trash2 className="w-4 h-4" /></button>

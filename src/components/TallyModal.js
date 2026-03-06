@@ -1196,7 +1196,7 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                 <h3 className="text-xl font-bold text-white mb-3">
                   Grand Total — {selectedYear} {selectedQuarter !== 'all' ? `(Q${selectedQuarter})` : ''}
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-5 gap-4">
                   <div><p className="text-xs text-green-200">Total Clients</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.noOfClient}</p></div>
                   <div><p className="text-xs text-green-200">Total Services</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.noOfServices}</p></div>
                   <div><p className="text-xs text-green-200">Total Income</p><p className="text-2xl font-bold text-white">₱{(displayedGrandTotals.income || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p></div>
@@ -1321,11 +1321,10 @@ export function TallyModal({ isOpen, onClose, customYears, allClients = [] }) {
                 <h3 className="text-xl font-bold text-white mb-3">
                   Grand Total — {selectedYear} {selectedQuarter !== 'all' ? `(Q${selectedQuarter})` : ''}
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div><p className="text-xs text-green-200">Total Samples</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.totalSamples}</p></div>
                   <div><p className="text-xs text-green-200">Material Testing</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.materialTesting || 0}</p></div>
-                  <div><p className="text-xs text-green-200">Bio Testing</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.bioTesting || 0}</p></div>
-                  <div><p className="text-xs text-green-200">CT Samples</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.samples?.['CT'] || 0}</p></div>
+                  <div><p className="text-xs text-green-200">Bio Testing</p><p className="text-2xl font-bold text-white">{displayedGrandTotals.bioTesting || 0}</p></div> 
                 </div>
               </div>
             </>

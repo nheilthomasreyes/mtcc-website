@@ -25,9 +25,9 @@ const SERVICE_COLORS = {
 export function Dashboard({ clients, selectedYear }) {
   const stats = useMemo(() => {
     const total = clients.length;
-    const ongoing = clients.filter(c => c.status === 'Ongoing').length;
-    const completed = clients.filter(c => c.status === 'Completed').length;
-    const pending = clients.filter(c => c.status === 'Pending').length;
+    const fortest = clients.filter(c => c.status === 'For Test').length;
+    const servicecompleted = clients.filter(c => c.status === 'Service Completed').length;
+    const onhold = clients.filter(c => c.status === 'On-Hold').length;
     const cancelled = clients.filter(c => c.status === 'Cancelled').length;
     const forRelease = clients.filter(c => c.status === 'For Release').length;
 
@@ -41,7 +41,7 @@ export function Dashboard({ clients, selectedYear }) {
     // Use Number() to safely parse amount in case it comes as a string from the DB
     const totalRevenue = clients.reduce((sum, c) => sum + getRevenue(c), 0);
     const completedRevenue = clients
-      .filter(c => c.status === 'Completed')
+      .filter(c => c.status === 'Service Completed')
       .reduce((sum, c) => sum + getRevenue(c), 0);
 
     // Monthly data for the last 6 months
@@ -78,10 +78,10 @@ export function Dashboard({ clients, selectedYear }) {
 
     // Status distribution for bar chart
     const statusData = [
-      { status: 'Pending', count: pending, color: '#f59e0b' },
-      { status: 'Ongoing', count: ongoing, color: '#3b82f6' },
+      { status: 'On-Hold', count: onhold, color: '#f59e0b' },
+      { status: 'For Test', count: fortest, color: '#3b82f6' },
       { status: 'For Release', count: forRelease, color: '#eab308' },
-      { status: 'Completed', count: completed, color: '#10b981' },
+      { status: 'Service Completed', count: servicecompleted, color: '#10b981' },
       { status: 'Cancelled', count: cancelled, color: '#ec4899' },
     ];
 
@@ -128,9 +128,9 @@ export function Dashboard({ clients, selectedYear }) {
 
     return {
       total,
-      ongoing,
-      completed,
-      pending,
+      fortest,
+      servicecompleted,
+      onhold,
       cancelled,
       forRelease,
       totalRevenue,
@@ -178,8 +178,8 @@ export function Dashboard({ clients, selectedYear }) {
               <TrendingUp className="w-5 h-5 text-blue-400" />
             </div>
             <div className="space-y-2">
-              <p className="text-blue-200 text-sm font-medium">Ongoing</p>
-              <p className="text-4xl font-bold text-white">{stats.ongoing}</p>
+              <p className="text-blue-200 text-sm font-medium">For Test</p>
+              <p className="text-4xl font-bold text-white">{stats.fortest}</p>
               <p className="text-blue-300 text-xs">In progress services</p>
             </div>
           </div>
@@ -196,8 +196,8 @@ export function Dashboard({ clients, selectedYear }) {
               <TrendingUp className="w-5 h-5 text-green-400" />
             </div>
             <div className="space-y-2">
-              <p className="text-green-200 text-sm font-medium">Completed</p>
-              <p className="text-4xl font-bold text-white">{stats.completed}</p>
+              <p className="text-green-200 text-sm font-medium">Service Completed</p>
+              <p className="text-4xl font-bold text-white">{stats.servicecompleted}</p>
               <p className="text-green-300 text-xs">Finished services</p>
             </div>
           </div>
@@ -216,7 +216,7 @@ export function Dashboard({ clients, selectedYear }) {
             <div className="space-y-2">
               <p className="text-amber-200 text-sm font-medium">Total Revenue</p>
               <p className="text-4xl font-bold text-white">₱{(stats.totalRevenue / 1000).toFixed(1)}K</p>
-              <p className="text-amber-300 text-xs">Completed: ₱{(stats.completedRevenue / 1000).toFixed(1)}K</p>
+              <p className="text-amber-300 text-xs">ServiceCompleted: ₱{(stats.completedRevenue / 1000).toFixed(1)}K</p>
             </div>
           </div>
         </div>
