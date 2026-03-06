@@ -1,14 +1,22 @@
-import { Download, Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 import { format } from 'date-fns';
 import { useState, useMemo, useEffect } from 'react';
 import ExcelJS from 'exceljs';
 
-export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
+export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, onRevert }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedClientType, setSelectedClientType] = useState('All');
   const [selectedTestType, setSelectedTestType] = useState('All');
   const [searchClientName, setSearchClientName] = useState('');
+
+  // Complete dialog state
+  const [completeDialog, setCompleteDialog] = useState(null); // { clientId, isForRelease }
+
+  // Delete/Cancel dialog states
+  const [deleteDialog, setDeleteDialog]   = useState(null); // { clientId, client }
+  const [finalDialog, setFinalDialog]     = useState(null); // { action: 'Cancel'|'Delete', clientId, client }
+  const [revertDialog, setRevertDialog]   = useState(null); // { clientId, client }
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,6 +85,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
       All:              base.length,
       ForTest:          base.filter(c => c.status === 'For Test').length,
       OnHold:           base.filter(c => c.status === 'On-Hold').length,
+      AwaitingROA:      base.filter(c => c.status === 'Awaiting ROA').length,
       ForRelease:       base.filter(c => c.status === 'For Release').length,
       ServiceCompleted: base.filter(c => c.status === 'Service Completed').length,
       Cancelled:        base.filter(c => c.status === 'Cancelled').length,
@@ -181,23 +190,25 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'On-Hold':     return <AlertCircle className="w-5 h-5 text-amber-400" />;
-      case 'For Test':     return <Clock className="w-5 h-5 text-blue-400" />;
-      case 'For Release': return <Download className="w-5 h-5 text-yellow-400" />;
-      case 'Service Completed':   return <CheckCircle className="w-5 h-5 text-green-400" />;
-      case 'Cancelled':   return <XIcon className="w-5 h-5 text-red-400" />;
-      default:            return null;
+      case 'On-Hold':          return <AlertCircle className="w-5 h-5 text-amber-400" />;
+      case 'For Test':         return <Clock className="w-5 h-5 text-blue-400" />;
+      case 'Awaiting ROA':     return <Clock className="w-5 h-5 text-yellow-400" />;
+      case 'For Release':      return <Download className="w-5 h-5 text-lime-400" />;
+      case 'Service Completed':return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'Cancelled':        return <XIcon className="w-5 h-5 text-red-400" />;
+      default:                 return null;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'On-Hold':     return 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300';
-      case 'For Test':     return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300';
-      case 'For Release': return 'from-yellow-500/20 to-yellow-400/20 border-yellow-500/30 text-yellow-300';
-      case 'Service Completed':   return 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300';
-      case 'Cancelled':   return 'from-red-500/20 to-rose-500/20 border-red-500/30 text-red-300';
-      default:            return '';
+      case 'On-Hold':          return 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-300';
+      case 'For Test':         return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-300';
+      case 'Awaiting ROA':     return 'from-yellow-500/20 to-yellow-400/20 border-yellow-500/30 text-yellow-300';
+      case 'For Release':      return 'from-lime-500/20 to-green-400/20 border-lime-500/30 text-lime-300';
+      case 'Service Completed':return 'from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300';
+      case 'Cancelled':        return 'from-red-500/20 to-rose-500/20 border-red-500/30 text-red-300';
+      default:                 return '';
     }
   };
 
@@ -323,6 +334,15 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     }
   };
 
+  // ─── Revert status logic ─────────────────────────────────────────────────────
+
+  const getRevertStatus = (client) => {
+    if (client.officialReceipt && client.testDate && client.roaV) return 'For Release';
+    if (client.officialReceipt && client.testDate && !client.roaV) return 'Awaiting ROA';
+    if (client.officialReceipt && !client.testDate) return 'For Test';
+    return 'On-Hold';
+  };
+
   // ─── Custom scrollable filter dropdown ───────────────────────────────────────
 
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -377,7 +397,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden flex flex-col h-[calc(100vh-230px)]">
+    <>
+      <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden flex flex-col h-[calc(100vh-230px)]">
       {/* Frozen Header Section */}
       <div className="flex-none p-6 border-b border-white/10 bg-slate-900/50 relative z-50 w-full">
         <div className="flex flex-row items-center justify-between w-full gap-4">
@@ -413,8 +434,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                 setOpen={setStatusDropdownOpen}
                 value={statusFilter}
                 onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
-                options={['All', 'On-Hold', 'For Test', 'For Release', 'Service Completed', 'Cancelled']}
-                getCounts={{ 'All': statusCounts.All, 'For Test': statusCounts.ForTest, 'On-Hold': statusCounts.OnHold, 'For Release': statusCounts.ForRelease, 'Service Completed': statusCounts.ServiceCompleted, 'Cancelled': statusCounts.Cancelled }}
+                options={['All', 'On-Hold', 'For Test', 'Awaiting ROA', 'For Release', 'Service Completed', 'Cancelled']}
+                getCounts={{ 'All': statusCounts.All, 'For Test': statusCounts.ForTest, 'On-Hold': statusCounts.OnHold, 'Awaiting ROA': statusCounts.AwaitingROA, 'For Release': statusCounts.ForRelease, 'Service Completed': statusCounts.ServiceCompleted, 'Cancelled': statusCounts.Cancelled }}
                 formatLabel={(v) => v === 'All' ? 'All Status' : v}
               />
 
@@ -629,9 +650,13 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => onEdit(client)} className="p-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 hover:scale-110" title="Edit"><Edit className="w-4 h-4" /></button>
                       {client.status !== 'Service Completed' && onComplete && (
-                        <button onClick={() => onComplete(client.id)} className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110" title="Mark as Completed"><CheckCircle className="w-4 h-4" /></button>
+                        <button onClick={() => setCompleteDialog({ clientId: client.id, isForRelease: client.status === 'For Release' })} className="p-2 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 transition-all duration-200 hover:scale-110" title="Mark as Completed"><CheckCircle className="w-4 h-4" /></button>
                       )}
-                      <button onClick={() => onDelete(client.id)} className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                      {client.status === 'Cancelled' ? (
+                        <button onClick={() => setRevertDialog({ clientId: client.id, client })} className="p-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 border border-orange-500/30 hover:border-orange-500/50 transition-all duration-200 hover:scale-110" title="Revert Cancelled Status"><RotateCcw className="w-4 h-4" /></button>
+                      ) : (
+                        <button onClick={() => setDeleteDialog({ clientId: client.id, client })} className="p-2 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 hover:scale-110" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -674,5 +699,159 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
         )}
       </div>
     </div>
+
+    {/* Complete Confirmation Dialog */}
+    {completeDialog && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl p-8 space-y-6">
+          {completeDialog.isForRelease ? (
+            <>
+              <div className="flex items-center gap-4">
+                <CheckCircle className="w-9 h-9 text-green-400 flex-shrink-0" />
+                <h3 className="text-2xl font-bold text-white tracking-wide">CONFIRMATION</h3>
+              </div>
+              <p className="text-gray-200 text-base leading-relaxed">
+                Are you sure the Report of Analysis (ROA) is released?
+              </p>
+              <div className="flex justify-end gap-4 pt-2">
+                <button
+                  onClick={() => setCompleteDialog(null)}
+                  className="px-7 py-3 rounded-lg bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all text-base font-medium"
+                >
+                  NO
+                </button>
+                <button
+                  onClick={() => { onComplete(completeDialog.clientId); setCompleteDialog(null); }}
+                  className="px-7 py-3 rounded-lg bg-green-600 hover:bg-green-500 text-white transition-all text-base font-semibold"
+                >
+                  YES
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-4">
+                <AlertCircle className="w-9 h-9 text-amber-400 flex-shrink-0" />
+                <h3 className="text-2xl font-bold text-white tracking-wide">CAUTION</h3>
+              </div>
+              <p className="text-gray-200 text-base leading-relaxed">
+                No Report of Analysis (ROA) reported. Please verify the availability of ROA.
+              </p>
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={() => setCompleteDialog(null)}
+                  className="px-7 py-3 rounded-lg bg-amber-600 hover:bg-amber-500 text-white transition-all text-base font-semibold"
+                >
+                  OK
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    )}
+    {/* ── Step 1: Delete/Cancel choice dialog ───────────────────────────────── */}
+    {deleteDialog && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl p-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <AlertCircle className="w-9 h-9 text-red-400 flex-shrink-0" />
+              <h3 className="text-2xl font-bold text-white tracking-wide">WARNING</h3>
+            </div>
+            <button onClick={() => setDeleteDialog(null)} className="p-2 rounded-lg bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10 transition-all">
+              <XIcon className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-gray-200 text-base leading-relaxed">
+            Cancellation and Deletion Activated: Select Process
+          </p>
+          <div className="flex justify-end gap-4 pt-2">
+            <button
+              onClick={() => { setDeleteDialog(null); setFinalDialog({ action: 'Cancel', clientId: deleteDialog.clientId, client: deleteDialog.client }); }}
+              className="px-7 py-3 rounded-lg bg-amber-600 hover:bg-amber-500 text-white transition-all text-base font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => { setDeleteDialog(null); setFinalDialog({ action: 'Delete', clientId: deleteDialog.clientId, client: deleteDialog.client }); }}
+              className="px-7 py-3 rounded-lg bg-red-600 hover:bg-red-500 text-white transition-all text-base font-semibold"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Step 2: Final confirmation dialog ─────────────────────────────────── */}
+    {finalDialog && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl p-8 space-y-6">
+          <div className="flex items-center gap-4">
+            <AlertCircle className="w-9 h-9 text-red-400 flex-shrink-0" />
+            <h3 className="text-2xl font-bold text-white tracking-wide">FINAL WARNING</h3>
+          </div>
+          <p className="text-gray-200 text-base leading-relaxed">
+            Do you want to <span className="font-bold text-white">{finalDialog.action.toUpperCase()}</span> this transaction?
+          </p>
+          <div className="flex justify-end gap-4 pt-2">
+            <button
+              onClick={() => setFinalDialog(null)}
+              className="px-7 py-3 rounded-lg bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all text-base font-medium"
+            >
+              NO
+            </button>
+            <button
+              onClick={() => {
+                if (finalDialog.action === 'Delete') {
+                  onDelete(finalDialog.clientId);
+                } else {
+                  onCancel && onCancel(finalDialog.clientId);
+                }
+                setFinalDialog(null);
+              }}
+              className={`px-7 py-3 rounded-lg text-white transition-all text-base font-semibold ${finalDialog.action === 'Delete' ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'}`}
+            >
+              YES
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Revert dialog ─────────────────────────────────────────────────────── */}
+    {revertDialog && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl p-8 space-y-6">
+          <div className="flex items-center gap-4">
+            <RotateCcw className="w-9 h-9 text-orange-400 flex-shrink-0" />
+            <h3 className="text-2xl font-bold text-white tracking-wide">REVERT CHANGES?</h3>
+          </div>
+          <p className="text-gray-200 text-base leading-relaxed">
+            Do you want to remove <span className="font-bold text-white">'Cancelled'</span> status?
+          </p>
+          <div className="flex justify-end gap-4 pt-2">
+            <button
+              onClick={() => setRevertDialog(null)}
+              className="px-7 py-3 rounded-lg bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all text-base font-medium"
+            >
+              NO
+            </button>
+            <button
+              onClick={() => {
+                const newStatus = getRevertStatus(revertDialog.client);
+                onRevert && onRevert(revertDialog.clientId, newStatus);
+                setRevertDialog(null);
+              }}
+              className="px-7 py-3 rounded-lg bg-orange-600 hover:bg-orange-500 text-white transition-all text-base font-semibold"
+            >
+              YES
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

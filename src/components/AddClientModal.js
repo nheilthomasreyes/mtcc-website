@@ -4,7 +4,7 @@ import { TEST_TYPE_LABELS } from "./types";
 import axios from 'axios';
 
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
-const STATUSES = ['On-Hold', 'For Test', 'For Release', 'Service Completed', 'Cancelled'];
+const STATUSES = ['Cancelled'];
 const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
@@ -354,16 +354,24 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status <span className="text-red-500">*</span></label>
-               <select
-                  required
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"
-                >
-                  {STATUSES.map((status) => (
-                    <option key={status} value={status} className="bg-slate-800">{status}</option>
-                  ))}
-                </select>
+                {(formData.status === 'On-Hold' || formData.status === 'For Test' || formData.status === 'Awaiting ROA' || formData.status === 'For Release') ? (
+                  <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm italic select-none">
+                    {formData.status} <span className="text-xs text-gray-500">
+                      {(formData.status === 'On-Hold' || formData.status === 'For Test') ? '(auto-set by Official Receipt)' : '(auto-set by Date of Test & ROA)'}
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"
+                  >
+                    {STATUSES.map((status) => (
+                      <option key={status} value={status} className="bg-slate-800">{status}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
           </div>
@@ -529,7 +537,16 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <input
                   type="date"
                   value={formData.testDate || ''}
-                  onChange={(e) => setFormData({ ...formData, testDate: e.target.value })}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    let newStatus;
+                    if (newDate) {
+                      newStatus = formData.roaV ? 'For Release' : 'Awaiting ROA';
+                    } else {
+                      newStatus = formData.officialReceipt ? 'For Test' : 'On-Hold';
+                    }
+                    setFormData({ ...formData, testDate: newDate, status: newStatus });
+                  }}
                   className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   style={{ colorScheme: 'dark' }}
                 />
@@ -551,20 +568,24 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Report of Analysis</label>
                 <label
                   htmlFor="roaV"
-                  className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border cursor-pointer transition-all select-none ${
-                    formData.roaV
-                      ? 'bg-green-500/10 border-green-500/40 text-green-300'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                  className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border transition-all select-none ${
+                    !formData.testDate
+                      ? 'bg-white/3 border-white/5 text-gray-600 cursor-not-allowed opacity-50'
+                      : formData.roaV
+                        ? 'bg-green-500/10 border-green-500/40 text-green-300 cursor-pointer'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20 cursor-pointer'
                   }`}
                 >
                   <input
                     type="checkbox"
                     id="roaV"
                     checked={formData.roaV || false}
-                    onChange={(e) => setFormData({ ...formData, roaV: e.target.checked })}
+                    disabled={!formData.testDate}
+                    onChange={(e) => setFormData({ ...formData, roaV: e.target.checked, status: e.target.checked ? 'For Release' : 'Awaiting ROA' })}
                     className="w-4 h-4 rounded accent-green-400"
                   />
                   <span className="text-sm font-medium">ROA Available</span>
+                  {!formData.testDate && <span className="text-xs text-gray-600 ml-auto">Requires Date of Test</span>}
                 </label>
               </div>
               <div>
@@ -581,7 +602,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                     type="checkbox"
                     id="officialReceipt"
                     checked={formData.officialReceipt || false}
-                    onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked })}
+                    onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked, status: e.target.checked ? 'For Test' : 'On-Hold' })}
                     className="w-4 h-4 rounded accent-green-400"
                   />
                   <span className="text-sm font-medium">Receipt Available</span>

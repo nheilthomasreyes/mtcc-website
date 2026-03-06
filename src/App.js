@@ -170,9 +170,43 @@ const fetchAllClients = async () => {
   };
 
   const handleDeleteClient = async (id) => {
-    if (window.confirm("Are you sure you want to delete this client?")) {
-      await fetch(`${API_URL}/clients/${id}`, { method: "DELETE" });
-      setClients(clients.filter((c) => c.id !== id));
+    await fetch(`${API_URL}/clients/${id}`, { method: "DELETE" });
+    setClients(clients.filter((c) => c.id !== id));
+  };
+
+  const handleCancelClient = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/clients/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Cancelled' }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to cancel');
+      }
+      setClients(clients.map((c) => (c.id === id ? { ...c, status: 'Cancelled' } : c)));
+    } catch (error) {
+      console.error('Error cancelling client:', error);
+      alert(`Failed to cancel: ${error.message}`);
+    }
+  };
+
+  const handleRevertClient = async (id, newStatus) => {
+    try {
+      const res = await fetch(`${API_URL}/clients/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to revert');
+      }
+      setClients(clients.map((c) => (c.id === id ? { ...c, status: newStatus } : c)));
+    } catch (error) {
+      console.error('Error reverting client:', error);
+      alert(`Failed to revert: ${error.message}`);
     }
   };
 
@@ -335,6 +369,8 @@ const fetchAllClients = async () => {
             onEdit={setEditingClient}
             onDelete={handleDeleteClient}
             onComplete={handleCompleteClient}
+            onCancel={handleCancelClient}
+            onRevert={handleRevertClient}
           />
           </div>
         </main>
