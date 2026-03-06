@@ -15,11 +15,20 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
   const itemsPerPage = 10;
 
   const availableCategories = useMemo(() => {
-    const cats = new Set(clients.map(c => c.category).filter(Boolean));
+    const cats = new Set(clients.map(c => c.category || '(No Category)'));
     return ['All', ...Array.from(cats).sort()];
   }, [clients]);
 
   const availableTestTypes = ['All', 'FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
+
+  const clientTypeCounts = useMemo(() => {
+    const counts = { All: clients.length };
+    clients.forEach(c => {
+      const cat = c.category || '(No Category)';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [clients]);
 
   const statusCounts = useMemo(() => {
     return {
@@ -46,6 +55,16 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     }
     return [];
   };
+
+  const testTypeCounts = useMemo(() => {
+    const counts = { All: clients.length };
+    clients.forEach(c => {
+      getTestTypes(c).forEach(t => {
+        counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [clients]);
 
   /** Total amount: sum across all serviceTests rows */
   const getTotalAmount = (client) => {
@@ -109,7 +128,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
       const clientTestTypes = getTestTypes(client);
       const matchesTestType = selectedTestType === 'All' || clientTestTypes.includes(selectedTestType);
       const matchesStatus = statusFilter === 'All' || client.status === statusFilter;
-      const matchesClientType = selectedClientType === 'All' || client.category === selectedClientType;
+      const matchesClientType = selectedClientType === 'All' ||
+        (selectedClientType === '(No Category)' ? !client.category : client.category === selectedClientType);
 
       const searchTerm = searchClientName.toLowerCase().trim();
       if (!searchTerm) return matchesStatus && matchesClientType && matchesTestType;
@@ -286,6 +306,57 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
     }
   };
 
+  // ─── Custom scrollable filter dropdown ───────────────────────────────────────
+
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
+  const [testDropdownOpen, setTestDropdownOpen]   = useState(false);
+
+  const FilterDropdown = ({ open, setOpen, value, onChange, options, getCounts, formatLabel }) => {
+    const currentLabel = value === 'All' ? formatLabel('All') : (formatLabel ? formatLabel(value) : value);
+    const currentCount = getCounts[value] ?? 0;
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 whitespace-nowrap"
+        >
+          <span>{currentLabel}</span>
+          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 min-w-[22px]">
+            {currentCount}
+          </span>
+          <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        </button>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="absolute top-full mt-1 right-0 z-50 bg-slate-900 border border-white/10 rounded-lg shadow-2xl min-w-[180px] overflow-hidden">
+              <div className="overflow-y-auto" style={{ maxHeight: `${6 * 40}px` }}>
+                {options.map(opt => {
+                  const label = formatLabel ? formatLabel(opt) : opt;
+                  const count = getCounts[opt] ?? 0;
+                  const isSelected = value === opt;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => { onChange(opt); setOpen(false); }}
+                      className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm transition-colors ${isSelected ? 'bg-cyan-500/20 text-cyan-300' : 'text-gray-300 hover:bg-white/10'}`}
+                    >
+                      <span className="truncate">{label}</span>
+                      <span className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-bold min-w-[22px] flex-shrink-0 ${isSelected ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/40' : 'bg-white/10 text-gray-400 border border-white/10'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -320,26 +391,35 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete }) {
 
             {/* Selects */}
             <div className="flex items-center gap-2">
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                <option value="All" className="bg-gray-900">All Status ({statusCounts.All})</option>
-                <option value="Ongoing" className="bg-gray-900">Ongoing ({statusCounts.Ongoing})</option>
-                <option value="Pending" className="bg-gray-900">Pending ({statusCounts.Pending})</option>
-                <option value="For Release" className="bg-gray-900">For Release ({statusCounts.ForRelease})</option>
-                <option value="Completed" className="bg-gray-900">Completed ({statusCounts.Completed})</option>
-                <option value="Cancelled" className="bg-gray-900">Cancelled ({statusCounts.Cancelled})</option>
-              </select>
+              <FilterDropdown
+                open={statusDropdownOpen}
+                setOpen={setStatusDropdownOpen}
+                value={statusFilter}
+                onChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}
+                options={['All', 'Ongoing', 'Pending', 'For Release', 'Completed', 'Cancelled']}
+                getCounts={{ All: statusCounts.All, Ongoing: statusCounts.Ongoing, Pending: statusCounts.Pending, 'For Release': statusCounts.ForRelease, Completed: statusCounts.Completed, Cancelled: statusCounts.Cancelled }}
+                formatLabel={(v) => v === 'All' ? 'All Status' : v}
+              />
 
-              <select value={selectedClientType} onChange={(e) => setSelectedClientType(e.target.value)} className="hidden md:block px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                {availableCategories.map(cat => (
-                  <option key={cat} value={cat} className="bg-gray-900">{cat === 'All' ? 'All Clients' : cat}</option>
-                ))}
-              </select>
+              <FilterDropdown
+                open={clientDropdownOpen}
+                setOpen={setClientDropdownOpen}
+                value={selectedClientType}
+                onChange={(v) => { setSelectedClientType(v); setCurrentPage(1); }}
+                options={availableCategories}
+                getCounts={clientTypeCounts}
+                formatLabel={(v) => v === 'All' ? 'All Clients' : v}
+              />
 
-              <select value={selectedTestType} onChange={(e) => setSelectedTestType(e.target.value)} className="hidden lg:block px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-sm hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                {availableTestTypes.map(type => (
-                  <option key={type} value={type} className="bg-gray-900">{type === 'All' ? 'All Tests' : type}</option>
-                ))}
-              </select>
+              <FilterDropdown
+                open={testDropdownOpen}
+                setOpen={setTestDropdownOpen}
+                value={selectedTestType}
+                onChange={(v) => { setSelectedTestType(v); setCurrentPage(1); }}
+                options={availableTestTypes}
+                getCounts={testTypeCounts}
+                formatLabel={(v) => v === 'All' ? 'All Tests' : v}
+              />
             </div>
 
             {/* Export */}
