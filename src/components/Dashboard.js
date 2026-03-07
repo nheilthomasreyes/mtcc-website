@@ -30,6 +30,7 @@ export function Dashboard({ clients, selectedYear }) {
     const onhold = clients.filter(c => c.status === 'On-Hold').length;
     const cancelled = clients.filter(c => c.status === 'Cancelled').length;
     const forRelease = clients.filter(c => c.status === 'For Release').length;
+    const awaitingROA = clients.filter(c => c.status === 'Awaiting ROA').length;
 
     const getRevenue = (client) => {
       if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
@@ -80,8 +81,9 @@ export function Dashboard({ clients, selectedYear }) {
     const statusData = [
       { status: 'On-Hold', count: onhold, color: '#f59e0b' },
       { status: 'For Test', count: fortest, color: '#3b82f6' },
-      { status: 'For Release', count: forRelease, color: '#eab308' },
-      { status: 'Service Completed', count: servicecompleted, color: '#10b981' },
+      { status: 'Awaiting ROA', count: awaitingROA, color: '#facc15' },
+      { status: 'For Release', count: forRelease, color: '#81ea08' },
+      { status: 'Completed', count: servicecompleted, color: '#066545' },
       { status: 'Cancelled', count: cancelled, color: '#ec4899' },
     ];
 
@@ -133,6 +135,7 @@ export function Dashboard({ clients, selectedYear }) {
       onhold,
       cancelled,
       forRelease,
+      awaitingROA,
       totalRevenue,
       completedRevenue,
       monthlyData,
@@ -148,7 +151,7 @@ export function Dashboard({ clients, selectedYear }) {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Total Services */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-xl border border-cyan-500/20 p-6 hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl" />
@@ -181,6 +184,24 @@ export function Dashboard({ clients, selectedYear }) {
               <p className="text-blue-200 text-sm font-medium">For Test</p>
               <p className="text-4xl font-bold text-white">{stats.fortest}</p>
               <p className="text-blue-300 text-xs">In progress services</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Awaiting ROA */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-500/10 to-amber-400/10 backdrop-blur-xl border border-yellow-500/20 p-6 hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg shadow-yellow-500/50">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+              <TrendingUp className="w-5 h-5 text-yellow-400" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-yellow-200 text-sm font-medium">For Release</p>
+              <p className="text-4xl font-bold text-white">{stats.forRelease}</p>
+              <p className="text-yellow-300 text-xs">Pending ROA release</p>
             </div>
           </div>
         </div>

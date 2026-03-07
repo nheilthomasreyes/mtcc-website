@@ -44,6 +44,18 @@ const defaultTestData = () => ({
   amount: 0,
 });
 
+const getProgressFromStatus = (status, currentProgress) => {
+  switch (status) {
+    case 'On-Hold':           return 10;
+    case 'For Test':          return 30;
+    case 'Awaiting ROA':      return 70;
+    case 'For Release':       return 80;
+    case 'Service Completed': return 100;
+    case 'Cancelled':         return currentProgress ?? 0;
+    default:                  return currentProgress ?? 0;
+  }
+};
+
 // Build testData map from serviceTests array (from backend)
 const initTestData = (client) => {
   const testData = {};
@@ -210,6 +222,7 @@ export function EditClientModal({ client, onClose, onSave }) {
       address:       formData.address.trim(),
       email:         formData.email.trim().toLowerCase(),
       phone:         formData.phone.replace(/\s/g, ''),
+      progress:      getProgressFromStatus(formData.status, formData.progress),
       dateRequested: sanitizeDate(formData.dateRequested) || null,
       startDate:     sanitizeDate(formData.startDate)     || null,
       dueDate:       sanitizeDate(formData.dueDate)       || null,
@@ -283,21 +296,6 @@ export function EditClientModal({ client, onClose, onSave }) {
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={formData.address || ''}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                placeholder="Enter address"
-              />
-            </div>
-          </div>
-
-          {/* ── Contact Details ────────────────────────────────────────────── */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Contact Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Email <span className="text-red-500">*</span></label>
@@ -327,11 +325,114 @@ export function EditClientModal({ client, onClose, onSave }) {
                 />
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Address <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={formData.address || ''}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                placeholder="Enter address"
+              />
+            </div>
           </div>
 
           {/* ── Service Details ────────────────────────────────────────────── */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Date Requested <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.dateRequested || ''}
+                  max={today}
+                  onChange={(e) => {
+                    handleDateChange('dateRequested', e.target.value);
+                    setFormData(prev => ({ ...prev, roa: false, ts: false }));
+                    setErrors({ service: "" });
+                  }}
+                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  style={{ colorScheme: 'dark' }}
+                />
+
+                {/* ROA / TS selector */}
+                {(() => {
+                  const dateValue = formData.dateRequested;
+                  const year = dateValue ? parseInt(dateValue.split('-')[0]) : 0;
+                  const isComplete = dateValue?.length === 10 && year > 1900;
+                  if (!isComplete) return (
+                    <p className="mt-2 text-sm text-gray-300 italic">
+                      Enter Date for Service Request Form
+                    </p>
+                  );
+                  return (
+                    <div className={`mt-3 p-3 rounded-lg border flex flex-wrap gap-6 items-center animate-in fade-in zoom-in-95 duration-200 ${
+                      errors.service ? 'bg-red-500/10 border-red-500/40' : 'bg-white/5 border-white/8'
+                    }`}>
+                      <label className="text-sm font-medium text-gray-300">
+                        Service Request Form <span className="text-red-500">*</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-gray-300 hover:text-white transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.roa || false}
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, roa: e.target.checked, ts: false }));
+                            if (e.target.checked) setErrors({ service: "" });
+                          }}
+                          className="rounded border-gray-500 bg-transparent focus:ring-offset-0 focus:ring-0"
+                        />
+                        <span>ROA</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-gray-300 hover:text-white transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.ts || false}
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, ts: e.target.checked, roa: false }));
+                            if (e.target.checked) setErrors({ service: "" });
+                          }}
+                          className="rounded border-gray-500 bg-transparent focus:ring-offset-0 focus:ring-0"
+                        />
+                        <span>TS</span>
+                      </label>
+                      {errors.service && (
+                        <span className="text-red-400 text-xs font-medium w-full -mt-1">
+                          ⚠ {errors.service}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt</label>
+                <label
+                  htmlFor="officialReceipt"
+                  className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border transition-all select-none ${
+                    !formData.dateRequested
+                      ? 'bg-white/3 border-white/5 text-gray-600 cursor-not-allowed opacity-50'
+                      : formData.officialReceipt
+                        ? 'bg-green-500/10 border-green-500/40 text-green-300 cursor-pointer'
+                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20 cursor-pointer'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    id="officialReceipt"
+                    checked={formData.officialReceipt || false}
+                    disabled={!formData.dateRequested}
+                    onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked, status: e.target.checked ? 'For Test' : 'On-Hold' })}
+                    className="w-4 h-4 rounded accent-green-400"
+                  />
+                  <span className="text-sm text-gray-300 font-medium">Receipt Available</span>
+                </label>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Category <span className="text-red-500">*</span></label>
@@ -413,12 +514,12 @@ export function EditClientModal({ client, onClose, onSave }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-                <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm italic select-none">
-                  {formData.status} <span className="text-xs text-gray-500">
+                <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-300 text-sm italic select-none">
+                  {formData.status} <span className="text-s text-gray-300">
                     {(formData.status === 'On-Hold' || formData.status === 'For Test')
-                      ? '(auto-set by Official Receipt)'
+                      ? '(auto-set by O.R.)'
                       : (formData.status === 'Awaiting ROA' || formData.status === 'For Release')
-                      ? '(auto-set by Date of Test & ROA)'
+                      ? '(auto-set by Test Date)'
                       : formData.status === 'Cancelled'
                       ? '(set via Cancellation)'
                       : formData.status === 'Service Completed'
@@ -432,153 +533,16 @@ export function EditClientModal({ client, onClose, onSave }) {
 
           {/* ── Progress & Timeline ────────────────────────────────────────── */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Timeline</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%) <span className="text-red-500">*</span></label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  required
-                  value={formData.progress ?? ''}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "") { setFormData({ ...formData, progress: "" }); return; }
-                    const numValue = Number(val);
-                    setFormData({ ...formData, progress: (numValue > 100 || numValue < 0) ? "" : numValue });
-                  }}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Date Requested <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.dateRequested || ''}
-                  max={today}
-                  onChange={(e) => {
-                    handleDateChange('dateRequested', e.target.value);
-                    setFormData(prev => ({ ...prev, roa: false, ts: false }));
-                    setErrors({ service: "" });
-                  }}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{ colorScheme: 'dark' }}
-                />
-
-                {/* ROA / TS selector */}
-                {(() => {
-                  const dateValue = formData.dateRequested;
-                  const year = dateValue ? parseInt(dateValue.split('-')[0]) : 0;
-                  const isComplete = dateValue?.length === 10 && year > 1900;
-                  if (!isComplete) return (
-                    <p className="mt-2 text-xs text-gray-500 italic">
-                      Enter Date Requested to select Service Request Form type.
-                    </p>
-                  );
-                  return (
-                    <div className={`mt-3 p-3 rounded-lg border flex flex-wrap gap-6 items-center animate-in fade-in zoom-in-95 duration-200 ${
-                      errors.service ? 'bg-red-500/10 border-red-500/40' : 'bg-white/5 border-white/8'
-                    }`}>
-                      <label className="text-sm font-medium text-gray-300">
-                        Service Request Form <span className="text-red-500">*</span>
-                      </label>
-                      <label className="flex items-center space-x-2 cursor-pointer text-gray-300 hover:text-white transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={formData.roa || false}
-                          onChange={(e) => {
-                            setFormData(prev => ({ ...prev, roa: e.target.checked, ts: false }));
-                            if (e.target.checked) setErrors({ service: "" });
-                          }}
-                          className="rounded border-gray-500 bg-transparent focus:ring-offset-0 focus:ring-0"
-                        />
-                        <span>ROA</span>
-                      </label>
-                      <label className="flex items-center space-x-2 cursor-pointer text-gray-300 hover:text-white transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={formData.ts || false}
-                          onChange={(e) => {
-                            setFormData(prev => ({ ...prev, ts: e.target.checked, roa: false }));
-                            if (e.target.checked) setErrors({ service: "" });
-                          }}
-                          className="rounded border-gray-500 bg-transparent focus:ring-offset-0 focus:ring-0"
-                        />
-                        <span>TS</span>
-                      </label>
-                      {errors.service && (
-                        <span className="text-red-400 text-xs font-medium w-full -mt-1">
-                          ⚠ {errors.service}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
-                <input
-                  type="date"
-                  value={formData.startDate || ''}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{ colorScheme: 'dark' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Due Date</label>
-                <input
-                  type="date"
-                  value={formData.dueDate || ''}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{ colorScheme: 'dark' }}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Date Claimed</label>
-                <input
-                  type="date"
-                  value={formData.dateClaimed || ''}
-                  max={today}
-                  onChange={(e) => handleDateChange('dateClaimed', e.target.value)}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{ colorScheme: 'dark' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Date Released</label>
-                <input
-                  type="date"
-                  value={formData.dateReleased || ''}
-                  max={today}
-                  onChange={(e) => handleDateChange('dateReleased', e.target.value)}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  style={{ colorScheme: 'dark' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ── Documentation & Payment ────────────────────────────────────── */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Documentation & Payment</h3>
-
+            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Documentation</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={formData.requestForm || 'Waiting'}
+                  disabled={!formData.dateRequested}
                   onChange={(e) => setFormData({ ...formData, requestForm: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={`w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${!formData.dateRequested ? 'bg-white/3 border-white/5 text-gray-600 opacity-50 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white'}`}
                 >
                   {REQUEST_FORMS.map((form) => (
                     <option key={form} value={form} className="bg-slate-800">{form}</option>
@@ -590,6 +554,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="date"
                   value={formData.testDate || ''}
+                  disabled={!formData.officialReceipt}
                   onChange={(e) => {
                     const newDate = e.target.value;
                     let newStatus;
@@ -600,7 +565,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                     }
                     setFormData({ ...formData, testDate: newDate, status: newStatus });
                   }}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={`w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${!formData.officialReceipt ? 'bg-white/3 border-white/5 text-gray-600 opacity-50 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white'}`}
                   style={{ colorScheme: 'dark' }}
                 />
               </div>
@@ -609,20 +574,20 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <input
                   type="date"
                   value={formData.releasedROA || ''}
+                  disabled={!formData.testDate || !formData.officialReceipt || !formData.dateRequested}
                   onChange={(e) => setFormData({ ...formData, releasedROA: e.target.value })}
-                  className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  className={`w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${!formData.testDate || !formData.officialReceipt || !formData.dateRequested ? 'bg-white/3 border-white/5 text-gray-600 opacity-50 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white'}`}
                   style={{ colorScheme: 'dark' }}
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Report of Analysis</label>
                 <label
                   htmlFor="roaV"
                   className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border transition-all select-none ${
-                    !formData.testDate
+                    !formData.testDate || !formData.officialReceipt || !formData.dateRequested
                       ? 'bg-white/3 border-white/5 text-gray-600 cursor-not-allowed opacity-50'
                       : formData.roaV
                         ? 'bg-green-500/10 border-green-500/40 text-green-300 cursor-pointer'
@@ -633,36 +598,21 @@ export function EditClientModal({ client, onClose, onSave }) {
                     type="checkbox"
                     id="roaV"
                     checked={formData.roaV || false}
-                    disabled={!formData.testDate}
+                    disabled={!formData.testDate || !formData.officialReceipt || !formData.dateRequested}
                     onChange={(e) => setFormData({ ...formData, roaV: e.target.checked, status: e.target.checked ? 'For Release' : 'Awaiting ROA' })}
                     className="w-4 h-4 rounded accent-green-400"
                   />
-                  <span className="text-sm font-medium">ROA Available</span>
+                  <span className="text-sm text-gray-300 font-medium">ROA Available</span>
                   {!formData.testDate && <span className="text-xs text-gray-600 ml-auto">Requires Date of Test</span>}
                 </label>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Official Receipt</label>
-                <label
-                  htmlFor="officialReceipt"
-                  className={`flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border cursor-pointer transition-all select-none ${
-                    formData.officialReceipt
-                      ? 'bg-green-500/10 border-green-500/40 text-green-300'
-                      : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    id="officialReceipt"
-                    checked={formData.officialReceipt || false}
-                    onChange={(e) => setFormData({ ...formData, officialReceipt: e.target.checked, status: e.target.checked ? 'For Test' : 'On-Hold' })}
-                    className="w-4 h-4 rounded accent-green-400"
-                  />
-                  <span className="text-sm font-medium">Receipt Available</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%)</label>
+                <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-300 text-sm italic select-none">
+                  {getProgressFromStatus(formData.status, formData.progress)}% <span className="text-sm text-gray-300">(auto-set by Status)</span>
+                </div>
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Remarks</label>
               <textarea
@@ -673,13 +623,12 @@ export function EditClientModal({ client, onClose, onSave }) {
                 rows={3}
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Received By</label>
               <textarea
                 disbaled
                 value={formData.log || ''}
-                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-500 cursor-not-allowed opacity-60"
+                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white cursor-not-allowed opacity-60"
                 placeholder=""
               />
               <p className="mt-1 text-xs text-gray-500 italic">This field cannot be edited after submission.</p>
