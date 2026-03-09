@@ -485,14 +485,14 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
                 <select
-                  value={formData.requestForm}
+                  required
+                  value={formData.requestForm || 'Waiting'}
                   disabled={!formData.dateRequested}
                   onChange={(e) => setFormData({ ...formData, requestForm: e.target.value })}
                   className={`w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${!formData.dateRequested ? 'bg-white/3 border-white/5 text-gray-600 opacity-50 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white'}`}
-                  style={{ colorScheme: 'dark' }}
                 >
                   {REQUEST_FORMS.map((form) => (
-                    <option key={form} value={form}>{form}</option>
+                    <option key={form} value={form} className="bg-slate-800">{form}</option>
                   ))}
                 </select>
               </div>
