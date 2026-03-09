@@ -510,7 +510,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status</label>
                 <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm italic select-none flex items-center gap-2">
                   <span className="text-gray-300">{client.requestForm || 'Waiting'}</span>
-                  <span className="text-gray-500">(set via table)</span>
+                  <span className="text-gray-300">(via Service Table)</span>
                 </div>
               </div>
 
