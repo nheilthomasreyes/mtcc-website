@@ -4,26 +4,19 @@ import { TEST_TYPE_LABELS } from "./types";
 import axios from 'axios';
 
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
-const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
-// Helper to sanitize null/undefined values
 const sanitizeValue = (value) => {
   if (value === null || value === undefined || value === 'NULL' || value === 'null') return '';
   return value;
 };
 
-// Helper to convert dates to YYYY-MM-DD format
 const sanitizeDate = (value) => {
   if (!value || value === 'NULL' || value === 'null') return '';
-  
-  // Already in YYYY-MM-DD format, return as-is
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  
   try {
     const date = new Date(value);
     if (!isNaN(date.getTime())) {
-      // Use local date parts instead of UTC to avoid timezone shift
       const yyyy = date.getFullYear();
       const mm   = String(date.getMonth() + 1).padStart(2, '0');
       const dd   = String(date.getDate()).padStart(2, '0');
@@ -35,7 +28,6 @@ const sanitizeDate = (value) => {
   return '';
 };
 
-// Default per-test data structure
 const defaultTestData = () => ({
   sampleRangeStart: '',
   sampleRangeEnd: '',
@@ -56,7 +48,6 @@ const getProgressFromStatus = (status, currentProgress) => {
   }
 };
 
-// Build testData map from serviceTests array (from backend)
 const initTestData = (client) => {
   const testData = {};
   const tests = Array.isArray(client.serviceTests) ? client.serviceTests : [];
@@ -72,12 +63,10 @@ const initTestData = (client) => {
   return testData;
 };
 
-// Parse testTypes from whatever format the client has
 const initTestTypes = (client) => {
   if (Array.isArray(client.testTypes) && client.testTypes.length > 0) return client.testTypes;
   if (typeof client.testTypes === 'string' && client.testTypes.trim())
     return client.testTypes.split(',').map(t => t.trim());
-  // Fall back to keys from serviceTests
   if (Array.isArray(client.serviceTests))
     return client.serviceTests.map(st => st.testType);
   return [];
@@ -138,22 +127,18 @@ export function EditClientModal({ client, onClose, onSave }) {
     testData:      initTestData(client),
   });
 
-  // ── Per-test helpers ──────────────────────────────────────────────────────
-
   const toggleTestType = (type) => {
     setFormData(prev => {
       const isSelected = prev.testTypes.includes(type);
       const newTestTypes = isSelected
         ? prev.testTypes.filter(t => t !== type)
         : [...prev.testTypes, type];
-
       const newTestData = { ...prev.testData };
       if (!isSelected) {
         if (!newTestData[type]) newTestData[type] = defaultTestData();
       } else {
         delete newTestData[type];
       }
-
       return { ...prev, testTypes: newTestTypes, testData: newTestData };
     });
   };
@@ -182,8 +167,6 @@ export function EditClientModal({ client, onClose, onSave }) {
     }));
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
-
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -191,21 +174,17 @@ export function EditClientModal({ client, onClose, onSave }) {
       alert("Date Requested is required.");
       return;
     }
-
     if (new Date(formData.dateRequested) > new Date()) {
       alert("Date Requested cannot be in the future.");
       return;
     }
-
     if (!formData.roa && !formData.ts) {
       setErrors({ service: "Please select either ROA or TS!" });
       alert("Please select a Service Request Form type (ROA or TS) before submitting.");
       return;
     }
-
     setErrors({ service: "" });
 
-    // Build serviceTests array
     const serviceTests = formData.testTypes.map(type => ({
       testType:    type,
       sampleNo1:   formData.testData[type]?.sampleRangeStart ? Number(formData.testData[type].sampleRangeStart) : null,
@@ -235,21 +214,15 @@ export function EditClientModal({ client, onClose, onSave }) {
       roaV:          formData.roaV || false,
       remarks:       formData.remarks?.trim() || null,
       log:           formData.log?.trim() || null,
+      // Preserve existing requestForm — it's edited via the table dropdown
+      requestForm:   client.requestForm || 'Waiting',
       serviceTests,
-      // Keep testTypes as comma-separated string for any legacy consumers
       testTypes: formData.testTypes.join(', '),
     };
-
-    console.log('=== EDIT CLIENT DATA BEING SENT ===');
-    console.log('serviceTests:', dataForBackend.serviceTests);
-    console.log('Full data:', dataForBackend);
-    console.log('===================================');
 
     onSave(dataForBackend);
     onClose();
   };
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -267,7 +240,7 @@ export function EditClientModal({ client, onClose, onSave }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
 
-          {/* ── Client Information ─────────────────────────────────────────── */}
+          {/* Client Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Client Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -337,7 +310,7 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
           </div>
 
-          {/* ── Service Details ────────────────────────────────────────────── */}
+          {/* Service Details */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Service Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -365,9 +338,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                   const year = dateValue ? parseInt(dateValue.split('-')[0]) : 0;
                   const isComplete = dateValue?.length === 10 && year > 1900;
                   if (!isComplete) return (
-                    <p className="mt-2 text-sm text-gray-300 italic">
-                      Enter Date for Service Request Form
-                    </p>
+                    <p className="mt-2 text-sm text-gray-300 italic">Enter Date for Service Request Form</p>
                   );
                   return (
                     <div className={`mt-3 p-3 rounded-lg border flex flex-wrap gap-6 items-center animate-in fade-in zoom-in-95 duration-200 ${
@@ -401,9 +372,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                         <span>TS</span>
                       </label>
                       {errors.service && (
-                        <span className="text-red-400 text-xs font-medium w-full -mt-1">
-                          ⚠ {errors.service}
-                        </span>
+                        <span className="text-red-400 text-xs font-medium w-full -mt-1">⚠ {errors.service}</span>
                       )}
                     </div>
                   );
@@ -515,7 +484,7 @@ export function EditClientModal({ client, onClose, onSave }) {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
                 <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-300 text-sm italic select-none">
-                  {formData.status} <span className="text-s text-gray-300">
+                  {formData.status} <span className="text-gray-500">
                     {(formData.status === 'On-Hold' || formData.status === 'For Test')
                       ? '(auto-set by O.R.)'
                       : (formData.status === 'Awaiting ROA' || formData.status === 'For Release')
@@ -531,24 +500,20 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
           </div>
 
-          {/* ── Progress & Timeline ────────────────────────────────────────── */}
+          {/* Progress & Documentation */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Documentation</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+              {/* Request Form Status — read-only, edited via the table */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
-                <select
-                  required
-                  value={formData.requestForm || 'Waiting'}
-                  disabled={!formData.dateRequested}
-                  onChange={(e) => setFormData({ ...formData, requestForm: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${!formData.dateRequested ? 'bg-white/3 border-white/5 text-gray-600 opacity-50 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white'}`}
-                >
-                  {REQUEST_FORMS.map((form) => (
-                    <option key={form} value={form} className="bg-slate-800">{form}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status</label>
+                <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm italic select-none flex items-center gap-2">
+                  <span className="text-gray-300">{client.requestForm || 'Waiting'}</span>
+                  <span className="text-gray-500">(set via table)</span>
+                </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date of Test</label>
                 <input
@@ -609,7 +574,7 @@ export function EditClientModal({ client, onClose, onSave }) {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Progress (%)</label>
                 <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-300 text-sm italic select-none">
-                  {getProgressFromStatus(formData.status, formData.progress)}% <span className="text-sm text-gray-300">(auto-set by Status)</span>
+                  {getProgressFromStatus(formData.status, formData.progress)}% <span className="text-gray-500">(auto-set by Status)</span>
                 </div>
               </div>
             </div>
@@ -626,16 +591,15 @@ export function EditClientModal({ client, onClose, onSave }) {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Received By</label>
               <textarea
-                disbaled
+                disabled
                 value={formData.log || ''}
                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white cursor-not-allowed opacity-60"
-                placeholder=""
               />
               <p className="mt-1 text-xs text-gray-500 italic">This field cannot be edited after submission.</p>
             </div>
           </div>
 
-          {/* ── Test Types ─────────────────────────────────────────────────── */}
+          {/* Test Types */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Types</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -660,21 +624,16 @@ export function EditClientModal({ client, onClose, onSave }) {
             </p>
           </div>
 
-          {/* ── Per-Test Details ───────────────────────────────────────────── */}
+          {/* Per-Test Details */}
           {formData.testTypes.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Test Details</h3>
-              <p className="text-xs text-gray-400 -mt-2">
-                Fill in the sample and payment details for each selected test type.
-              </p>
+              <p className="text-xs text-gray-400 -mt-2">Fill in the sample and payment details for each selected test type.</p>
 
               {formData.testTypes.map((type) => {
                 const td = formData.testData[type] || defaultTestData();
                 return (
-                  <div
-                    key={type}
-                    className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200"
-                  >
+                  <div key={type} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
                     <div className="flex items-center gap-2">
                       <FlaskConical className="w-4 h-4 text-pink-400" />
                       <span className="text-sm font-semibold text-white">
@@ -684,42 +643,37 @@ export function EditClientModal({ client, onClose, onSave }) {
                         )}
                       </span>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div className="md:col-span-2">
                         <label className="block text-xs font-medium text-gray-400 mb-1">Sample No.</label>
                         <div className="flex items-center gap-2">
                           <input
-                            type="number"
-                            min="1"
+                            type="number" min="1"
                             value={td.sampleRangeStart || ''}
                             onChange={(e) => handleSampleRangeChange(type, 'sampleRangeStart', e.target.value)}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                             placeholder="Start"
                           />
                           <span className="text-gray-400 font-medium shrink-0">—</span>
                           <input
-                            type="number"
-                            min="1"
+                            type="number" min="1"
                             value={td.sampleRangeEnd || ''}
                             onChange={(e) => handleSampleRangeChange(type, 'sampleRangeEnd', e.target.value)}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                             placeholder="End"
                           />
                         </div>
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-400 mb-1">Specimen No.</label>
                         <input
                           type="text"
                           value={td.specimenNo || ''}
                           onChange={(e) => handleTestFieldChange(type, 'specimenNo', e.target.value)}
-                          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                           placeholder="e.g., SP-001"
                         />
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-400 mb-1">Sample Count</label>
                         <div className="w-full px-3 py-2 bg-white/3 border border-white/8 rounded-lg text-gray-300 text-sm select-none">
@@ -727,14 +681,12 @@ export function EditClientModal({ client, onClose, onSave }) {
                         </div>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-400 mb-1">Amount (₱)</label>
                         {formData.officialReceipt ? (
                           <input
-                            type="number"
-                            min="0"
+                            type="number" min="0"
                             value={td.amount ?? ''}
                             onChange={(e) => {
                               const val = e.target.value;
@@ -742,7 +694,7 @@ export function EditClientModal({ client, onClose, onSave }) {
                               const numValue = Number(val);
                               handleTestFieldChange(type, 'amount', numValue < 0 ? "" : numValue);
                             }}
-                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                             placeholder="0"
                           />
                         ) : (
@@ -758,7 +710,7 @@ export function EditClientModal({ client, onClose, onSave }) {
             </div>
           )}
 
-          {/* ── Actions ────────────────────────────────────────────────────── */}
+          {/* Actions */}
           <div className="flex items-center justify-end gap-4 pt-6 border-t border-white/10">
             <button
               type="button"

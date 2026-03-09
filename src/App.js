@@ -252,6 +252,15 @@ const fetchAllClients = async () => {
     );
   }, [clients, selectedYear]);
 
+  const handleUpdateRequestForm = async (id, requestForm) => {
+    await fetch(`${API_URL}/clients/${id}/request-form`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestForm }),
+    });
+    setClients(prev => prev.map(c => c.id === id ? { ...c, requestForm } : c));
+  };
+  
   if (!isLoggedIn) {
     return (
       <Login
@@ -371,6 +380,7 @@ const fetchAllClients = async () => {
             onComplete={handleCompleteClient}
             onCancel={handleCancelClient}
             onRevert={handleRevertClient}
+            onUpdateRequestForm={handleUpdateRequestForm}
           />
           </div>
         </main>

@@ -4,7 +4,8 @@ import { format } from 'date-fns';
 import { useState, useMemo, useEffect } from 'react';
 import ExcelJS from 'exceljs';
 
-export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, onRevert }) {
+// Add onUpdateRequestForm to the props
+export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, onRevert, onUpdateRequestForm }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedClientType, setSelectedClientType] = useState('All');
   const [selectedTestType, setSelectedTestType] = useState('All');
@@ -36,7 +37,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
     if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
       return client.serviceTests.map(t => t.testType).filter(Boolean);
     }
-    // Fallback: legacy flat field (for records that may not have been migrated)
     if (client.testTypes) {
       if (Array.isArray(client.testTypes)) return client.testTypes;
       if (typeof client.testTypes === 'string') return client.testTypes.split(',').map(t => t.trim()).filter(Boolean);
@@ -108,12 +108,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
     return Number(client.sampleCount) || 0;
   };
 
-  /**
-   * Sample No. display: join each test's range string.
-   * If a test has both sampleNo1 and sampleNo2 → "start – end"
-   * If only one → just that value
-   * Multiple tests → comma-separated
-   */
   const getSampleNoDisplay = (client) => {
     if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
       const parts = client.serviceTests
@@ -126,17 +120,12 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
         .filter(Boolean);
       return parts.length > 0 ? parts.join(', ') : '-';
     }
-    // Fallback: legacy flat fields
     if (client.sampleNo1 && client.sampleNo2) return `${client.sampleNo1} - ${client.sampleNo2}`;
     if (client.sampleNo1) return String(client.sampleNo1);
     if (client.sampleNo2) return String(client.sampleNo2);
     return '-';
   };
 
-  /**
-   * Specimen No. display: unique specimen numbers across all tests,
-   * comma-separated (deduplicated).
-   */
   const getSpecimenNoDisplay = (client) => {
     if (Array.isArray(client.serviceTests) && client.serviceTests.length > 0) {
       const unique = [...new Set(
@@ -228,6 +217,40 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
     }
   };
 
+  // ─── Inline Request Form Dropdown ────────────────────────────────────────────
+
+  const REQUEST_FORM_OPTIONS = ['Waiting', 'Signed', 'Unsigned', 'N/A'];
+
+  const getRequestFormSelectStyle = (value) => {
+    switch (value) {
+      case 'Signed':   return 'bg-green-500/20 text-green-300 border-green-500/40';
+      case 'Unsigned': return 'bg-red-500/20 text-red-300 border-red-500/40';
+      case 'Waiting':  return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
+      default:         return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
+    }
+  };
+
+  /**
+   * Always-visible styled select for request form status.
+   * Color updates live as the value changes.
+   */
+  const RequestFormCell = ({ client }) => {
+    const currentValue = client.requestForm || 'Waiting';
+    return (
+      <select
+        value={currentValue}
+        onChange={(e) => {
+          onUpdateRequestForm && onUpdateRequestForm(client.id, e.target.value);
+        }}
+        className={`px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 ${getRequestFormSelectStyle(currentValue)}`}
+      >
+        {REQUEST_FORM_OPTIONS.map(opt => (
+          <option key={opt} value={opt} className="bg-slate-800 text-white">{opt}</option>
+        ))}
+      </select>
+    );
+  };
+
   // ─── Service Request Form name ────────────────────────────────────────────────
 
   const getServiceRequestName = (client, allClients) => {
@@ -295,13 +318,11 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
           testDate:        client.testDate ? format(new Date(client.testDate), 'yyyy-MM-dd') : '',
           roaStatus:       (client.roaV === true || client.roaV === 1) ? '☑' : '☐',
           roaReleasedDate: client.releasedROA ? format(new Date(client.releasedROA), 'yyyy-MM-dd') : '',
-          // ── Use aggregated helpers ──────────────────────────────────────────
           sampleNo:        getSampleNoDisplay(client),
           specimenNo:      getSpecimenNoDisplay(client),
           testTypes:       getTestTypes(client).join(', '),
           amount:          getTotalAmount(client),
           sampleCount:     getTotalSampleCount(client),
-          // ───────────────────────────────────────────────────────────────────
           status:          client.status || '',
           remarks:         client.remarks || '',
           log:             client.log || '',
@@ -499,7 +520,6 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
 
           <tbody className="divide-y divide-white/5">
             {paginatedClients.map((client, index) => {
-              // ── Derive all test-related values from serviceTests ────────────
               const clientTestTypes    = getTestTypes(client);
               const totalAmount        = getTotalAmount(client);
               const totalSampleCount   = getTotalSampleCount(client);
@@ -543,11 +563,9 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
                     <p className="text-sm text-gray-300 whitespace-nowrap">{client.dateRequested ? format(new Date(client.dateRequested), 'MMM dd, yyyy') : '-'}</p>
                   </td>
 
-                  {/* Signed Request Form */}
+                  {/* Signed Request Form — now inline-editable */}
                   <td className="px-5 py-5">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium border ${getRequestFormColor(client.requestForm)} whitespace-nowrap`}>
-                      {getRequestFormIcon(client.requestForm)} {client.requestForm}
-                    </div>
+                    <RequestFormCell client={client} />
                   </td>
 
                   {/* Official Receipt */}
@@ -582,24 +600,24 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
                     <p className="text-sm text-gray-300 whitespace-nowrap">{client.releasedROA ? format(new Date(client.releasedROA), 'MMMM dd, yyyy') : '-'}</p>
                   </td>
 
-                  {/* Sample No. — now from serviceTests */}
+                  {/* Sample No. */}
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-300 whitespace-nowrap">{sampleNoDisplay}</p>
                   </td>
 
-                  {/* Specimen No. — now from serviceTests */}
+                  {/* Specimen No. */}
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-300 whitespace-nowrap">{specimenNoDisplay}</p>
                   </td>
 
-                  {/* Sample Count — summed from serviceTests */}
+                  {/* Sample Count */}
                   <td className="px-5 py-5">
                     <p className="text-sm text-gray-300 text-center whitespace-nowrap">
                       {totalSampleCount > 0 ? totalSampleCount : '-'}
                     </p>
                   </td>
 
-                  {/* Types of Test — from serviceTests */}
+                  {/* Types of Test */}
                   <td className="px-5 py-5">
                     <div className="grid grid-cols-3 gap-2 w-fit max-w-xs">
                       {clientTestTypes.length > 0
@@ -617,7 +635,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
                     </div>
                   </td>
 
-                  {/* Amount — summed from serviceTests */}
+                  {/* Amount */}
                   <td className="px-5 py-5">
                     <p className="text-lg font-bold text-amber-300 whitespace-nowrap">
                       ₱{totalAmount.toLocaleString()}
@@ -750,7 +768,8 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
         </div>
       </div>
     )}
-    {/* ── Step 1: Delete/Cancel choice dialog ───────────────────────────────── */}
+
+    {/* Step 1: Delete/Cancel choice dialog */}
     {deleteDialog && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl p-8 space-y-6">
@@ -784,7 +803,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
       </div>
     )}
 
-    {/* ── Step 2: Final confirmation dialog ─────────────────────────────────── */}
+    {/* Step 2: Final confirmation dialog */}
     {finalDialog && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl p-8 space-y-6">
@@ -820,7 +839,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
       </div>
     )}
 
-    {/* ── Revert dialog ─────────────────────────────────────────────────────── */}
+    {/* Revert dialog */}
     {revertDialog && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div className="w-full max-w-lg mx-4 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl p-8 space-y-6">

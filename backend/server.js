@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
 // MySQL connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -85,6 +86,7 @@ app.post("/categories", (req, res) => {
   });
 });
 
+// ─── PATCH /clients/:id/status ────────────────────────────────────────────────
 app.patch("/clients/:id/status", (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -97,6 +99,22 @@ app.patch("/clients/:id/status", (req, res) => {
       return res.status(500).json({ message: "Server error", error: err.message });
     }
     res.json({ message: "Status updated successfully" });
+  });
+});
+
+// ─── PATCH /clients/:id/request-form ─────────────────────────────────────────
+app.patch("/clients/:id/request-form", (req, res) => {
+  const { id } = req.params;
+  const { requestForm } = req.body;
+
+  if (!requestForm) return res.status(400).json({ message: "requestForm is required" });
+
+  db.query("UPDATE clients SET requestForm = ? WHERE id = ?", [requestForm, id], (err) => {
+    if (err) {
+      console.error("Error updating requestForm:", err);
+      return res.status(500).json({ message: "Server error", error: err.message });
+    }
+    res.json({ message: "Request form updated successfully" });
   });
 });
 
@@ -119,7 +137,7 @@ app.get("/clients", (req, res) => {
   });
 });
 
-// POST /clients — inserts client + service_tests rows
+// ─── POST /clients ────────────────────────────────────────────────────────────
 app.post("/clients", (req, res) => {
   const {
     name, address, email, phone, company,
@@ -131,7 +149,6 @@ app.post("/clients", (req, res) => {
     serviceTests
   } = req.body;
 
-  // ── Validation ──────────────────────────────────────────────────────────────
   if (!dateRequested) {
     return res.status(400).json({ message: "dateRequested is required" });
   }
@@ -145,11 +162,7 @@ app.post("/clients", (req, res) => {
   const year = new Date(dateRequested).getFullYear();
   const type = roa ? 'ROA' : (ts ? 'TS' : null);
 
-  // ── Generate serviceNo based on dateRequested order within the year ─────────
-  const serviceNoQuery = `
-    SELECT COUNT(*) as count FROM clients
-    WHERE YEAR(dateRequested) = ?
-  `;
+  const serviceNoQuery = `SELECT COUNT(*) as count FROM clients WHERE YEAR(dateRequested) = ?`;
 
   db.query(serviceNoQuery, [year], (serviceNoErr, serviceNoResult) => {
     if (serviceNoErr) return res.status(500).json({ message: "Server error generating service number" });
@@ -157,7 +170,6 @@ app.post("/clients", (req, res) => {
     const sequence = serviceNoResult[0].count + 1;
     const serviceNo = `${year}-${String(sequence).padStart(4, '0')}`;
 
-    // ── Generate serviceRequestForm ───────────────────────────────────────────
     const doInsert = (serviceRequestForm) => {
       const clientQuery = `
         INSERT INTO clients
@@ -170,17 +182,17 @@ app.post("/clients", (req, res) => {
       `;
 
       const clientValues = [
-        serviceNo,          // ← added
+        serviceNo,
         serviceRequestForm,
         name.trim(),
-        address   || null,
-        email     || null,
-        phone     || null,
-        company   || null,
-        category  || 'Industry',
-        serviceType || 'Material Testing',
-        status    || 'On-Hold',
-        progress  || 0,
+        address      || null,
+        email        || null,
+        phone        || null,
+        company      || null,
+        category     || 'Industry',
+        serviceType  || 'Material Testing',
+        status       || 'On-Hold',
+        progress     || 0,
         dateRequested,
         startDate    || null,
         dueDate      || null,
@@ -206,12 +218,7 @@ app.post("/clients", (req, res) => {
         const clientId = result.insertId;
 
         if (!serviceTests || serviceTests.length === 0) {
-          return res.json({
-            message: "Client added successfully",
-            id: clientId,
-            serviceNo,
-            serviceRequestForm
-          });
+          return res.json({ message: "Client added successfully", id: clientId, serviceNo, serviceRequestForm });
         }
 
         const testQuery = `
@@ -235,24 +242,15 @@ app.post("/clients", (req, res) => {
             console.error("Error inserting service_tests:", testErr);
             return res.status(207).json({
               message: "Client added but service tests failed to save",
-              id: clientId,
-              serviceNo,
-              serviceRequestForm,
+              id: clientId, serviceNo, serviceRequestForm,
               error: testErr.message
             });
           }
-
-          res.json({
-            message: "Client and service tests added successfully",
-            id: clientId,
-            serviceNo,
-            serviceRequestForm
-          });
+          res.json({ message: "Client and service tests added successfully", id: clientId, serviceNo, serviceRequestForm });
         });
       });
     };
 
-    // ── Generate serviceRequestForm ───────────────────────────────────────────
     if (type) {
       const typeCountQuery = `
         SELECT COUNT(*) as count FROM clients
@@ -270,8 +268,6 @@ app.post("/clients", (req, res) => {
 });
 
 // ─── SERVICE TESTS ────────────────────────────────────────────────────────────
-
-// GET all service_tests for a client
 app.get("/clients/:id/service-tests", (req, res) => {
   const { id } = req.params;
   const query = "SELECT * FROM service_tests WHERE service_id = ?";
@@ -281,13 +277,10 @@ app.get("/clients/:id/service-tests", (req, res) => {
   });
 });
 
-// PUT update service_tests for a client
-// Replaces all existing service_tests rows for that client
 app.put("/clients/:id/service-tests", (req, res) => {
   const { id } = req.params;
-  const { serviceTests } = req.body; // array same shape as POST
+  const { serviceTests } = req.body;
 
-  // Delete existing rows first
   db.query("DELETE FROM service_tests WHERE service_id = ?", [id], (delErr) => {
     if (delErr) return res.status(500).json({ message: "Server error deleting old tests" });
 
@@ -321,7 +314,7 @@ app.put("/clients/:id/service-tests", (req, res) => {
   });
 });
 
-// ─── PUT /clients/:id — update client only (call PUT service-tests separately) ─
+// ─── PUT /clients/:id ─────────────────────────────────────────────────────────
 app.put("/clients/:id", (req, res) => {
   const { id } = req.params;
   const {
@@ -402,7 +395,6 @@ app.put("/clients/:id", (req, res) => {
           doUpdate(generateServiceRequestFormName(dateRequested, roa, ts, sequenceNumber));
         });
       } else {
-        // Re-fetch existing serviceRequestForm to preserve it
         db.query("SELECT serviceRequestForm FROM clients WHERE id = ?", [id], (fetchErr, fetchResult) => {
           if (fetchErr) return res.status(500).json({ message: "Server error" });
           doUpdate(fetchResult[0]?.serviceRequestForm || null);
@@ -414,11 +406,10 @@ app.put("/clients/:id", (req, res) => {
   }
 });
 
-// ─── DELETE client (cascades to service_tests if FK is set, else delete manually) ─
+// ─── DELETE /clients/:id ──────────────────────────────────────────────────────
 app.delete("/clients/:id", (req, res) => {
   const { id } = req.params;
 
-  // Delete service_tests first in case there's no ON DELETE CASCADE
   db.query("DELETE FROM service_tests WHERE service_id = ?", [id], (delTestErr) => {
     if (delTestErr) {
       console.error("Error deleting service_tests:", delTestErr);

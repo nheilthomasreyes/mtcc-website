@@ -5,7 +5,6 @@ import axios from 'axios';
 
 const SERVICE_TYPES = ['Material Testing', 'Calibration', 'Both'];
 const STATUSES = ['Cancelled'];
-const REQUEST_FORMS = ['Signed', 'Waiting', 'N/A'];
 const TEST_TYPES = ['FTIR', 'CN', 'CT', 'CTT', 'MO', 'HT', 'FT', 'TS', 'BT', 'HP', 'RE', 'UC', 'FD'];
 
 const formatDateForInput = (dateValue) => {
@@ -75,6 +74,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     dateClaimed: '',
     testDate: '',
     releasedROA: '',
+    // requestForm always starts as 'Waiting' — edited later in the table
     requestForm: 'Waiting',
     roaV: false,
     roa: false,
@@ -165,7 +165,8 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       dateClaimed:     formatDateForInput(formData.dateClaimed)   || null,
       testDate:        formatDateForInput(formData.testDate)      || null,
       releasedROA:     formatDateForInput(formData.releasedROA)   || null,
-      requestForm:     formData.requestForm,
+      // Always submit 'Waiting' — the user will update it in the table
+      requestForm:     'Waiting',
       roaV:            formData.roaV,
       roa:             formData.roa,
       ts:              formData.ts,
@@ -292,7 +293,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   max={today}
                   onChange={(e) => {
                     handleDateChange('dateRequested', e.target.value);
-                    // Clear ROA/TS when date changes
                     setFormData(prev => ({ ...prev, roa: false, ts: false }));
                     setErrors({ service: "" });
                   }}
@@ -300,7 +300,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                   style={{ colorScheme: 'dark' }}
                 />
 
-                {/* ── ROA / TS selector — always visible once date is complete ── */}
+                {/* ROA / TS selector */}
                 {(() => {
                   const dateValue = formData.dateRequested;
                   const year = dateValue ? parseInt(dateValue.split('-')[0]) : 0;
@@ -341,7 +341,6 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
                         />
                         <span>TS</span>
                       </label>
-                      {/* ── Inline error message ── */}
                       {errors.service && (
                         <span className="text-red-400 text-xs font-medium w-full -mt-1">
                           ⚠ {errors.service}
@@ -479,23 +478,18 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
 
           {/* Progress & Documentation */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Documentation </h3>
+            <h3 className="text-lg font-semibold text-cyan-300 border-b border-cyan-500/30 pb-2">Progress & Documentation</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* ── Request Form Status — now read-only, set via the table ── */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status <span className="text-red-500">*</span></label>
-                <select
-                  required
-                  value={formData.requestForm || 'Waiting'}
-                  disabled={!formData.dateRequested}
-                  onChange={(e) => setFormData({ ...formData, requestForm: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent ${!formData.dateRequested ? 'bg-white/3 border-white/5 text-gray-600 opacity-50 cursor-not-allowed' : 'bg-white/5 border-white/10 text-white'}`}
-                >
-                  {REQUEST_FORMS.map((form) => (
-                    <option key={form} value={form} className="bg-slate-800">{form}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status</label>
+                <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm italic select-none flex items-center gap-2">
+                  <span className="text-gray-300">Waiting</span>
+                  <span className="text-gray-500">(set via table after adding)</span>
+                </div>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Date of Test</label>
                 <input
