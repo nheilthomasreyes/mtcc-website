@@ -215,7 +215,7 @@ export function EditClientModal({ client, onClose, onSave }) {
       remarks:       formData.remarks?.trim() || null,
       log:           formData.log?.trim() || null,
       // Preserve existing requestForm — it's edited via the table dropdown
-      requestForm:   client.requestForm || 'Waiting',
+      requestForm:   client.requestForm || 'Unsigned',
       serviceTests,
       testTypes: formData.testTypes.join(', '),
     };
@@ -509,7 +509,7 @@ export function EditClientModal({ client, onClose, onSave }) {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status</label>
                 <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm italic select-none flex items-center gap-2">
-                  <span className="text-gray-300">{client.requestForm || 'Waiting'}</span>
+                  <span className="text-gray-300">{client.requestForm || 'Unsigned'}</span>
                   <span className="text-gray-300">(via Service Table)</span>
                 </div>
               </div>

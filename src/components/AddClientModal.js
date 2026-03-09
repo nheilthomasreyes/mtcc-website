@@ -74,8 +74,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
     dateClaimed: '',
     testDate: '',
     releasedROA: '',
-    // requestForm always starts as 'Waiting' — edited later in the table
-    requestForm: 'Waiting',
+    requestForm: 'Unsigned',
     roaV: false,
     roa: false,
     ts: false,
@@ -165,8 +164,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       dateClaimed:     formatDateForInput(formData.dateClaimed)   || null,
       testDate:        formatDateForInput(formData.testDate)      || null,
       releasedROA:     formatDateForInput(formData.releasedROA)   || null,
-      // Always submit 'Waiting' — the user will update it in the table
-      requestForm:     'Waiting',
+      requestForm:     'Unsigned',
       roaV:            formData.roaV,
       roa:             formData.roa,
       ts:              formData.ts,
@@ -185,7 +183,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
       category: 'Industry', serviceType: 'Material Testing', status: 'On-Hold',
       dateRequested: '', startDate: '', dueDate: '',
       dateReleased: '', dateClaimed: '', testDate: '', releasedROA: '',
-      requestForm: 'Waiting', roaV: false, roa: false, ts: false,
+      requestForm: 'Unsigned', roaV: false, roa: false, ts: false,
       officialReceipt: false, testTypes: [], testData: {}, remarks: '', log: '',
     });
     setErrors({ service: "" });
@@ -485,7 +483,7 @@ export function AddClientModal({ isOpen, onClose, onAdd }) {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Request Form Status</label>
                 <div className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-sm italic select-none flex items-center gap-2">
-                  <span className="text-gray-300">Waiting</span>
+                  <span className="text-gray-300">Unsigned</span>
                   <span className="text-gray-300">(via Service Table)</span>
                 </div>
               </div>

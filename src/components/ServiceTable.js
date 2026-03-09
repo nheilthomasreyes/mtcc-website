@@ -1,4 +1,4 @@
-import { Download, Edit, Trash2, CheckCircle, Clock, AlertCircle, FileCheck, FileQuestion, FileX, Filter, X as XIcon, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { Download, Edit, Trash2, CheckCircle, Clock, AlertCircle, Filter, X as XIcon, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { TEST_TYPE_LABELS } from "./types";
 import { format } from 'date-fns';
 import { useState, useMemo, useEffect } from 'react';
@@ -201,31 +201,14 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
     }
   };
 
-  const getRequestFormIcon = (status) => {
-    switch (status) {
-      case 'Signed':   return <FileCheck className="w-4 h-4" />;
-      case 'Unsigned': return <FileX className="w-4 h-4" />;
-      default:         return <FileQuestion className="w-4 h-4" />;
-    }
-  };
-
-  const getRequestFormColor = (status) => {
-    switch (status) {
-      case 'Signed':   return 'bg-green-500/20 text-green-300 border-green-500/30';
-      case 'Unsigned': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      default:         return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-    }
-  };
-
   // ─── Inline Request Form Dropdown ────────────────────────────────────────────
 
-  const REQUEST_FORM_OPTIONS = ['Waiting', 'Signed', 'Unsigned', 'N/A'];
+  const REQUEST_FORM_OPTIONS = ['Signed', 'Unsigned'];
 
   const getRequestFormSelectStyle = (value) => {
     switch (value) {
       case 'Signed':   return 'bg-green-500/20 text-green-300 border-green-500/40';
       case 'Unsigned': return 'bg-red-500/20 text-red-300 border-red-500/40';
-      case 'Waiting':  return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
       default:         return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
     }
   };
@@ -235,7 +218,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
    * Color updates live as the value changes.
    */
   const RequestFormCell = ({ client }) => {
-    const currentValue = client.requestForm || 'Waiting';
+    const currentValue = client.requestForm || 'Unsigned';
     return (
       <select
         value={currentValue}
