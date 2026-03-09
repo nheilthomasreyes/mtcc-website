@@ -398,6 +398,49 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
     );
   };
 
+  // ─── Status Progress Bar ─────────────────────────────────────────────────────
+
+  const STATUS_STEPS = ['On-Hold', 'For Test', 'Awaiting ROA', 'For Release', 'Service Completed'];
+
+  const getProgressInfo = (status) => {
+    if (status === 'Cancelled') return { percent: 100, cancelled: true };
+    const idx = STATUS_STEPS.indexOf(status);
+    const percent = idx === -1 ? 0 : Math.round(((idx + 1) / STATUS_STEPS.length) * 100);
+    return { percent, cancelled: false };
+  };
+
+  const StatusProgressBar = ({ status }) => {
+    const { percent, cancelled } = getProgressInfo(status);
+    const barColor = cancelled
+      ? 'bg-red-500'
+      : percent === 100
+      ? 'bg-emerald-400'
+      : percent >= 80
+      ? 'bg-lime-400'
+      : percent >= 60
+      ? 'bg-yellow-400'
+      : percent >= 40
+      ? 'bg-blue-400'
+      : 'bg-amber-400';
+    const trackColor = cancelled ? 'bg-red-500/10' : 'bg-white/10';
+    const labelColor = cancelled ? 'text-red-400' : percent === 100 ? 'text-emerald-400' : 'text-gray-500';
+    return (
+      <div className="mt-8">
+        <div className="flex items-center gap-2">
+          <div className={`w-36 h-1.5 rounded-full ${trackColor} overflow-hidden`}>
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${barColor} ${cancelled ? 'opacity-60' : ''}`}
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <p className={`text-[13px] font-semibold flex-shrink-0 ${labelColor}`}>
+            {cancelled ? 'Cancelled' : `${percent}%`}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -523,6 +566,7 @@ export function ServiceTable({ clients, onEdit, onDelete, onComplete, onCancel, 
                     <div className="space-y-1">
                       <p className="text-white font-semibold truncate">{client.name}</p>
                       <p className="text-gray-400 text-sm truncate">{client.address}</p>
+                      <StatusProgressBar status={client.status} />
                     </div>
                   </td>
 
